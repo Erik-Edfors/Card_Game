@@ -53,7 +53,8 @@ group("Implementations")
 
         links {
             "Shared",
-            "CommonUtilities"
+            "CommonUtilities",
+            "Logger"
         }
 
         includedirs {
@@ -79,7 +80,8 @@ group("Implementations")
 
         links {
             "Shared",
-            "CommonUtilities"
+            "CommonUtilities",
+            "Logger"
         }
 
         includedirs {
@@ -98,6 +100,24 @@ group("Implementations")
 coreDir = Settings.SourceDir .. "Core/"
 group("Core")
 
+    loggerDir = coreDir .. "Logger/"
+    project("Logger")
+        location(loggerDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+
+        includedirs {
+            loggerDir
+        }
+
+        files {
+    		loggerDir .. "**.h",
+    		loggerDir .. "**.hpp",
+    		loggerDir .. "**.cpp",
+    	}
+
     SharedDir = coreDir .. "Shared/"
     project("Shared")
         location(SharedDir)
@@ -105,6 +125,10 @@ group("Core")
         kind("StaticLib")
         language("C++")
         cppdialect("C++20")
+
+        links {
+            "Logger"
+        }
 
         includedirs {
             SharedDir
@@ -127,8 +151,69 @@ group("Core")
         language("C++")
         cppdialect("C++20")
 
+        links {
+            "Logger"
+        }
+
         files {
     		commonUtilitiesDir .. "**.h",
     		commonUtilitiesDir .. "**.hpp",
     		commonUtilitiesDir .. "**.cpp",
+    	}
+
+    renderHardwareInterfaceDir = coreDir .. "RenderHardwareInterface/"
+    project("RenderHardwareInterface")
+        location(renderHardwareInterfaceDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+        
+        links {
+            "CommonUtilities",
+            "Logger"
+        }
+
+        includedirs {
+            renderHardwareInterfaceDir
+        }
+
+        pchheader("RenderHardwareInterface.pch.h")
+    	pchsource(renderHardwareInterfaceDir .. "RenderHardwareInterface.pch.cpp")
+
+        filter("files:**DDSTextureLoader11.cpp")
+            enablepch("Off")
+        filter {}
+
+        files {
+    		renderHardwareInterfaceDir .. "**.h",
+    		renderHardwareInterfaceDir .. "**.hpp",
+    		renderHardwareInterfaceDir .. "**.cpp",
+    	}
+    
+    graphicsEngineDir = coreDir .. "GraphicsEngine/"
+    project("GraphicsEngine")
+        location(graphicsEngineDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+        
+        links {
+            "CommonUtilities",
+            "RenderHardwareInterface",
+            "Logger"
+        }
+
+        includedirs {
+            graphicsEngineDir
+        }
+
+        pchheader("GraphicsEngine.pch.h")
+    	pchsource(graphicsEngineDir .. "GraphicsEngine.pch.cpp")
+
+        files {
+    		graphicsEngineDir .. "**.h",
+    		graphicsEngineDir .. "**.hpp",
+    		graphicsEngineDir .. "**.cpp",
     	}
