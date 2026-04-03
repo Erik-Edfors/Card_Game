@@ -1,0 +1,9 @@
+## Visual Studio Project Files
+*.sln
+*.vcxproj
+*.vcxproj.*
+
+## Temporary Folders
+/Temp/**
+/Bin/**
+.vs/**
