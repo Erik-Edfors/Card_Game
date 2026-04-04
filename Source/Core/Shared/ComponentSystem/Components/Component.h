@@ -18,6 +18,7 @@ namespace shared
 
 		ComponentSystem* GetSystem() const noexcept;
 		ActorRef GetActor() const noexcept;
+		ComponentID GetID() const noexcept;
 
 	protected:
 		virtual void OnInit() {};
@@ -26,11 +27,12 @@ namespace shared
 		virtual void OnDestroy() {};
 
 	private:
-		void Initialize(ComponentSystem* aSystem, ActorID aActor);
+		void Initialize(ComponentSystem* aSystem, ActorID aActor, ComponentID aID);
 
 		void Start();
 		void Update();
 
+		ComponentID myID;
 		ActorRef myActor;
 		bool myIsDestroyed;
 	};

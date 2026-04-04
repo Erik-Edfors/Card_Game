@@ -1,5 +1,6 @@
 #include "Shared.pch.h"
 #include "TransformComponent.h"
+#include "ComponentSystem/ComponentSystem.h"
 #include "ComponentSystem/Actor.h"
 
 namespace shared
@@ -29,6 +30,7 @@ namespace shared
 	}
 	void TransformComponent::SetTranslationGlobal(const CommonUtilities::Vector3f& aTranslation) noexcept
 	{
+		aTranslation;
 	}
 	CommonUtilities::Vector3f TransformComponent::GetTranslationLocal() const noexcept
 	{
@@ -45,6 +47,7 @@ namespace shared
 	}
 	void TransformComponent::SetScaleGlobal(const CommonUtilities::Vector3f& aScale) noexcept
 	{
+		aScale;
 	}
 	CommonUtilities::Vector3f TransformComponent::GetScaleLocal() const noexcept
 	{
@@ -61,6 +64,7 @@ namespace shared
 	}
 	void TransformComponent::SetRotationGlobal(const CommonUtilities::Quaternionf& aRotation) noexcept
 	{
+		aRotation;
 	}
 	CommonUtilities::Quaternionf TransformComponent::GetRotationLocal() const noexcept
 	{
@@ -78,6 +82,7 @@ namespace shared
 	}
 	void TransformComponent::SetMatrixGlobal(const CommonUtilities::Matrix4x4f& aMatrix) noexcept
 	{
+		aMatrix;
 	}
 	CommonUtilities::Matrix4x4f TransformComponent::GetMatrixLocal() noexcept
 	{

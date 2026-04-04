@@ -4,6 +4,7 @@
 namespace shared
 {
 	Component::Component() :
+		myID(INVALID_COMPONENT),
 		myActor(),
 		myIsDestroyed(false)
 	{
@@ -32,10 +33,15 @@ namespace shared
 	{
 		return myActor;
 	}
+	ComponentID Component::GetID() const noexcept
+	{
+		return myID;
+	}
 
-	void Component::Initialize(ComponentSystem* aSystem, ActorID aActor)
+	void Component::Initialize(ComponentSystem* aSystem, ActorID aActor, ComponentID aID)
 	{
 		myActor = ActorRef(aSystem, aActor);
+		myID = aID;
 
 		OnInit();
 	}

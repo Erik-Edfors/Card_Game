@@ -1,5 +1,6 @@
 #include "Shared.pch.h"
 #include "Actor.h"
+#include "ComponentSystem.h"
 
 namespace shared
 {

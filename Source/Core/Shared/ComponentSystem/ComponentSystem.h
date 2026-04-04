@@ -45,7 +45,7 @@ namespace shared
 		myComponents[id] = component;
 		aActor->InsertComponent(id);
 
-		component->Initialize(this, aActor);
+		component->Initialize(this, aActor, id);
 		
 		return component;
 	}

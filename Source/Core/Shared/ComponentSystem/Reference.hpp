@@ -85,7 +85,7 @@ namespace shared
 	{
 		if (aComponent != nullptr)
 		{
-			mySystem = &aComponent->GetSystem();
+			mySystem = aComponent->GetSystem();
 			myComponentID = aComponent->GetID();
 		}
 	}
