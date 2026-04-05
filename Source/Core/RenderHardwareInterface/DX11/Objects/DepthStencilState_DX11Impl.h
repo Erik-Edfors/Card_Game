@@ -1,5 +1,5 @@
 #pragma once
-#include "Objects/DepthStencilState.h"
+#include "../../Objects/DepthStencilState.h"
 #include <wrl.h>
 
 struct ID3D11DepthStencilState;

@@ -3,6 +3,9 @@
 #include "Common_DX11.h"
 #include "GAssert_DX11.h"
 
+#include "Objects/ImmediateDeviceContext_DX11Impl.h"
+#include "Objects/DeferredDeviceContext_DX11Impl.h"
+
 #include "Objects/Texture2D_DX11Impl.h"
 #include "Objects/Texture2DArray_DX11Impl.h"
 #include "Objects/ShaderResource_DX11Impl.h"
@@ -84,6 +87,31 @@ namespace graphics
 	const IDXGISwapChain* Device_DX11Impl::GetSwapChain() const
 	{
 		return mySwapChain.Get();
+	}
+	result::Code Device_DX11Impl::CreateImmediateDeviceContext(ImmediateDeviceContext** outDeviceContext)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::CreateImmediateDeviceContext"
+		GRAPHICS_ASSERT(outDeviceContext != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outDeviceContext) " cannot be nullptr!");
+
+		*outDeviceContext = new ImmediateDeviceContext_DX11Impl(_createGraphicsID(), GetDeviceContext());
+
+		return result::OK;
+#undef LOG_CATEGORY
+	}
+	result::Code Device_DX11Impl::CreateDeferredDeviceContext(DeferredDeviceContext** outDeviceContext)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::CreateDeferredDeviceContext"
+		GRAPHICS_ASSERT(outDeviceContext != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outDeviceContext) " cannot be nullptr!");
+
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> deviceContext;
+		HRESULT result = myDevice->CreateDeferredContext(NULL, &deviceContext);
+
+		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateDeferredContext, LOG_CATEGORY);
+
+		*outDeviceContext = new DeferredDeviceContext_DX11Impl(_createGraphicsID(), deviceContext.Get());
+
+		return result::OK;
+#undef LOG_CATEGORY
 	}
 	result::Code Device_DX11Impl::CreateTexture2D(Texture2D** outTexture2D, const Texture2DDesc* aDesc)
 	{

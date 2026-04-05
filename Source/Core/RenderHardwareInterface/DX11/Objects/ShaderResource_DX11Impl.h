@@ -1,5 +1,5 @@
 #pragma once
-#include "Objects/ShaderResource.h"
+#include "../../Objects/ShaderResource.h"
 #include <wrl.h>
 
 struct ID3D11ShaderResourceView;

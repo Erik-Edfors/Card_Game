@@ -3,10 +3,12 @@
 
 namespace graphics
 {
-	class DeferredDeviceContext : public DeviceContext
+	class DeferredDeviceContext : public virtual DeviceContext
 	{
 	public:
-
+		virtual ~DeferredDeviceContext();
+	protected:
+		DeferredDeviceContext(GraphicsID aID);
 	private:
 	};
 }

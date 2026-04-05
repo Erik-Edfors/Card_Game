@@ -7,6 +7,9 @@ namespace graphics
 {
 	class GraphicsObject;
 
+	class ImmediateDeviceContext;
+	class DeferredDeviceContext;
+
 	class Texture2D;
 	struct Texture2DDesc;
 	class Texture2DArray;
@@ -65,6 +68,14 @@ namespace graphics
 		//########
 		// Objects
 		//########
+
+		virtual result::Code CreateImmediateDeviceContext(
+			ImmediateDeviceContext** outDeviceContext							// A pointer to an ImmediateDeviceContext interface that will recieve the created context.
+		) = 0;
+
+		virtual result::Code CreateDeferredDeviceContext(
+			DeferredDeviceContext** outDeviceContext							// A pointer to an DeferredDeviceContext interface that will recieve the created context.
+		) = 0;
 
 		virtual result::Code CreateTexture2D(
 			Texture2D** outTexture2D,											//A pointer to a Texture2D interface that will recieve the created texture.

@@ -37,6 +37,14 @@ namespace graphics
 		// Objects
 		//########
 
+		result::Code CreateImmediateDeviceContext(
+			ImmediateDeviceContext** outDeviceContext
+		) override;
+
+		result::Code CreateDeferredDeviceContext(
+			DeferredDeviceContext** outDeviceContext
+		) override;
+
 		result::Code CreateTexture2D(
 			Texture2D** outTexture2D,
 			const Texture2DDesc* aDesc

@@ -1,5 +1,5 @@
 #pragma once
-#include "Objects/Texture2D.h"
+#include "../../Objects/Texture2D.h"
 #include <wrl.h>
 
 struct ID3D11Texture2D;

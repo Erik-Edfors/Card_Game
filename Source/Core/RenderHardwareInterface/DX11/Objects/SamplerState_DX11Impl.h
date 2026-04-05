@@ -1,5 +1,5 @@
 #pragma once
-#include "Objects\SamplerState.h"
+#include "../../Objects\SamplerState.h"
 #include <wrl.h>
 
 struct ID3D11SamplerState;
