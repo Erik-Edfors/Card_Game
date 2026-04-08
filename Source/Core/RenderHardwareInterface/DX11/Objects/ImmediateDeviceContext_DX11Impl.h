@@ -30,6 +30,11 @@ namespace graphics
 			unsigned int aSubResource
 		) override;
 
+		result::Code ExecuteDeferredDeviceContext(
+			DeferredDeviceContext* aDeferredDeviceContext,
+			bool aRestoreImmediateContextAfter
+		) override;
+
 	private:
 	};
 #pragma warning(pop)

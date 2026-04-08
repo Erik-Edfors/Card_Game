@@ -118,11 +118,7 @@ namespace graphics
 		//Creates a vertex buffer on the device.
 		virtual result::Code CreateVertexBuffer(
 			VertexBuffer** outVertexBuffer,										//A pointer to a VertexBuffer interface that will recieve the created vertex buffer.
-			const char* aName,													//A name to assign the object.
-			const void* aData,													//A pointe to data to fill the vertex buffer with. If nullptr, will only allocate space. Can only be nullptr if aUsage is not GRAPHICS_USAGE_IMMUTABLE.
-			size_t aSize,														//The size of the vertex buffer in bytes.
-			GRAPHICS_USAGE aUsage,												//The usage of the vertex buffer.
-			GRAPHICS_CPU_ACCESS_FLAGS aCPUAccessFlags							//CPU Access flags. Non-immutable buffers should be writable by the cpu.
+			const VertexBufferDesc* aDesc
 		) = 0;
 
 		//Creates a index buffer on the device.

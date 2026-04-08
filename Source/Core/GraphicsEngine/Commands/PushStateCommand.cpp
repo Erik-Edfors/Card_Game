@@ -11,5 +11,5 @@ PushStateCommand::~PushStateCommand() = default;
 
 void PushStateCommand::Execute()
 {
-	myGraphicsEngine->PushState(myPipelineState);
+	//myGraphicsEngine->PushState(myPipelineState);
 }

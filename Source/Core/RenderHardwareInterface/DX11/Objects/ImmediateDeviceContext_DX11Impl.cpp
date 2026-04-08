@@ -1,5 +1,6 @@
 #include "RenderHardwareInterface.pch.h"
 #include "ImmediateDeviceContext_DX11Impl.h"
+#include "DeferredDeviceContext_DX11Impl.h"
 
 #include "DX11/Common_DX11.h"
 #include "DX11/GAssert_DX11.h"
@@ -74,6 +75,22 @@ namespace graphics
 			dxTexture,
 			aSubResource
 		);
+
+		return result::OK;
+#undef LOG_CATEGORY
+	}
+	result::Code ImmediateDeviceContext_DX11Impl::ExecuteDeferredDeviceContext(DeferredDeviceContext* aDeferredDeviceContext, bool aRestoreImmediateContextAfter)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::ExecuteDeferredDeviceContext"
+
+		DeferredDeviceContext_DX11Impl* deferred = dynamic_cast<DeferredDeviceContext_DX11Impl*>(aDeferredDeviceContext);
+		GRAPHICS_ASSERT(deferred != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDeferredDeviceContext) " could not be cast to " STRINGIFY(DeferredDeviceContext_DX11Impl) "!");
+
+		Microsoft::WRL::ComPtr<ID3D11CommandList> commandList;
+		HRESULT result = deferred->GetDeviceContext()->FinishCommandList(false, &commandList);
+		GRAPHICS_ASSERT_WIN32_API_CALL(result, STRINGIFY(ID3D11DeviceContext::FinishCommandList), LOG_CATEGORY);
+
+		GetDeviceContext()->ExecuteCommandList(commandList.Get(), aRestoreImmediateContextAfter);
 
 		return result::OK;
 #undef LOG_CATEGORY

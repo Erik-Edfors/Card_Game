@@ -56,6 +56,11 @@ namespace graphics
 		SetLocalName(aName);
 		myDeviceContext->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(strlen(aName)), aName);
 	}
+	result::Code DeviceContext_DX11Impl::ResetState()
+	{
+		myDeviceContext->ClearState();
+		return result::OK;
+	}
 	result::Code DeviceContext_DX11Impl::UpdateConstantBuffer(ConstantBuffer* aConstantBuffer, void* aData, size_t aDataSize)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::UpdateConstantBuffer"

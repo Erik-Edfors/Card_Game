@@ -33,6 +33,9 @@ namespace graphics
 	public:
 		virtual ~DeviceContext();
 
+		virtual result::Code ResetState(
+		) = 0;
+
 		//########
 		// Buffers
 		//########

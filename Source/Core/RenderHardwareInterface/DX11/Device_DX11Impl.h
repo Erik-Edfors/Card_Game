@@ -81,11 +81,7 @@ namespace graphics
 
 		result::Code CreateVertexBuffer(
 			VertexBuffer** outVertexBuffer,
-			const char* aName,
-			const void* aData,
-			size_t aSize,
-			GRAPHICS_USAGE aUsage,
-			GRAPHICS_CPU_ACCESS_FLAGS aCPUAccessFlags
+			const VertexBufferDesc* aDesc
 		) override;
 
 		result::Code CreateIndexBuffer(

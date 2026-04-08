@@ -10,5 +10,5 @@ PopStateCommand::~PopStateCommand() = default;
 
 void PopStateCommand::Execute()
 {
-	myGraphicsEngine->PopState();
+	//myGraphicsEngine->PopState();
 }

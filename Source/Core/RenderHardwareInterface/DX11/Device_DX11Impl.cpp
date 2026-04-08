@@ -436,29 +436,29 @@ namespace graphics
 		return result::OK;
 #undef LOG_CATEGORY
 	}
-	result::Code Device_DX11Impl::CreateVertexBuffer(VertexBuffer** outVertexBuffer, const char* aName, const void* aData, size_t aSize, GRAPHICS_USAGE aUsage, GRAPHICS_CPU_ACCESS_FLAGS aCPUAccessFlags)
+	result::Code Device_DX11Impl::CreateVertexBuffer(VertexBuffer** outVertexBuffer, const VertexBufferDesc* aDesc)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::CreateVertexBuffer"
 
 		GRAPHICS_ASSERT(outVertexBuffer != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outConstantBuffer) " cannot be nullptr!");
-		GRAPHICS_ASSERT(aSize > 0, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aSize) " must be greater than 0!");
+		GRAPHICS_ASSERT(aDesc->Size > 0, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aSize) " must be greater than 0!");
 
 		Microsoft::WRL::ComPtr<ID3D11Buffer> buffer;
 		result::Code result = _createBuffer(
 			&buffer,
 			D3D11_BIND_VERTEX_BUFFER,
-			aData,
-			aSize,
-			aUsage,
-			aCPUAccessFlags
+			aDesc->Data,
+			aDesc->Size,
+			aDesc->Usage,
+			aDesc->CPUAccessFlags
 		);
 
 		GRAPHICS_ASSERT_RESULT(result, LOG_CATEGORY, "Failed to create Vertex buffer!");
 
-		*outVertexBuffer = new VertexBuffer_DX11Impl(_createGraphicsID(), aSize, buffer.Get());
+		*outVertexBuffer = new VertexBuffer_DX11Impl(_createGraphicsID(), aDesc->Size, buffer.Get());
 		(**outVertexBuffer).AddReference();
 
-		_setName(aName, *outVertexBuffer);
+		_setName(aDesc->Name.c_str(), *outVertexBuffer);
 
 		return result::OK;
 #undef LOG_CATEGORY	

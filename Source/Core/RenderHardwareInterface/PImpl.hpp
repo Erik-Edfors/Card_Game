@@ -19,11 +19,11 @@ namespace graphics
 		template<typename _CastTy>
 		bool As(_CastTy** outPtr) const;
 
-		_Ty* Get();
-		const _Ty* Get() const;
+		_Ty* Get() const noexcept;
+		//const _Ty* Get() const;
 
-		PImpl<_Ty>* GetAddressOf();
-		const PImpl<_Ty>* GetAddressOf() const;
+		PImpl<_Ty>* GetAddressOf() noexcept;
+		const PImpl<_Ty>* GetAddressOf() const noexcept;
 
 		void Reset();
 
@@ -113,22 +113,22 @@ namespace graphics
 		return false;
 	}
 	template<typename _Ty>
-	inline _Ty* PImpl<_Ty>::Get()
+	inline _Ty* PImpl<_Ty>::Get() const noexcept
 	{
 		return myRefObject;
 	}
+	//template<typename _Ty>
+	//inline const _Ty* PImpl<_Ty>::Get() const
+	//{
+	//	return myRefObject;
+	//}
 	template<typename _Ty>
-	inline const _Ty* PImpl<_Ty>::Get() const
-	{
-		return myRefObject;
-	}
-	template<typename _Ty>
-	inline PImpl<_Ty>* PImpl<_Ty>::GetAddressOf()
+	inline PImpl<_Ty>* PImpl<_Ty>::GetAddressOf() noexcept
 	{
 		return this;
 	}
 	template<typename _Ty>
-	inline const PImpl<_Ty>* PImpl<_Ty>::GetAddressOf() const
+	inline const PImpl<_Ty>* PImpl<_Ty>::GetAddressOf() const noexcept
 	{
 		return this;
 	}

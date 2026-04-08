@@ -18,6 +18,9 @@ namespace graphics
 
 		void SetName(const char* aName) override;
 
+		result::Code ResetState(
+		) override;
+
 		//########
 		// Buffers
 		//########

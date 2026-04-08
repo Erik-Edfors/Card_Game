@@ -11,11 +11,11 @@
 #undef FILE_CATEGORY
 #define FILE_CATEGORY "PipelineState.cpp"
 
-PipelineStateDesc::PipelineStateDesc() :
-	Topology(graphics::GRAPHICS_TOPOLOGY_UNDEFINED)
-{
-}
-PipelineStateDesc::~PipelineStateDesc() = default;
+//PipelineStateDesc::PipelineStateDesc() :
+//	Topology(graphics::GRAPHICS_TOPOLOGY_UNDEFINED)
+//{
+//}
+//PipelineStateDesc::~PipelineStateDesc() = default;
 
 #undef CLASS_CATEGORY
 #define CLASS_CATEGORY FILE_CATEGORY"->PipelineState"

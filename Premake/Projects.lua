@@ -217,3 +217,46 @@ group("Core")
     		graphicsEngineDir .. "**.hpp",
     		graphicsEngineDir .. "**.cpp",
     	}
+    
+    shadersDir = coreDir .. "Shaders/"
+    project("Shaders")
+        location(shadersDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+
+        shaderobjectfileoutput("../../../Assets/Shaders/%%(Filename).cso")
+
+        files {
+            shadersDir .. "**.hlsl",
+            shadersDir .. "**.hlsli"
+        }
+
+        filter("files:**.hlsl")
+            shadermodel("5.0")
+            shaderoptions("/WX") -- Warnings as errors
+
+        filter("files:**PS.hlsl")
+            shadertype("Pixel")
+
+        filter("files:**VS.hlsl")
+            shadertype("Vertex")
+
+        filter("files:**GS.hlsl")
+            shadertype("Geometry")
+        
+        filter("files:**DS.hlsl")
+            shadertype("Domain")
+
+        filter("files:**CS.hlsl")
+            shadertype("Compute")
+
+        filter("files:**MS.hlsl")
+            shadertype("Mesh")
+        
+        filter("files:**AS.hlsl")
+            shadertype("Amplification")
+        
+        filter("files:**FX.hlsl")
+            shadertype("Effect")

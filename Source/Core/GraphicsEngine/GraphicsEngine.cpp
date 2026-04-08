@@ -3,10 +3,13 @@
 #include "GraphicsRegistry.h"
 
 #include <Core/RenderHardwareInterface/Device.h>
+#include <Core/RenderHardwareInterface/Objects/ImmediateDeviceContext.h>
 #include <Core/RenderHardwareInterface/Objects/Buffers/ConstantBuffer.h>
 
 #include "Objects/LightEntry.h"
 #include "Objects/PipelineState.h"
+
+#include "RenderLayers/RenderLayer.h"
 
 #include "ConstantBuffers/FrameBuffer.h"
 #include "ConstantBuffers/ObjectBuffer.h"
@@ -140,9 +143,24 @@ void GraphicsEngine::Initialize()
 	}
 }
 
-graphics::Device* GraphicsEngine::GetDevice()
+void GraphicsEngine::Render()
+{
+	for (std::unique_ptr<RenderLayer>& layer : myRenderLayers)
+	{
+		layer->Prepare();
+		layer->Render();
+		GetDeviceContext()->ExecuteDeferredDeviceContext(layer->GetContext(), false);
+	}
+}
+
+graphics::Device* GraphicsEngine::GetDevice() const noexcept
 {
 	return myDevice.Get();
+}
+
+graphics::ImmediateDeviceContext* GraphicsEngine::GetDeviceContext() const noexcept
+{
+	return myDeviceContext.Get();
 }
 
 bool GraphicsEngine::UpdateConstantBuffer(CONSTANT_BUFFER aBuffer, void* aData, size_t aSize)
@@ -289,32 +307,32 @@ LightEntryID GraphicsEngine::CreateLightEntryID()
 //	}
 //}
 
-PipelineState* GraphicsEngine::GetState()
-{
-	return myPipelineStateStack.empty() ? nullptr : myPipelineStateStack.back().get();
-}
-
-PipelineState* GraphicsEngine::PushState(const PipelineStateDesc& aDesc)
-{
-	if (not myPipelineStateStack.empty())
-	{
-		myPipelineStateStack.back()->Unbind(myDevice.Get());
-	}
-	myPipelineStateStack.push_back(std::move(std::make_shared<PipelineState>(aDesc)));
-	myPipelineStateStack.back()->Bind(myDevice.Get());
-	return myPipelineStateStack.back().get();
-}
-
-PipelineState* GraphicsEngine::PopState()
-{
-	if (myPipelineStateStack.empty())
-	{
-		return nullptr;
-	}
-	myPipelineStateStack.back()->Unbind(myDevice.Get());
-	myPipelineStateStack.pop_back();
-	return myPipelineStateStack.empty() ? nullptr : myPipelineStateStack.back().get();
-}
+//PipelineState* GraphicsEngine::GetState()
+//{
+//	return myPipelineStateStack.empty() ? nullptr : myPipelineStateStack.back().get();
+//}
+//
+//PipelineState* GraphicsEngine::PushState(const PipelineStateDesc& aDesc)
+//{
+//	if (not myPipelineStateStack.empty())
+//	{
+//		myPipelineStateStack.back()->Unbind(myDevice.Get());
+//	}
+//	myPipelineStateStack.push_back(std::move(std::make_shared<PipelineState>(aDesc)));
+//	myPipelineStateStack.back()->Bind(myDevice.Get());
+//	return myPipelineStateStack.back().get();
+//}
+//
+//PipelineState* GraphicsEngine::PopState()
+//{
+//	if (myPipelineStateStack.empty())
+//	{
+//		return nullptr;
+//	}
+//	myPipelineStateStack.back()->Unbind(myDevice.Get());
+//	myPipelineStateStack.pop_back();
+//	return myPipelineStateStack.empty() ? nullptr : myPipelineStateStack.back().get();
+//}
 
 //graphics::PipelineState* GraphicsEngine::GetPipelineState(PIPELINE_STATE aPipelineState)
 //{

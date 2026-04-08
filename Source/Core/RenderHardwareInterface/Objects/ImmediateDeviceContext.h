@@ -3,6 +3,8 @@
 
 namespace graphics
 {
+	class DeferredDeviceContext;
+
 	class ImmediateDeviceContext : public virtual DeviceContext
 	{
 	public:
@@ -25,6 +27,11 @@ namespace graphics
 		virtual result::Code Unmap(
 			Texture2D* aTexture,
 			unsigned int aSubResource
+		) = 0;
+
+		virtual result::Code ExecuteDeferredDeviceContext(
+			DeferredDeviceContext* aDeferredDeviceContext,
+			bool aRestoreImmediateContextAfter
 		) = 0;
 
 	protected:

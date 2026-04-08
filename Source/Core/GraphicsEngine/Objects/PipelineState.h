@@ -73,8 +73,8 @@ struct PipelineStateConstantBuffer
 struct PipelineStateDesc
 {
 public:
-	PipelineStateDesc();
-	~PipelineStateDesc();
+	//PipelineStateDesc();
+	//~PipelineStateDesc();
 
 	std::string Name;
 
