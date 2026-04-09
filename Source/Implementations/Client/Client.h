@@ -43,10 +43,7 @@
 
 #include <memory>
 
-namespace shared
-{
-	class Scene;
-}
+class Engine;
 
 namespace client
 {
@@ -66,6 +63,6 @@ namespace client
 
 	private:
 		bool myExiting;
-		std::unique_ptr<shared::Scene> myScene;
+		std::unique_ptr<Engine> myEngine;
 	};
 }

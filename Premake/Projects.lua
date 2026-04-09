@@ -54,6 +54,7 @@ group("Implementations")
         links {
             "Shared",
             "GraphicsEngine",
+            "Engine",
             "CommonUtilities",
             "Logger",
 
@@ -87,6 +88,7 @@ group("Implementations")
         links {
             "Shared",
             "GraphicsEngine",
+            "Engine",
             "CommonUtilities",
             "Logger",
 
@@ -230,6 +232,33 @@ group("Core")
     		graphicsEngineDir .. "**.cpp",
     	}
     
+    engineDir = coreDir .. "Engine/"
+    project("Engine")
+        location(engineDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+        
+        links {
+            "CommonUtilities",
+            "GraphicsEngine",
+            "Logger"
+        }
+
+        includedirs {
+            engineDir
+        }
+
+        pchheader("Engine.pch.h")
+    	pchsource(engineDir .. "Engine.pch.cpp")
+
+        files {
+    		engineDir .. "**.h",
+    		engineDir .. "**.hpp",
+    		engineDir .. "**.cpp",
+    	}
+        
     shadersDir = coreDir .. "Shaders/"
     project("Shaders")
         location(shadersDir)

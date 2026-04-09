@@ -4,6 +4,7 @@
 #include "Client.h"
 #include "Scenes/LobbyScene.h"
 
+#include <Core/Engine/Engine.h>
 
 //TEMPORARY:
 #include <Core/GraphicsEngine/GraphicsEngine.h>
@@ -15,8 +16,8 @@
 #include <Core/RenderHardwareInterface/DX11/Window_DX11Impl.h>
 #include <fstream>
 
-static graphics::PImpl<graphics::Window_DX11Impl> locWindow = nullptr;
-static GraphicsEngine* locGraphicsEngine = nullptr;
+//static graphics::PImpl<graphics::Window_DX11Impl> locWindow = nullptr;
+//static GraphicsEngine* locGraphicsEngine = nullptr;
 static SpriteRenderLayer* locSpriteRenderLayer = nullptr;
 static graphics::PImpl<graphics::RenderTarget> locRenderTarget = nullptr;
 
@@ -49,14 +50,13 @@ namespace client
 		aArgs;
 		aNumArgs;
 
-		//TEMPORARY:
-		locWindow = new graphics::Window_DX11Impl(aWindow);
-		graphics::PImpl<graphics::Device> device;
-		graphics::CreateDevice(&device, locWindow.Get(), graphics::GRAPHICS_DEVICE_ALLOW_TEARING | graphics::GRAPHICS_DEVICE_DEBUG | graphics::GRAPHICS_DEVICE_VIDEO_SUPPORT | graphics::GRAPHICS_DEVICE_BGRA_SUPPORT);
-		locGraphicsEngine = new GraphicsEngine(device.Get());
-		locGraphicsEngine->Initialize();
+		myEngine = std::make_unique<Engine>();
+		myEngine->Initialize(aWindow);
 
-		locSpriteRenderLayer = locGraphicsEngine->AddRenderLayer<SpriteRenderLayer>();
+
+		//TEMPORARY:
+		locSpriteRenderLayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>();
+		graphics::PImpl<graphics::Device> device = myEngine->GetGraphicsEngine().GetDevice();
 
 		graphics::PImpl<graphics::Texture2D> backBufferTexture;
 		device->GetBuffer(&backBufferTexture);
@@ -105,8 +105,8 @@ namespace client
 		locSpriteRenderLayer->SetTarget(locRenderTarget.Get());
 		locSpriteRenderLayer->SetView(CommonUtilities::Matrix4x4f());
 		locSpriteRenderLayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
-
-		myScene = std::make_unique<client::LobbyScene>();
+			
+		myEngine->PushScene<client::LobbyScene>();
 
 		return true;
 	}
@@ -130,29 +130,35 @@ namespace client
 
 			}
 
-			static CommonUtilities::Vector2f pos = { 0.f, 0.f };
-			pos += { 0.00001f, 0.00001f };
+			if (myEngine->BeginFrame())
+			{
+				static CommonUtilities::Vector2f pos = { 0.f, 0.f };
+				pos += { 0.00001f, 0.00001f };
 
-			const Sprite sprite = {
-				.Position = pos,
-				.Size = { 0.1f, 0.2f },
-				.Pivot = { 0.5f, 0.5f },
-				.Rotation = 0.f,
+				const Sprite sprite = {
+					.Position = pos,
+					.Size = { 0.1f, 0.2f },
+					.Pivot = { 0.5f, 0.5f },
+					.Rotation = 0.f,
 
-				.Tint = { 1.f, 1.f, 1.f, 1.f },
-				.Roughness = 1.f,
-				.Metallicity = 0.f,
+					.Tint = { 1.f, 1.f, 1.f, 1.f },
+					.Roughness = 1.f,
+					.Metallicity = 0.f,
 
-				.TextureRect = {
-					{ 0.003173828125f, 0.001953125f },
-					{ 0.003173828125f + 0.01318359375f, 0.001953125f + 0.025390625f }
-				},
-				.Depth = 0.5f
-			};
-			locSpriteRenderLayer->Draw(sprite);
+					.TextureRect = {
+						{ 0.003173828125f, 0.001953125f },
+						{ 0.003173828125f + 0.01318359375f, 0.001953125f + 0.025390625f }
+					},
+					.Depth = 0.5f
+				};
+				locSpriteRenderLayer->Draw(sprite);
 
-			myScene->Update();
-			locGraphicsEngine->Render();
+				myEngine->EndFrame();
+			}
+			else
+			{
+				Exit();
+			}
 		}
 	}
 	void Client::Exit()

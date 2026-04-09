@@ -1,9 +1,9 @@
 #pragma once
-#include <Core/Shared/Scene.h>
+#include <Core/Engine/Scene.h>
 
 namespace client
 {
-	class LobbyScene : public shared::Scene
+	class LobbyScene : public Scene
 	{
 	public:
 
