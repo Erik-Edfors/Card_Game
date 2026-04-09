@@ -34,6 +34,8 @@ GraphicsEngine::~GraphicsEngine() = default;
 
 void GraphicsEngine::Initialize()
 {
+	GetDevice()->CreateImmediateDeviceContext(&myDeviceContext);
+
 	//////////////////
 	//// Constant Buffers
 	//////////////////
@@ -151,6 +153,8 @@ void GraphicsEngine::Render()
 		layer->Render();
 		GetDeviceContext()->ExecuteDeferredDeviceContext(layer->GetContext(), false);
 	}
+
+	myDevice->Present(graphics::GRAPHICS_PRESENT_NONE);
 }
 
 graphics::Device* GraphicsEngine::GetDevice() const noexcept

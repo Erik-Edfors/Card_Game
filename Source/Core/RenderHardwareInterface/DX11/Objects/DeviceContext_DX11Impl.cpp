@@ -93,8 +93,8 @@ namespace graphics
 		GRAPHICS_ASSERT(aDataSize > 0, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDataSize) " must be greater than 0!");
 		GRAPHICS_ASSERT(aDataSize <= aVertexBuffer->GetSize(), LOG_CATEGORY, result::OUT_OF_RANGE, STRINGIFY(aDataSize) " was larger than the size of " STRINGIFY(aVertexBuffer) "!");
 
-		ConstantBuffer_DX11Impl* buffer = dynamic_cast<ConstantBuffer_DX11Impl*>(aVertexBuffer);
-		GRAPHICS_ASSERT(buffer != nullptr, LOG_CATEGORY, result::INVALID_IMPLEMENTATION, STRINGIFY(aVertexBuffer) " could not be cast to " STRINGIFY(ConstantBuffer_DX11Impl*) "!");
+		VertexBuffer_DX11Impl* buffer = dynamic_cast<VertexBuffer_DX11Impl*>(aVertexBuffer);
+		GRAPHICS_ASSERT(buffer != nullptr, LOG_CATEGORY, result::INVALID_IMPLEMENTATION, STRINGIFY(aVertexBuffer) " could not be cast to " STRINGIFY(VertexBuffer_DX11Impl*) "!");
 
 		result::Code result = _updateBuffer(buffer->GetBuffer(), aData, aDataSize);
 		if (GRAPHICS_FAILED(result))
@@ -115,8 +115,8 @@ namespace graphics
 		GRAPHICS_ASSERT(aDataSize > 0, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDataSize) " must be greater than 0!");
 		GRAPHICS_ASSERT(aDataSize <= aIndexBuffer->GetSize(), LOG_CATEGORY, result::OUT_OF_RANGE, STRINGIFY(aDataSize) " was larger than the capacity of " STRINGIFY(aIndexBuffer) "!");
 
-		ConstantBuffer_DX11Impl* buffer = dynamic_cast<ConstantBuffer_DX11Impl*>(aIndexBuffer);
-		GRAPHICS_ASSERT(buffer != nullptr, LOG_CATEGORY, result::INVALID_IMPLEMENTATION, STRINGIFY(aIndexBuffer) " could not be cast to " STRINGIFY(ConstantBuffer_DX11Impl*) "!");
+		IndexBuffer_DX11Impl* buffer = dynamic_cast<IndexBuffer_DX11Impl*>(aIndexBuffer);
+		GRAPHICS_ASSERT(buffer != nullptr, LOG_CATEGORY, result::INVALID_IMPLEMENTATION, STRINGIFY(aIndexBuffer) " could not be cast to " STRINGIFY(IndexBuffer_DX11Impl*) "!");
 
 		result::Code result = _updateBuffer(buffer->GetBuffer(), aData, aDataSize);
 		if (GRAPHICS_FAILED(result))

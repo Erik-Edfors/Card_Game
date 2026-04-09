@@ -53,8 +53,14 @@ group("Implementations")
 
         links {
             "Shared",
+            "GraphicsEngine",
             "CommonUtilities",
-            "Logger"
+            "Logger",
+
+            "d3d11.lib",
+            "dxguid.lib",
+            "dxgi.lib",
+            "d3dcompiler.lib"
         }
 
         includedirs {
@@ -80,8 +86,14 @@ group("Implementations")
 
         links {
             "Shared",
+            "GraphicsEngine",
             "CommonUtilities",
-            "Logger"
+            "Logger",
+
+            "d3d11.lib",
+            "dxguid.lib",
+            "dxgi.lib",
+            "d3dcompiler.lib"
         }
 
         includedirs {

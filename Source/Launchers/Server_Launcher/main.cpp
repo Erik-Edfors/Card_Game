@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <Implementations/Server/Server.h>
+#include <Core/Logger/Logger.h>
 
 static LRESULT CALLBACK locWinProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
@@ -132,6 +133,8 @@ extern int WINAPI wWinMain(
 		{
 			setvbuf(consoleErr, nullptr, _IONBF, 1024);  // NOLINT(cert-err33-c)
 		}
+
+		logger::Logger::SetOutputStream(&std::cout);
 	}
 	else
 	{

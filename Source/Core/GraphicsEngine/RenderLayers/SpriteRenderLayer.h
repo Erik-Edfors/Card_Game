@@ -17,6 +17,8 @@ namespace graphics
 	class VertexShader;
 	class GeometryShader;
 	class PixelShader;
+
+	class SamplerState;
 }
 
 struct Sprite
@@ -30,7 +32,6 @@ struct Sprite
 	float Roughness;
 	float Metallicity;
 
-	graphics::PImpl<graphics::ShaderResource> Texture;
 	CommonUtilities::AABB2Df TextureRect;
 
 	float Depth;
@@ -77,4 +78,5 @@ private:
 
 	graphics::PImpl<graphics::RenderTarget> myRenderTarget;
 	graphics::PImpl<graphics::ShaderResource> myTextureAtlas;
+	graphics::PImpl<graphics::SamplerState> mySamplerState;
 };

@@ -1,38 +1,38 @@
 
 struct Sprite_VS_In
 {
-    float2 Position : Position;
-    float2 Size : Size;
-    float4 UVRect : UVRect;
-    float2 Pivot : Pivot;
-    float Rotation : Rotation;
+    float2 Position : POSITION;
+    float2 Size : SIZE;
+    float4 UVRect : UVRECT;
+    float2 Pivot : PIVOT;
+    float Rotation : ROTATION;
 };
 
 struct Sprite_VS_Out
 {
-    float2 Rectangle[4] : Rectangle;
-    float4 UVRect : UVRect;
+    float2 Corners[4] : CORNERS;
+    float4 UVRect : UVRECT;
 };
 
 struct Sprite_GS_In
 {
-    float2 Rectangle[4] : Rectangle;
-    float4 UVRect : UVRect;
+    float2 Corners[4] : CORNERS;
+    float4 UVRect : UVRECT;
 };
 
 struct Sprite_GS_Out
 {
-    float2 Position : SV_Position;
+    float4 Position : SV_POSITION;
     float2 UV : TEXCOORD;
 };
 
 struct Sprite_PS_In
 {
-    float2 Position : SV_Position;
+    float4 Position : SV_POSITION;
     float2 UV : TEXCOORD;
 };
 
 struct Sprite_PS_Out
 {
-    float Color : SV_Target;
+    float4 Color : SV_TARGET;
 };

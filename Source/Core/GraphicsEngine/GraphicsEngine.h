@@ -47,6 +47,9 @@ public:
 	_RenderLayerTy* AddRenderLayer();
 
 	template<class _RenderLayerTy>
+	_RenderLayerTy* GetRenderLayer() const noexcept;
+
+	template<class _RenderLayerTy>
 	void EraseRenderLayer();
 
 private:
@@ -58,7 +61,7 @@ private:
 	std::unordered_map<LIGHT_REGISTRY, std::shared_ptr<CommonUtilities::Registry<LightEntryID, LightEntry>>> myLightRegistries;
 	std::vector<std::unique_ptr<RenderLayer>> myRenderLayers;
 	LightEntryID myNextLightEntryID;
-	std::vector<std::shared_ptr<PipelineState>> myPipelineStateStack;
+	//std::vector<std::shared_ptr<PipelineState>> myPipelineStateStack;
 };
 
 template<class _RenderLayerTy>
@@ -66,9 +69,23 @@ inline _RenderLayerTy* GraphicsEngine::AddRenderLayer()
 {
 	myRenderLayers.push_back(std::make_unique<_RenderLayerTy>());
 
-	myRenderLayers.back().Initialize(this);
+	myRenderLayers.back()->Initialize(this);
 
-	return myRenderLayers.back().get();
+	return static_cast<_RenderLayerTy*>(myRenderLayers.back().get());
+}
+
+template<class _RenderLayerTy>
+inline _RenderLayerTy* GraphicsEngine::GetRenderLayer() const noexcept
+{
+	for (const std::unique_ptr<RenderLayer>& renderLayer : myRenderLayers)
+	{
+		_RenderLayerTy* result = dynamic_cast<_RenderLayerTy*>(renderLayer.get());
+		if (result != nullptr)
+		{
+			return result;
+		}
+	}
+	return nullptr;
 }
 
 template<class _RenderLayerTy>

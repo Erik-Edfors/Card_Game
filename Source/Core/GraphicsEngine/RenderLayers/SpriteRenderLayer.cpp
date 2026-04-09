@@ -2,6 +2,7 @@
 #include "SpriteRenderLayer.h"
 
 #include "GraphicsEngine.h"
+#include "Common.h"
 
 #include "ConstantBuffers/FrameBuffer.h"
 #include "ConstantBuffers/ObjectBuffer.h"
@@ -61,20 +62,16 @@ void SpriteRenderLayer::Draw(const Sprite& aSprite)
 
 void SpriteRenderLayer::OnInit()
 {
-	constexpr size_t shaderBufferSize = 16'384;
-	char* shaderBuffer = new char[shaderBufferSize];
+	constexpr size_t shaderBufferSize = 1'048'576;
+	void* shaderBuffer = new char[shaderBufferSize];
 
 	{
 		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../Assets/Shaders/Sprite_VS.cso");
+		std::ifstream file("../../Assets/Shaders/Sprite_VS.cso", std::ios::binary);
 
 		size_t shaderSize = 0;
 
-		memset(shaderBuffer, 0, shaderBufferSize);
-		while (file.read(shaderBuffer, sizeof(shaderBuffer)))
-		{
-			shaderSize += file.gcount();
-		}
+		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
 
 		GetGraphicsEngine()->GetDevice()->CreateShader(
 			&myVertexShader,
@@ -87,23 +84,23 @@ void SpriteRenderLayer::OnInit()
 			.Name = "Sprite InputLayout",
 			.LayoutDefinition = {
 				graphics::LayoutElementDesc{
-					.SemanticName = "Position",
+					.SemanticName = "POSITION",
 					.Format = graphics::GRAPHICS_FORMAT_R32G32_FLOAT
 				},
 				graphics::LayoutElementDesc{
-					.SemanticName = "Size",
+					.SemanticName = "SIZE",
 					.Format = graphics::GRAPHICS_FORMAT_R32G32_FLOAT
 				},
 				graphics::LayoutElementDesc{
-					.SemanticName = "UVRect",
+					.SemanticName = "UVRECT",
 					.Format = graphics::GRAPHICS_FORMAT_R32G32B32A32_FLOAT
 				},
 				graphics::LayoutElementDesc{
-					.SemanticName = "Pivot",
+					.SemanticName = "PIVOT",
 					.Format = graphics::GRAPHICS_FORMAT_R32G32_FLOAT
 				},
 				graphics::LayoutElementDesc{
-					.SemanticName = "Rotation",
+					.SemanticName = "ROTATION",
 					.Format = graphics::GRAPHICS_FORMAT_R32_FLOAT
 				}
 			},
@@ -114,15 +111,11 @@ void SpriteRenderLayer::OnInit()
 	}
 	{
 		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../Assets/Shaders/Sprite_GS.cso");
+		std::ifstream file("../../Assets/Shaders/Sprite_GS.cso", std::ios::binary);
 
 		size_t shaderSize = 0;
 
-		memset(shaderBuffer, 0, shaderBufferSize);
-		while (file.read(shaderBuffer, sizeof(shaderBuffer)))
-		{
-			shaderSize += file.gcount();
-		}
+		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
 
 		GetGraphicsEngine()->GetDevice()->CreateShader(
 			&myGeometryShader,
@@ -132,15 +125,11 @@ void SpriteRenderLayer::OnInit()
 		);
 	}
 	{
-		std::ifstream file("../../Assets/Shaders/Sprite_PS.cso");
+		std::ifstream file("../../Assets/Shaders/Sprite_PS.cso", std::ios::binary);
 
 		size_t shaderSize = 0;
 
-		memset(shaderBuffer, 0, shaderBufferSize);
-		while (file.read(shaderBuffer, sizeof(shaderBuffer)))
-		{
-			shaderSize += file.gcount();
-		}
+		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
 
 		GetGraphicsEngine()->GetDevice()->CreateShader(
 			&myPixelShader,
@@ -201,15 +190,33 @@ void SpriteRenderLayer::OnInit()
 				graphics::RenderTargetBlendDesc{
 					.EnableBlend = true,
 					.SourceBlend = graphics::GRAPHICS_BLEND_SRC_ALPHA,
-					.DestinationBlend = graphics::GRAPHICS_BLEND_DEST_ALPHA,
+					.DestinationBlend = graphics::GRAPHICS_BLEND_INV_SRC_ALPHA,
 					.BlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
-					.AlphaSourceBlend = graphics::GRAPHICS_BLEND_INV_DEST_ALPHA,
-					.AlphaDestinationBlend = graphics::GRAPHICS_BLEND_DEST_ALPHA,
-					.AlphaBlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD
+					.AlphaSourceBlend = graphics::GRAPHICS_BLEND_SRC_ALPHA,
+					.AlphaDestinationBlend = graphics::GRAPHICS_BLEND_INV_SRC_ALPHA,
+					.AlphaBlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
+					.RenderTargetWriteMask = 0b1111
 				}
 			}
 		};
 		GetGraphicsEngine()->GetDevice()->CreateBlendState(&myBlendState, &desc);
+	}
+
+	{
+		const graphics::SamplerStateDesc desc = {
+			.Name = "Sprite Atlas Sampler",
+			.Filter = graphics::GRAPHICS_SAMPLER_FILTER_MIN_MAG_MIP_POINT,
+			.AddressU = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
+			.AddressV = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
+			.AddressW = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
+			.MipLODBias = 0.f,
+			.MaxAnistropy = 0,
+			.Comparison = graphics::GRAPHICS_COMPARISON_NEVER,
+			.BorderColor = { 0.f, 0.f, 0.f, 0.f },
+			.MinLOD = 0,
+			.MaxLOD = FLT_MAX
+		};
+		GetGraphicsEngine()->GetDevice()->CreateSamplerState(&mySamplerState, &desc);
 	}
 
 	graphics::PImpl<graphics::RasterizerState> rasterizerState = nullptr;
@@ -265,6 +272,11 @@ void SpriteRenderLayer::OnRender()
 
 	GetContext()->PushEvent("Sprite Rendering");
 
+	const float clearColor[4] = { 0.f, 0.f, 0.f, 0.f };
+	GetContext()->ClearRenderTarget(myRenderTarget.Get(), clearColor);
+
+	GetContext()->SetTopology(graphics::GRAPHICS_TOPOLOGY_POINTLIST);
+
 	graphics::ConstantBuffer* buffers[] = {
 		myFrameBuffer.Get(),
 		nullptr,
@@ -294,12 +306,14 @@ void SpriteRenderLayer::OnRender()
 
 	GetContext()->SetBlendState(myBlendState.Get());
 
+	GetContext()->SetInputLayout(myInputLayout.Get());
 	GetContext()->BindVertexShader(myVertexShader.Get());
 	GetContext()->BindGeometryShader(myGeometryShader.Get());
 	GetContext()->BindPixelShader(myPixelShader.Get());
 
 	GetContext()->BindTargets(&myRenderTarget, 1, nullptr);
 	GetContext()->BindShaderResources(&myTextureAtlas, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
+	GetContext()->BindSamplerStates(&mySamplerState, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
 
 	graphics::Viewport viewport = {
 		.Left = 0.f,
@@ -311,7 +325,8 @@ void SpriteRenderLayer::OnRender()
 	};
 	GetContext()->SetViewports(&viewport, 1);
 
-	std::vector<Sprite> sprites = mySprites;
+	std::vector<Sprite> sprites = std::move(mySprites);
+	mySprites = {};
 
 	std::sort(
 		sprites.begin(),
@@ -347,6 +362,9 @@ void SpriteRenderLayer::OnRender()
 	}
 
 	GetContext()->UpdateVertexBuffer(myVertexBuffer.Get(), vertices.data(), vertices.size() * sizeof(vertices[0]));
+
+	const size_t stride = sizeof(SpriteVertex);
+	GetContext()->BindVertexBuffers(&myVertexBuffer, 1, 0, &stride, nullptr);
 
 	GetContext()->Draw(static_cast<unsigned int>(vertices.size()), 0u);
 

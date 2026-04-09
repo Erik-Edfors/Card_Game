@@ -26,6 +26,8 @@ void RenderLayer::Initialize(GraphicsEngine* aGraphicsEngine)
 {
 	myGraphicsEngine = aGraphicsEngine;
 	aGraphicsEngine->GetDevice()->CreateDeferredDeviceContext(&myContext);
+
+	OnInit();
 }
 void RenderLayer::Prepare()
 {
