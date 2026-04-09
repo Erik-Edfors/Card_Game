@@ -14,7 +14,7 @@ public:
 	void Destroy();
 	bool IsDestroyed() const noexcept;
 
-	ComponentSystem* GetSystem() const noexcept;
+	ComponentSystem& GetSystem() const noexcept;
 	ActorRef GetActor() const noexcept;
 	ComponentID GetID() const noexcept;
 

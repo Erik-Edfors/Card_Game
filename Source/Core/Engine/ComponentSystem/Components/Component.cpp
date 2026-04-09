@@ -23,9 +23,9 @@ bool Component::IsDestroyed() const noexcept
 {
 	return myIsDestroyed;
 }
-ComponentSystem* Component::GetSystem() const noexcept
+ComponentSystem& Component::GetSystem() const noexcept
 {
-	return myActor.GetSystem();
+	return *myActor.GetSystem();
 }
 ActorRef Component::GetActor() const noexcept
 {

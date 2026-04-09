@@ -63,3 +63,7 @@ ActorRef::operator bool() const noexcept
 {
 	return not Expired();
 }
+ActorRef::operator ActorID() const noexcept
+{
+	return myActorID;
+}

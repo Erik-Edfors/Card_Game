@@ -41,7 +41,7 @@ inline ComponentRef<_ComponentTy> Actor::GetComponent()
 {
 	for (const ComponentRef<Component>& component : myComponents)
 	{
-		_ComponentTy result = dynamic_cast<_ComponentTy>(component.Get());
+		_ComponentTy* result = dynamic_cast<_ComponentTy*>(component.Get());
 		if (result != nullptr)
 		{
 			return ComponentRef<_ComponentTy>(result);

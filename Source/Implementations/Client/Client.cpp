@@ -14,12 +14,10 @@
 #include <Core/RenderHardwareInterface/Objects/Texture2D.h>
 #include <Core/RenderHardwareInterface/DDSLoad.h>
 #include <Core/RenderHardwareInterface/DX11/Window_DX11Impl.h>
+#include <Core/Engine/ComponentSystem/ComponentSystem.h>
+#include <Core/Engine/ComponentSystem/Components/TransformComponent.h>
+#include <Core/Engine/ComponentSystem/Components/SpriteComponent.h>
 #include <fstream>
-
-//static graphics::PImpl<graphics::Window_DX11Impl> locWindow = nullptr;
-//static GraphicsEngine* locGraphicsEngine = nullptr;
-static SpriteRenderLayer* locSpriteRenderLayer = nullptr;
-static graphics::PImpl<graphics::RenderTarget> locRenderTarget = nullptr;
 
 namespace client
 {
@@ -55,7 +53,8 @@ namespace client
 
 
 		//TEMPORARY:
-		locSpriteRenderLayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>();
+		//locSpriteRenderLayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>();
+		SpriteRenderLayer* spriteRenderlayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>();
 		graphics::PImpl<graphics::Device> device = myEngine->GetGraphicsEngine().GetDevice();
 
 		graphics::PImpl<graphics::Texture2D> backBufferTexture;
@@ -71,7 +70,8 @@ namespace client
 			.MipSlice = 0
 		};
 
-		device->CreateRenderTarget(&locRenderTarget, &rtDesc);
+		graphics::PImpl<graphics::RenderTarget> renderTarget;
+		device->CreateRenderTarget(&renderTarget, &rtDesc);
 
 		std::ifstream file("../../Assets/Textures/Atlas.dds");
 
@@ -101,12 +101,22 @@ namespace client
 		graphics::PImpl<graphics::ShaderResource> atlasResource;
 		device->CreateShaderResource(&atlasResource, &srDesc);
 
-		locSpriteRenderLayer->SetAtlas(atlasResource.Get());
-		locSpriteRenderLayer->SetTarget(locRenderTarget.Get());
-		locSpriteRenderLayer->SetView(CommonUtilities::Matrix4x4f());
-		locSpriteRenderLayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
-			
+		spriteRenderlayer->SetAtlas(atlasResource.Get());
+		spriteRenderlayer->SetTarget(renderTarget.Get());
+		spriteRenderlayer->SetView(CommonUtilities::Matrix4x4f());
+		spriteRenderlayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
+
 		myEngine->PushScene<client::LobbyScene>();
+
+		ComponentSystem& compSys = myEngine->GetScene()->GetComponentSystem();
+		ActorRef actor = compSys.CreateActor();
+		ComponentRef<TransformComponent> transform = compSys.AddComponent<TransformComponent>(actor);
+		ComponentRef<SpriteComponent> sprite = compSys.AddComponent<SpriteComponent>(actor);
+
+		transform->SetScaleLocal({ 0.1f, 0.2f, 1.f });
+		transform->SetTranslationLocal({ 0.5f, 0.5f, 0.f });
+
+		sprite->SetTextureRect({ { 0.003173828125f, 0.001953125f }, { 0.003173828125f + 0.01318359375f, 0.001953125f + 0.025390625f } });
 
 		return true;
 	}
@@ -127,32 +137,10 @@ namespace client
 						myExiting = true;
 						break;
 				}
-
 			}
 
 			if (myEngine->BeginFrame())
 			{
-				static CommonUtilities::Vector2f pos = { 0.f, 0.f };
-				pos += { 0.00001f, 0.00001f };
-
-				const Sprite sprite = {
-					.Position = pos,
-					.Size = { 0.1f, 0.2f },
-					.Pivot = { 0.5f, 0.5f },
-					.Rotation = 0.f,
-
-					.Tint = { 1.f, 1.f, 1.f, 1.f },
-					.Roughness = 1.f,
-					.Metallicity = 0.f,
-
-					.TextureRect = {
-						{ 0.003173828125f, 0.001953125f },
-						{ 0.003173828125f + 0.01318359375f, 0.001953125f + 0.025390625f }
-					},
-					.Depth = 0.5f
-				};
-				locSpriteRenderLayer->Draw(sprite);
-
 				myEngine->EndFrame();
 			}
 			else
@@ -161,6 +149,7 @@ namespace client
 			}
 		}
 	}
+
 	void Client::Exit()
 	{
 		myExiting = true;

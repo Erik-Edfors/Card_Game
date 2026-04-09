@@ -3,7 +3,11 @@
 #include "ComponentSystem/ComponentSystem.h"
 #include "ComponentSystem/Actor.h"
 
-TransformComponent::TransformComponent()
+TransformComponent::TransformComponent() :
+	myIsDirty(false),
+	myTranslation(0.f, 0.f, 0.f),
+	myRotation(1.f, 0.f, 0.f, 0.f),
+	myScale(1.f, 1.f, 1.f)
 {
 }
 
@@ -28,15 +32,17 @@ void TransformComponent::SetTranslationLocal(const CommonUtilities::Vector3f& aT
 }
 void TransformComponent::SetTranslationGlobal(const CommonUtilities::Vector3f& aTranslation) noexcept
 {
-	aTranslation;
+	//TODO: Implement.
+	SetTranslationLocal(aTranslation);
 }
 CommonUtilities::Vector3f TransformComponent::GetTranslationLocal() const noexcept
 {
-	return CommonUtilities::Vector3f();
+	return myTranslation;
 }
 CommonUtilities::Vector3f TransformComponent::GetTranslationGlobal() noexcept
 {
-	return CommonUtilities::Vector3f();
+	//TODO: Implement.
+	return GetTranslationLocal();
 }
 void TransformComponent::SetScaleLocal(const CommonUtilities::Vector3f& aScale) noexcept
 {
@@ -45,15 +51,17 @@ void TransformComponent::SetScaleLocal(const CommonUtilities::Vector3f& aScale) 
 }
 void TransformComponent::SetScaleGlobal(const CommonUtilities::Vector3f& aScale) noexcept
 {
-	aScale;
+	//TODO: Implement.
+	SetScaleLocal(aScale);
 }
 CommonUtilities::Vector3f TransformComponent::GetScaleLocal() const noexcept
 {
-	return CommonUtilities::Vector3f();
+	return myScale;
 }
 CommonUtilities::Vector3f TransformComponent::GetScaleGlobal() noexcept
 {
-	return CommonUtilities::Vector3f();
+	//TODO: Implement.
+	return GetScaleLocal();
 }
 void TransformComponent::SetRotationLocal(const CommonUtilities::Quaternionf& aRotation) noexcept
 {
@@ -62,15 +70,17 @@ void TransformComponent::SetRotationLocal(const CommonUtilities::Quaternionf& aR
 }
 void TransformComponent::SetRotationGlobal(const CommonUtilities::Quaternionf& aRotation) noexcept
 {
-	aRotation;
+	//TODO: Implement.
+	SetRotationLocal(aRotation);
 }
 CommonUtilities::Quaternionf TransformComponent::GetRotationLocal() const noexcept
 {
-	return CommonUtilities::Quaternionf();
+	return myRotation;
 }
 CommonUtilities::Quaternionf TransformComponent::GetRotationGlobal() noexcept
 {
-	return CommonUtilities::Quaternionf();
+	//TODO: Implement.
+	return GetRotationLocal();
 }
 void TransformComponent::SetMatrixLocal(const CommonUtilities::Matrix4x4f& aMatrix) noexcept
 {
@@ -80,15 +90,18 @@ void TransformComponent::SetMatrixLocal(const CommonUtilities::Matrix4x4f& aMatr
 }
 void TransformComponent::SetMatrixGlobal(const CommonUtilities::Matrix4x4f& aMatrix) noexcept
 {
-	aMatrix;
+	//TODO: Implement.
+	SetMatrixLocal(aMatrix);
 }
 CommonUtilities::Matrix4x4f TransformComponent::GetMatrixLocal() noexcept
 {
-	return CommonUtilities::Matrix4x4f();
+	Clean();
+	return myMatrix;
 }
 CommonUtilities::Matrix4x4f TransformComponent::GetMatrixGlobal() noexcept
 {
-	return CommonUtilities::Matrix4x4f();
+	//TODO: Implement.
+	return GetMatrixLocal();
 }
 const std::vector<ComponentRef<TransformComponent>>& TransformComponent::GetChildren() noexcept
 {

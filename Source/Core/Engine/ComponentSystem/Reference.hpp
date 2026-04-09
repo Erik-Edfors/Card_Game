@@ -22,6 +22,7 @@ public:
 	Actor& operator*() const;
 
 	operator bool() const noexcept;
+	operator ActorID() const noexcept;
 
 private:
 	ComponentSystem* mySystem;
@@ -83,7 +84,7 @@ ComponentRef<_Ty>::ComponentRef(_Ty* aComponent) noexcept :
 {
 	if (aComponent != nullptr)
 	{
-		mySystem = aComponent->GetSystem();
+		mySystem = &aComponent->GetSystem();
 		myComponentID = aComponent->GetID();
 	}
 }

@@ -42,12 +42,18 @@ private:
 template<class _Ty>
 inline _Ty* ComponentSystem::AddComponent(ActorID aActor) noexcept
 {
+	Actor* actor = FindActor(aActor);
+	if (actor == nullptr)
+	{
+		return nullptr;
+	}
+
 	const ComponentID id = myNextComponentID++;
 	myNewComponents.insert(id);
 
 	_Ty* component = new _Ty();
 	myComponents[id] = component;
-	aActor->InsertComponent(id);
+	actor->InsertComponent(id);
 
 	component->Initialize(this, aActor, id);
 
