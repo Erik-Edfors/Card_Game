@@ -40,6 +40,40 @@ group("Launchers")
     		Server_LauncherDir .. "**.cpp",
     	}
 
+toolsDir = Settings.SourceDir .. "Tools/"
+group("Tools")
+    
+    fontBuilderDir = toolsDir .. "FontBuilder/"
+    project("FontBuilder")
+        location(fontBuilderDir)
+
+        kind("ConsoleApp")
+        language("C++")
+        cppdialect("C++20")
+
+        debugargs {
+            "../../Assets/",
+            "--regex=^.*\\.ttf$",
+            "/rpd"
+        }
+
+        links {
+            "GraphicsEngine",
+            "CommonUtilities",
+
+            "d3d11.lib",
+            "d2d1.lib",
+            "dwrite.lib",
+            "dxguid.lib",
+            "dxgi.lib",
+        }
+
+        files {
+    		fontBuilderDir .. "**.h",
+    		fontBuilderDir .. "**.hpp",
+    		fontBuilderDir .. "**.cpp",
+    	}
+
 implementationsDir = Settings.SourceDir .. "Implementations/"
 group("Implementations")
     
