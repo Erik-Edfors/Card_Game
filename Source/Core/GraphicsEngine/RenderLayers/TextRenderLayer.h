@@ -12,21 +12,30 @@
 namespace graphics
 {
 	class Texture2D;
-}
 
-struct GlyphVertex
-{
-	CommonUtilities::Vector2f Position;
-	CommonUtilities::AABB2Df TextureRect;
-};
+	class VertexShader;
+	class GeometryShader;
+	class PixelShader;
+
+	class InputLayout;
+
+	class ConstantBuffer;
+
+	class BlendState;
+	class SamplerState;
+
+	class RenderTarget;
+	class DepthStencil;
+}
 
 class Font
 {
+	friend class TextRenderLayer;
 public:
 	struct Glyph
 	{
+		float Bounds[4];
 		float AtlasRect[4];
-		float Offset[2];
 		float Advance;
 	};
 	
@@ -43,6 +52,8 @@ public:
 	float GetStrikethroughThickness() const noexcept;
 
 private:
+	graphics::Texture2D* GetAtlas() const noexcept;
+
 	std::unordered_map<wchar_t, Glyph> myGlyphMap;
 	graphics::PImpl<graphics::Texture2D> myAtlas;
 
@@ -56,33 +67,72 @@ private:
 
 class Text
 {
+	friend class TextRenderLayer;
 public:
 	Text();
 	~Text();
 
-	void SetFont(const Font& aFont) noexcept;
-	const Font& GetFont() const noexcept;
-
-	void SetText(const wchar_t* aText) noexcept;
-	const wchar_t* GetText() const noexcept;
+	CommonUtilities::Vector2f GetSize() const noexcept;
 
 private:
-	void Recalculate() noexcept;
+	void Initialize(graphics::VertexBuffer* aVertexBuffer, size_t aVertexCount, graphics::Texture2D* aAtlas, CommonUtilities::Vector2f aSize);
 
-	Font myFont;
-	std::wstring myText;
-
-	CommonUtilities::Matrix4x4f myTransform;
-	CommonUtilities::Vector4f myColor;
-	float myRoughness;
-	float myMetallicity;
-
+	CommonUtilities::Vector2f mySize;
 	graphics::PImpl<graphics::VertexBuffer> myVertexBuffer;
+	size_t myVertexCount;
+	graphics::PImpl<graphics::Texture2D> myAtlas;
 };
 
-class TextRenderLayer
+class TextRenderLayer : public RenderLayer
 {
 public:
+	TextRenderLayer();
+	~TextRenderLayer();
+
+	Text CreateText(
+		const wchar_t* aText,
+		const Font& aFont,
+		const CommonUtilities::Vector4f& aColor,
+		float aRoughness,
+		float aMetallicity
+	) const;
+
+	void Draw(const Text& aText, const CommonUtilities::Matrix4x4f& aTransform);
+
+	void SetTargets(graphics::RenderTarget* aRenderTarget, graphics::DepthStencil* aDepthStencil);
+
+	void SetView(const CommonUtilities::Matrix4x4f& aView) noexcept;
+	void SetProjection(const CommonUtilities::Matrix4x4f& aProjection) noexcept;
+
+protected:
+	void OnInit() override;
+	void OnRender() override;
 
 private:
+	struct TextInstance
+	{
+		CommonUtilities::Matrix4x4f Transform;
+		Text Text;
+	};
+
+	std::vector<TextInstance> myTexts;
+
+	CommonUtilities::Matrix4x4f myView;
+	CommonUtilities::Matrix4x4f myProjection;
+
+	graphics::PImpl<graphics::VertexShader> myVertexShader;
+	graphics::PImpl<graphics::GeometryShader> myGeometryShader;
+	graphics::PImpl<graphics::PixelShader> myPixelShader;
+
+	graphics::PImpl<graphics::InputLayout> myInputLayout;
+
+	graphics::PImpl<graphics::ConstantBuffer> myFrameBuffer;
+	graphics::PImpl<graphics::ConstantBuffer> myObjectBuffer;
+	graphics::PImpl<graphics::ConstantBuffer> myMaterialBuffer;
+
+	graphics::PImpl<graphics::BlendState> myBlendState;
+
+	graphics::PImpl<graphics::RenderTarget> myRenderTarget;
+	graphics::PImpl<graphics::DepthStencil> myDepthStencil;
+	graphics::PImpl<graphics::SamplerState> mySamplerState;
 };

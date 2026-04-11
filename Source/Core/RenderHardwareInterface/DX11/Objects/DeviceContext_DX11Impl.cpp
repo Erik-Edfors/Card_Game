@@ -61,7 +61,7 @@ namespace graphics
 		myDeviceContext->ClearState();
 		return result::OK;
 	}
-	result::Code DeviceContext_DX11Impl::UpdateConstantBuffer(ConstantBuffer* aConstantBuffer, void* aData, size_t aDataSize)
+	result::Code DeviceContext_DX11Impl::UpdateConstantBuffer(ConstantBuffer* aConstantBuffer, const void* aData, size_t aDataSize)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::UpdateConstantBuffer"
 
@@ -83,7 +83,7 @@ namespace graphics
 		return result::OK;
 #undef LOG_CATEGORY
 	}
-	result::Code DeviceContext_DX11Impl::UpdateVertexBuffer(VertexBuffer* aVertexBuffer, void* aData, size_t aDataSize)
+	result::Code DeviceContext_DX11Impl::UpdateVertexBuffer(VertexBuffer* aVertexBuffer, const void* aData, size_t aDataSize)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::UpdateVertexBuffer"
 
@@ -105,7 +105,7 @@ namespace graphics
 		return result::OK;
 #undef LOG_CATEGORY
 	}
-	result::Code DeviceContext_DX11Impl::UpdateIndexBuffer(IndexBuffer* aIndexBuffer, void* aData, size_t aDataSize)
+	result::Code DeviceContext_DX11Impl::UpdateIndexBuffer(IndexBuffer* aIndexBuffer, const void* aData, size_t aDataSize)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::UpdateIndexBuffer"
 

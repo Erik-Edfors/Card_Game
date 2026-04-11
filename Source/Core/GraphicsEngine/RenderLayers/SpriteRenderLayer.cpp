@@ -62,8 +62,6 @@ void SpriteRenderLayer::Draw(const Sprite& aSprite)
 
 void SpriteRenderLayer::OnInit()
 {
-	constexpr size_t shaderBufferSize = 1'048'576;
-	void* shaderBuffer = new char[shaderBufferSize];
 
 	{
 		//TODO: use asset system or something to get shader file.
@@ -71,6 +69,7 @@ void SpriteRenderLayer::OnInit()
 
 		size_t shaderSize = 0;
 
+		void* shaderBuffer = nullptr;
 		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
 
 		GetGraphicsEngine()->GetDevice()->CreateShader(
@@ -108,6 +107,8 @@ void SpriteRenderLayer::OnInit()
 			.NumBytes = shaderSize
 		};
 		GetGraphicsEngine()->GetDevice()->CreateInputLayout(&myInputLayout, &desc);
+
+		delete[] shaderBuffer;
 	}
 	{
 		//TODO: use asset system or something to get shader file.
@@ -115,6 +116,7 @@ void SpriteRenderLayer::OnInit()
 
 		size_t shaderSize = 0;
 
+		void* shaderBuffer = nullptr;
 		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
 
 		GetGraphicsEngine()->GetDevice()->CreateShader(
@@ -123,12 +125,14 @@ void SpriteRenderLayer::OnInit()
 			shaderBuffer,
 			shaderSize
 		);
+		delete[] shaderBuffer;
 	}
 	{
 		std::ifstream file("../../Assets/Shaders/Sprite_PS.cso", std::ios::binary);
 
 		size_t shaderSize = 0;
 
+		void* shaderBuffer = nullptr;
 		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
 
 		GetGraphicsEngine()->GetDevice()->CreateShader(
@@ -137,6 +141,7 @@ void SpriteRenderLayer::OnInit()
 			shaderBuffer,
 			shaderSize
 		);
+		delete[] shaderBuffer;
 	}
 
 	{
@@ -219,51 +224,51 @@ void SpriteRenderLayer::OnInit()
 		GetGraphicsEngine()->GetDevice()->CreateSamplerState(&mySamplerState, &desc);
 	}
 
-	graphics::PImpl<graphics::RasterizerState> rasterizerState = nullptr;
-	graphics::PImpl<graphics::DepthStencilState> depthStencilState = nullptr;
-	graphics::PImpl<graphics::BlendState> blendState = nullptr;
+	//graphics::PImpl<graphics::RasterizerState> rasterizerState = nullptr;
+	//graphics::PImpl<graphics::DepthStencilState> depthStencilState = nullptr;
+	//graphics::PImpl<graphics::BlendState> blendState = nullptr;
 
-	graphics::PImpl<graphics::InputLayout> inputLayout = nullptr;
+	//graphics::PImpl<graphics::InputLayout> inputLayout = nullptr;
 
-	std::vector<PipelineStateConstantBuffer> constantBuffers = {};
+	//std::vector<PipelineStateConstantBuffer> constantBuffers = {};
 
-	graphics::PImpl<graphics::VertexShader> vertexShader;
-	graphics::PImpl<graphics::HullShader> hullShader;
-	graphics::PImpl<graphics::DomainShader> domainShader;
-	graphics::PImpl<graphics::GeometryShader> geometryShader;
-	graphics::PImpl<graphics::PixelShader> pixelShader;
-	graphics::PImpl<graphics::ComputeShader> computeShader;
+	//graphics::PImpl<graphics::VertexShader> vertexShader;
+	//graphics::PImpl<graphics::HullShader> hullShader;
+	//graphics::PImpl<graphics::DomainShader> domainShader;
+	//graphics::PImpl<graphics::GeometryShader> geometryShader;
+	//graphics::PImpl<graphics::PixelShader> pixelShader;
+	//graphics::PImpl<graphics::ComputeShader> computeShader;
 
-	std::vector<PipelineStateShaderResource> shaderResources = {};
-	std::vector<PipelineStateSamplerState> samplerStates = {};
-	std::vector<PipelineStateRenderTarget> renderTargets = {};
-	std::vector<graphics::Viewport> viewports = {};
-	PipelineStateDepthStencil depthStencil = {};
+	//std::vector<PipelineStateShaderResource> shaderResources = {};
+	//std::vector<PipelineStateSamplerState> samplerStates = {};
+	//std::vector<PipelineStateRenderTarget> renderTargets = {};
+	//std::vector<graphics::Viewport> viewports = {};
+	//PipelineStateDepthStencil depthStencil = {};
 
-	myPipelineState = PipelineStateDesc{
-		.Name = "Sprite Pipeline State",
-		.Topology = graphics::GRAPHICS_TOPOLOGY_TRIANGLELIST,
-		.RasterizerState = rasterizerState,
-		.DepthStencilState = depthStencilState,
-		.BlendState = blendState,
+	//myPipelineState = PipelineStateDesc{
+	//	.Name = "Sprite Pipeline State",
+	//	.Topology = graphics::GRAPHICS_TOPOLOGY_TRIANGLELIST,
+	//	.RasterizerState = rasterizerState,
+	//	.DepthStencilState = depthStencilState,
+	//	.BlendState = blendState,
 
-		.InputLayout = inputLayout,
+	//	.InputLayout = inputLayout,
 
-		.ConstantBuffers = std::move(constantBuffers),
+	//	.ConstantBuffers = std::move(constantBuffers),
 
-		.VertexShader = vertexShader,
-		.HullShader = hullShader,
-		.DomainShader = domainShader,
-		.GeometryShader = geometryShader,
-		.PixelShader = pixelShader,
-		.ComputeShader = computeShader,
+	//	.VertexShader = vertexShader,
+	//	.HullShader = hullShader,
+	//	.DomainShader = domainShader,
+	//	.GeometryShader = geometryShader,
+	//	.PixelShader = pixelShader,
+	//	.ComputeShader = computeShader,
 
-		.ShaderResources = std::move(shaderResources),
-		.SamplerStates = std::move(samplerStates),
-		.RenderTargets = std::move(renderTargets),
-		.Viewports = std::move(viewports),
-		.DepthStencil = depthStencil
-	};
+	//	.ShaderResources = std::move(shaderResources),
+	//	.SamplerStates = std::move(samplerStates),
+	//	.RenderTargets = std::move(renderTargets),
+	//	.Viewports = std::move(viewports),
+	//	.DepthStencil = depthStencil
+	//};
 }
 
 void SpriteRenderLayer::OnRender()

@@ -162,14 +162,10 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		int height = blackboxBottom - blackboxTop;
 
 		output.Glyphs[i].Advance = static_cast<float>(metrics.advanceWidth) * DUToEm * EmToPx;
-		output.Glyphs[i].Offset[0] = static_cast<float>(blackboxLeft) * DUToEm * EmToPx;
-		output.Glyphs[i].Offset[1] = static_cast<float>(blackboxTop) * DUToEm * EmToPx;
-
-		// Updated later when texture is set.
-		output.Glyphs[i].AtlasRect[0] = static_cast<float>(blackboxLeft) * DUToEm * EmToPx;
-		output.Glyphs[i].AtlasRect[1] = static_cast<float>(blackboxTop) * DUToEm * EmToPx;
-		output.Glyphs[i].AtlasRect[2] = static_cast<float>(blackboxRight) * DUToEm * EmToPx;
-		output.Glyphs[i].AtlasRect[3] = static_cast<float>(blackboxBottom) * DUToEm * EmToPx;
+		output.Glyphs[i].Bounds[0] = static_cast<float>(blackboxLeft) * DUToEm * EmToPx;
+		output.Glyphs[i].Bounds[1] = static_cast<float>(blackboxTop) * DUToEm * EmToPx;
+		output.Glyphs[i].Bounds[2] = static_cast<float>(blackboxRight) * DUToEm * EmToPx;
+		output.Glyphs[i].Bounds[3] = static_cast<float>(blackboxBottom) * DUToEm * EmToPx;
 
 		if (width > 0 && static_cast<unsigned int>(width) > glyphWidth)
 		{
@@ -318,10 +314,10 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		const float originX = static_cast<float>(i % xCellCount) * cellWidth + glyphCellXOffset;
 		const float originY = static_cast<float>(i / xCellCount) * cellHeight + glyphCellYOffset;
 
-		output.Glyphs[i].AtlasRect[0] = (output.Glyphs[i].AtlasRect[0] + originX) / static_cast<float>(textureWidth);
-		output.Glyphs[i].AtlasRect[1] = (output.Glyphs[i].AtlasRect[1] + originY) / static_cast<float>(textureHeight);
-		output.Glyphs[i].AtlasRect[2] = (output.Glyphs[i].AtlasRect[2] + originX) / static_cast<float>(textureWidth);
-		output.Glyphs[i].AtlasRect[3] = (output.Glyphs[i].AtlasRect[3] + originY) / static_cast<float>(textureHeight);
+		output.Glyphs[i].AtlasRect[0] = (output.Glyphs[i].Bounds[0] + originX) / static_cast<float>(textureWidth);
+		output.Glyphs[i].AtlasRect[1] = (output.Glyphs[i].Bounds[1] + originY) / static_cast<float>(textureHeight);
+		output.Glyphs[i].AtlasRect[2] = (output.Glyphs[i].Bounds[2] + originX) / static_cast<float>(textureWidth);
+		output.Glyphs[i].AtlasRect[3] = (output.Glyphs[i].Bounds[3] + originY) / static_cast<float>(textureHeight);
 
 		const DWRITE_GLYPH_RUN glyphRun = {
 			.fontFace = fontFace.Get(),

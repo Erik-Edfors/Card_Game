@@ -10,7 +10,7 @@ namespace assets
 {
 	static constexpr FileHeader FONT_FILE_HEADER = FileHeader{
 		{ 'F', 'O', 'N', 'T' },
-		{ 0, 0, 0, 1 }
+		{ 0, 0, 0, 2 }
 	};
 
 	struct Font
@@ -18,7 +18,7 @@ namespace assets
 		struct Glyph
 		{
 			wchar_t Character;
-			float Offset[2];
+			float Bounds[4];
 			float AtlasRect[4];
 			float Advance;
 		};
@@ -44,7 +44,7 @@ namespace assets
 	NBS_DEFINE_TYPE(
 		Font::Glyph,
 		Character,
-		Offset,
+		Bounds,
 		AtlasRect,
 		Advance
 	);

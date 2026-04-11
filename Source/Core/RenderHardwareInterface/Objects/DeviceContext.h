@@ -42,19 +42,19 @@ namespace graphics
 
 		virtual result::Code UpdateConstantBuffer(
 			ConstantBuffer* aConstantBuffer,
-			void* aData,
+			const void* aData,
 			size_t aDataSize
 		) = 0;
 
 		virtual result::Code UpdateVertexBuffer(
 			VertexBuffer* aVertexBuffer,
-			void* aData,
+			const void* aData,
 			size_t aDataSize
 		) = 0;
 
 		virtual result::Code UpdateIndexBuffer(
 			IndexBuffer* aIndexBuffer,
-			void* aData,
+			const void* aData,
 			size_t aDataSize
 		) = 0;
 
