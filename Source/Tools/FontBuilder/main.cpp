@@ -1,9 +1,10 @@
-#include <Core/CommonUtilities/ArgsParser.hpp>
-#include <Core/CommonUtilities/StringHash.hpp>
-#include <iostream>
-
 #include "FileIteration.h"
 #include "FontBuilder.h"
+
+#include <Core/CommonUtilities/ArgsParser.hpp>
+#include <Core/CommonUtilities/StringHash.hpp>
+
+#include <iostream>
 
 int wmain(int argc, wchar_t** argv)
 {
@@ -132,32 +133,15 @@ int wmain(int argc, wchar_t** argv)
 			const _userData& data = *reinterpret_cast<_userData*>(aUserData);
 
 			std::filesystem::path target = data.Target / aPath.lexically_relative(data.Root);
-			target.replace_extension(".bmp");
+			target.replace_extension(".bf");
 
-			constexpr const wchar_t glyphs[] = {
-				L'!', L'"', L'#', L'$', L'%', L'&', L'\'', L'(', L')', L'*', L'+', L',', L'-', L'/',
-				L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L':', L';', L'<', L'=',
-				L'>', L'?', L'@', L'A', L'B', L'C', L'D', L'E', L'F', L'G', L'H', L'I', L'J', L'K',
-				L'L', L'M', L'N', L'O', L'P', L'Q', L'R', L'S', L'T', L'U', L'V', L'W', L'X', L'Y',
-				L'Z', L'[', L'\\', L']', L'^', L'_', L'`', L'a', L'b', L'c', L'd', L'e', L'f', L'g',
-				L'h', L'i', L'j', L'k', L'l', L'm', L'n', L'o', L'p', L'q', L'r', L's', L't', L'u',
-				L'v', L'w', L'x', L'y', L'z', L'{', L'|', L'}', L'~', L'€', L'‚', L'ƒ', L'„', L'…',
-				L'†', L'‡', L'ˆ', L'‰', L'Š', L'‹', L'Œ', L'U', L'Ž', L'U', L'U', L'‘', L'’', L'“',
-				L'”', L'•', L'–', L'—', L'˜', L'™', L'š', L'›', L'œ', L'U', L'ž', L'Ÿ', L'N', L'¡',
-				L'¢', L'£', L'¤', L'¥', L'¦', L'§', L'¨', L'©', L'ª', L'«', L'¬', L'S', L'®', L'¯',
-				L'°', L'±', L'²', L'³', L'´', L'µ', L'¶', L'·', L'¸', L'¹', L'º', L'»', L'¼', L'½',
-				L'¾', L'¿', L'À', L'Á', L'Â', L'Ã', L'Ä', L'Å', L'Æ', L'Ç', L'È', L'É', L'Ê', L'Ë',
-				L'Ì', L'Í', L'Î', L'Ï', L'Ð', L'Ñ', L'Ò', L'Ó', L'Ô', L'Õ', L'Ö', L'×', L'Ø', L'Ù',
-				L'Ú', L'Û', L'Ü', L'Ý', L'Þ', L'ß', L'à', L'á', L'â', L'ã', L'ä', L'å', L'æ', L'ç',
-				L'è', L'é', L'ê', L'ë', L'ì', L'í', L'î', L'ï', L'ð', L'ñ', L'ò', L'ó', L'ô', L'õ',
-				L'ö', L'÷', L'ø', L'ù', L'ú', L'û', L'ü', L'ý', L'þ', L'ÿ'
-			};
+			std::unique_ptr<wchar_t[]> extendedASCIIChars = std::make_unique<wchar_t[]>(256);
+			for (wchar_t c = 0; c < 256; c++)
+			{
+				extendedASCIIChars[c] = c;
+			}
 
-			//constexpr const wchar_t glyphs[] = {
-			//	L'a'
-			//};
-
-			bool result = data.FontBuilder->Build(aPath, target, data.FontSize, glyphs, sizeof(glyphs) / sizeof(glyphs[0]));
+			bool result = data.FontBuilder->Build(aPath, target, data.FontSize, extendedASCIIChars.get(), 256);
 			if (not result)
 			{
 				std::wcout << "Failed to build!\n";

@@ -148,6 +148,23 @@ group("Implementations")
 coreDir = Settings.SourceDir .. "Core/"
 group("Core")
 
+    assetsDir = coreDir .. "Assets/"
+    project("Assets")
+        location(assetsDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+
+        includedirs {
+            assetsDir
+        }
+
+        files {
+    		assetsDir .. "**.h",
+    		assetsDir .. "**.hpp"
+    	}
+
     loggerDir = coreDir .. "Logger/"
     project("Logger")
         location(loggerDir)

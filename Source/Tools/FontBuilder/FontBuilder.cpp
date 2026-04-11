@@ -1,6 +1,10 @@
 #include "FontBuilder.h"
-#include <fstream>
 
+#include <Core/CommonUtilities/Serialization/StreamWrapper.hpp>
+#include <Core/CommonUtilities/Serialization/Serializer.hpp>
+#include <Core/Assets/Font.h>
+
+#include <fstream>
 #include <iostream>
 
 FontBuilder::FontBuilder()
@@ -49,7 +53,13 @@ bool FontBuilder::Initialize()
 
 bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesystem::path& aTarget, unsigned int aFontSize, const wchar_t* aCharacters, size_t aNumCharacters)
 {
-	std::filesystem::path sourceAbsolute = (std::filesystem::current_path() / aSource).lexically_normal();
+	const std::filesystem::path sourceAbsolute = (std::filesystem::current_path() / aSource).lexically_normal();
+
+
+	assets::Font output = {};
+	output.Glyphs.resize(aNumCharacters);
+	output.FontSize = static_cast<unsigned short>(aFontSize);
+
 
 	Microsoft::WRL::ComPtr<IDWriteFontFile> fontFile;
 	HRESULT result = myWriteFactory->CreateFontFileReference(
@@ -99,36 +109,37 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 	fontFace->GetMetrics(&fontMetrics);
 
 	constexpr float dpi = 92.f;
-	const FLOAT DUToEm = 1.f / static_cast<FLOAT>(fontMetrics.designUnitsPerEm);
+	const float DUToEm = 1.f / static_cast<float>(fontMetrics.designUnitsPerEm);
 	const float EmToPx = static_cast<float>(aFontSize);
 	//const float PxToEm = 1.f / EmToPx;
 
+	output.AdvanceHeight = static_cast<float>(fontMetrics.ascent + fontMetrics.descent + fontMetrics.lineGap) * DUToEm * EmToPx;
+	output.StrikethroughHeight = static_cast<float>(fontMetrics.strikethroughPosition) * DUToEm * EmToPx;
+	output.StrikethroughThickness = static_cast<float>(fontMetrics.strikethroughThickness) * DUToEm * EmToPx;
+	output.UnderlineHeight = static_cast<float>(fontMetrics.underlinePosition) * DUToEm * EmToPx;
+	output.UnderlineThickness = static_cast<float>(fontMetrics.underlineThickness) * DUToEm * EmToPx;
 
-	UINT32* codePoints = new UINT32[aNumCharacters];
-	UINT16* glyphIndices = new UINT16[aNumCharacters];
-	DWRITE_GLYPH_METRICS* glyphMetrics = new DWRITE_GLYPH_METRICS[aNumCharacters];
+
+	std::unique_ptr<UINT32[]> codePoints = std::make_unique<UINT32[]>(aNumCharacters);
+	std::unique_ptr<UINT16[]> glyphIndices = std::make_unique<UINT16[]>(aNumCharacters);
+	std::unique_ptr<DWRITE_GLYPH_METRICS[]> glyphMetrics = std::make_unique<DWRITE_GLYPH_METRICS[]>(aNumCharacters);
 
 	for (size_t i = 0; i < aNumCharacters; i++)
 	{
 		codePoints[i] = aCharacters[i];
+		output.Glyphs[i].Character = aCharacters[i];
 	}
 
-	result = fontFace->GetGlyphIndicesW(codePoints, static_cast<UINT32>(aNumCharacters), glyphIndices);
+	result = fontFace->GetGlyphIndicesW(codePoints.get(), static_cast<UINT32>(aNumCharacters), glyphIndices.get());
 	if (FAILED(result))
 	{
-		delete[] codePoints;
-		delete[] glyphIndices;
-		delete[] glyphMetrics;
 		//TODO: Log
 		return false;
 	}
 
-	result = fontFace->GetDesignGlyphMetrics(glyphIndices, static_cast<UINT32>(aNumCharacters), glyphMetrics, FALSE);
+	result = fontFace->GetDesignGlyphMetrics(glyphIndices.get(), static_cast<UINT32>(aNumCharacters), glyphMetrics.get(), FALSE);
 	if (FAILED(result))
 	{
-		delete[] codePoints;
-		delete[] glyphIndices;
-		delete[] glyphMetrics;
 		//TODO: Log
 		return false;
 	}
@@ -145,10 +156,20 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		int blackboxRight = metrics.advanceWidth - metrics.rightSideBearing;
 
 		int blackboxTop = -(glyphMetrics[i].verticalOriginY - glyphMetrics[i].topSideBearing);
-		int blockboxBottom = glyphMetrics[i].verticalOriginY + glyphMetrics[i].advanceHeight - glyphMetrics[i].bottomSideBearing;
+		int blackboxBottom = glyphMetrics[i].advanceHeight - glyphMetrics[i].verticalOriginY - glyphMetrics[i].bottomSideBearing;
 
 		int width = blackboxRight - blackboxLeft;
-		int height = blockboxBottom - blackboxTop;
+		int height = blackboxBottom - blackboxTop;
+
+		output.Glyphs[i].Advance = static_cast<float>(metrics.advanceWidth) * DUToEm * EmToPx;
+		output.Glyphs[i].Offset[0] = static_cast<float>(blackboxLeft) * DUToEm * EmToPx;
+		output.Glyphs[i].Offset[1] = static_cast<float>(blackboxTop) * DUToEm * EmToPx;
+
+		// Updated later when texture is set.
+		output.Glyphs[i].AtlasRect[0] = static_cast<float>(blackboxLeft) * DUToEm * EmToPx;
+		output.Glyphs[i].AtlasRect[1] = static_cast<float>(blackboxTop) * DUToEm * EmToPx;
+		output.Glyphs[i].AtlasRect[2] = static_cast<float>(blackboxRight) * DUToEm * EmToPx;
+		output.Glyphs[i].AtlasRect[3] = static_cast<float>(blackboxBottom) * DUToEm * EmToPx;
 
 		if (width > 0 && static_cast<unsigned int>(width) > glyphWidth)
 		{
@@ -224,6 +245,9 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		return false;
 	}
 
+	output.Atlas.Width = static_cast<unsigned short>(textureWidth);
+	output.Atlas.Height = static_cast<unsigned short>(textureHeight);
+
 	desc.Usage = D3D11_USAGE_STAGING;
 	desc.BindFlags = NULL;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
@@ -285,16 +309,21 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 	renderTarget->BeginDraw();
 	for (size_t i = 0; i < aNumCharacters; i++)
 	{
-		FLOAT glyphAdvance = static_cast<FLOAT>(glyphMetrics[i].advanceWidth) * DUToEm;
-		DWRITE_GLYPH_OFFSET glyphOffset = {
+		const FLOAT glyphAdvance = static_cast<FLOAT>(glyphMetrics[i].advanceWidth) * DUToEm;
+		const DWRITE_GLYPH_OFFSET glyphOffset = {
 			.advanceOffset = 0.f,
 			.ascenderOffset = 0.f
 		};
 
-		float originX = static_cast<float>(i % xCellCount) * cellWidth + glyphCellXOffset;
-		float originY = static_cast<float>(i / xCellCount) * cellHeight + glyphCellYOffset;
+		const float originX = static_cast<float>(i % xCellCount) * cellWidth + glyphCellXOffset;
+		const float originY = static_cast<float>(i / xCellCount) * cellHeight + glyphCellYOffset;
 
-		DWRITE_GLYPH_RUN glyphRun = {
+		output.Glyphs[i].AtlasRect[0] = (output.Glyphs[i].AtlasRect[0] + originX) / static_cast<float>(textureWidth);
+		output.Glyphs[i].AtlasRect[1] = (output.Glyphs[i].AtlasRect[1] + originY) / static_cast<float>(textureHeight);
+		output.Glyphs[i].AtlasRect[2] = (output.Glyphs[i].AtlasRect[2] + originX) / static_cast<float>(textureWidth);
+		output.Glyphs[i].AtlasRect[3] = (output.Glyphs[i].AtlasRect[3] + originY) / static_cast<float>(textureHeight);
+
+		const DWRITE_GLYPH_RUN glyphRun = {
 			.fontFace = fontFace.Get(),
 			.fontEmSize = static_cast<FLOAT>(aFontSize),
 			.glyphCount = 1,
@@ -311,13 +340,18 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 			brush.Get(),
 			DWRITE_MEASURING_MODE_NATURAL
 		);
+
+		//renderTarget->DrawRectangle(
+		//	D2D1_RECT_F{
+		//		output.Glyphs[i].AtlasRect[0] * static_cast<float>(textureWidth),
+		//		output.Glyphs[i].AtlasRect[1] * static_cast<float>(textureHeight),
+		//		output.Glyphs[i].AtlasRect[2] * static_cast<float>(textureWidth),
+		//		output.Glyphs[i].AtlasRect[3] * static_cast<float>(textureHeight)
+		//	},
+		//	brush.Get()
+		//);
 	}
 	result = renderTarget->EndDraw();
-
-	delete[] codePoints;
-	delete[] glyphIndices;
-	delete[] glyphMetrics;
-
 	if (FAILED(result))
 	{
 		//TODO: Log
@@ -334,56 +368,85 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		return false;
 	}
 
-	const unsigned int imageSize = desc.Height * ((desc.Width * 3 + 3) & 0xfffffffc);
-	constexpr unsigned int stride = 4;
-	constexpr unsigned int bmpStride = 3;
-
-	char* imageData = new char[imageSize];
-
-	for (unsigned int y = 0; y < desc.Height; y++)
-	{
-		for (unsigned int x = 0; x < desc.Width; x++)
-		{
-			const unsigned int resourceIndex = y * mappedResource.RowPitch + x * stride;
-			const unsigned int bmpIndex = y * ((desc.Width * 3 + 3) & 0xfffffffc) + x * bmpStride;
-
-			imageData[bmpIndex + 0] = reinterpret_cast<char*>(mappedResource.pData)[resourceIndex + 2];
-			imageData[bmpIndex + 1] = reinterpret_cast<char*>(mappedResource.pData)[resourceIndex + 1];
-			imageData[bmpIndex + 2] = reinterpret_cast<char*>(mappedResource.pData)[resourceIndex + 0];
-		}
-	}
+	output.Atlas.Data.resize(mappedResource.DepthPitch);
+	errno_t error = memcpy_s(output.Atlas.Data.data(), output.Atlas.Data.size() * sizeof(output.Atlas.Data[0]), mappedResource.pData, mappedResource.DepthPitch);
 
 	myDeviceContext->Unmap(stagingTexture.Get(), 0);
 
-	const float pixelsPerMeter = dpi * (1.f / 0.0254f);
-
-	BITMAPINFOHEADER bmpHeader = {
-		.biSize = sizeof(bmpHeader),
-		.biWidth = static_cast<LONG>(desc.Width),
-		.biHeight = -static_cast<LONG>(desc.Height),
-		.biPlanes = 1,
-		.biBitCount = 24,
-		.biCompression = BI_RGB,
-		.biSizeImage = imageSize,
-		.biXPelsPerMeter = static_cast<LONG>(pixelsPerMeter),
-		.biYPelsPerMeter = static_cast<LONG>(pixelsPerMeter),
-		.biClrUsed = 0,
-		.biClrImportant = 0
-	};
-
-	BITMAPFILEHEADER bmpFileHeader = {
-		.bfType = 0x4d42,
-		.bfSize = sizeof(bmpFileHeader) + sizeof(bmpHeader) + bmpStride * desc.Width * desc.Height,
-		.bfReserved1 = 0,
-		.bfReserved2 = 0,
-		.bfOffBits = sizeof(bmpFileHeader) + sizeof(bmpHeader)
-	};
+	if (error != 0)
+	{
+		//TODO: Log
+		return false;
+	}
 
 	std::ofstream file(aTarget);
 
-	file.write(reinterpret_cast<char*>(&bmpFileHeader), sizeof(bmpFileHeader));
-	file.write(reinterpret_cast<char*>(&bmpHeader), sizeof(bmpHeader));
-	file.write(imageData, imageSize);
+	CommonUtilities::StreamWriter writer(file);
+	CommonUtilities::Serializer serializer;
+	if (not serializer.Write(assets::FONT_FILE_HEADER, writer))
+	{
+		//TODO: Log
+		return false;
+	}
+	if (not serializer.Write(output, writer))
+	{
+		//TODO: Log
+		return false;
+	}
 
 	return true;
+
+	//D3D11_MAPPED_SUBRESOURCE mappedResource = {};
+	//result = myDeviceContext->Map(stagingTexture.Get(), 0, D3D11_MAP_READ, NULL, &mappedResource);
+
+	//const unsigned int imageSize = desc.Height * ((desc.Width * 3 + 3) & 0xfffffffc);
+	//constexpr unsigned int stride = 4;
+	//constexpr unsigned int bmpStride = 3;
+
+	//std::unique_ptr<char[]> imageData = std::make_unique<char[]>(imageSize);
+
+	//for (unsigned int y = 0; y < desc.Height; y++)
+	//{
+	//	for (unsigned int x = 0; x < desc.Width; x++)
+	//	{
+	//		const unsigned int resourceIndex = y * mappedResource.RowPitch + x * stride;
+	//		const unsigned int bmpIndex = y * ((desc.Width * 3 + 3) & 0xfffffffc) + x * bmpStride;
+
+	//		imageData[bmpIndex + 0] = reinterpret_cast<char*>(mappedResource.pData)[resourceIndex + 2];
+	//		imageData[bmpIndex + 1] = reinterpret_cast<char*>(mappedResource.pData)[resourceIndex + 1];
+	//		imageData[bmpIndex + 2] = reinterpret_cast<char*>(mappedResource.pData)[resourceIndex + 0];
+	//	}
+	//}
+
+	//myDeviceContext->Unmap(stagingTexture.Get(), 0);
+
+	//const float pixelsPerMeter = dpi * (1.f / 0.0254f);
+
+	//BITMAPINFOHEADER bmpHeader = {
+	//	.biSize = sizeof(bmpHeader),
+	//	.biWidth = static_cast<LONG>(desc.Width),
+	//	.biHeight = -static_cast<LONG>(desc.Height),
+	//	.biPlanes = 1,
+	//	.biBitCount = 24,
+	//	.biCompression = BI_RGB,
+	//	.biSizeImage = imageSize,
+	//	.biXPelsPerMeter = static_cast<LONG>(pixelsPerMeter),
+	//	.biYPelsPerMeter = static_cast<LONG>(pixelsPerMeter),
+	//	.biClrUsed = 0,
+	//	.biClrImportant = 0
+	//};
+
+	//BITMAPFILEHEADER bmpFileHeader = {
+	//	.bfType = 0x4d42,
+	//	.bfSize = sizeof(bmpFileHeader) + sizeof(bmpHeader) + bmpStride * desc.Width * desc.Height,
+	//	.bfReserved1 = 0,
+	//	.bfReserved2 = 0,
+	//	.bfOffBits = sizeof(bmpFileHeader) + sizeof(bmpHeader)
+	//};
+
+	//std::ofstream file(aTarget);
+
+	//file.write(reinterpret_cast<char*>(&bmpFileHeader), sizeof(bmpFileHeader));
+	//file.write(reinterpret_cast<char*>(&bmpHeader), sizeof(bmpHeader));
+	//file.write(imageData.get(), imageSize);
 }
