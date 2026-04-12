@@ -7,6 +7,7 @@
 #include "TransformComponent.h"
 
 #include <Core/GraphicsEngine/GraphicsEngine.h>
+#include <Core/GraphicsEngine/RenderLayers/SpriteRenderLayer.h>
 
 SpriteComponent::SpriteComponent() : 
 	myRenderLayer(nullptr),

@@ -10,7 +10,7 @@ namespace assets
 {
 	static constexpr FileHeader FONT_FILE_HEADER = FileHeader{
 		{ 'F', 'O', 'N', 'T' },
-		{ 0, 0, 0, 2 }
+		{ 0, 0, 0, 3 }
 	};
 
 	struct Font
@@ -27,6 +27,8 @@ namespace assets
 		{
 			unsigned short Width;
 			unsigned short Height;
+			unsigned int RowPitch;
+			unsigned int DepthPitch;
 			std::vector<char> Data;
 		};
 
@@ -53,6 +55,8 @@ namespace assets
 		Font::Image,
 		Width,
 		Height,
+		RowPitch,
+		DepthPitch,
 		Data
 	);
 

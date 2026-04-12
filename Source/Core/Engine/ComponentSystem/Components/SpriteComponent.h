@@ -1,9 +1,11 @@
 #pragma once
 #include "Component.h"
-#include <Core/GraphicsEngine/RenderLayers/SpriteRenderLayer.h>
 #include "../Reference.hpp"
+#include <Core/CommonUtilities/Math/Vector2.hpp>
+#include <Core/CommonUtilities/Math/AABB2D.hpp>
 
 class TransformComponent;
+class SpriteRenderLayer;
 
 class SpriteComponent : public Component
 {

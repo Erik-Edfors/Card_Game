@@ -7,6 +7,7 @@
 
 #include <Core/RenderHardwareInterface/Device.h>
 #include <Core/RenderHardwareInterface/Objects/Texture2D.h>
+#include <Core/RenderHardwareInterface/Objects/ShaderResource.h>
 #include <Core/RenderHardwareInterface/Objects/SamplerState.h>
 #include <Core/RenderHardwareInterface/Objects/BlendState.h>
 #include <Core/RenderHardwareInterface/Objects/InputLayout.h>
@@ -22,13 +23,27 @@
 
 #include <Core/GraphicsEngine/GraphicsEngine.h>
 
+#include <Core/Assets/Font.h>
+#include <Core/CommonUtilities/Serialization/StreamWrapper.hpp>
+#include <Core/CommonUtilities/Serialization/Serializer.hpp>
+
+#ifdef CreateFont
+#undef CreateFont
+#endif
+
 struct GlyphVertex
 {
 	CommonUtilities::AABB2Df Bounds;
 	CommonUtilities::AABB2Df TextureRect;
 };
 
-Font::Font()
+Font::Font() :
+	myFontSize(0),
+	myUnderlineHeight(0.f),
+	myUnderlineThickness(0.f),
+	myStrikethroughHeight(0.f),
+	myStrikethroughThickness(0.f),
+	myAdvanceHeight(0.f)
 {
 }
 
@@ -76,12 +91,13 @@ float Font::GetStrikethroughThickness() const noexcept
 	return myStrikethroughThickness;
 }
 
-graphics::Texture2D* Font::GetAtlas() const noexcept
+graphics::ShaderResource* Font::GetAtlas() const noexcept
 {
 	return myAtlas.Get();
 }
 
-Text::Text()
+Text::Text() : 
+	myVertexCount(0)
 {
 }
 
@@ -89,7 +105,7 @@ Text::~Text()
 {
 }
 
-void Text::Initialize(graphics::VertexBuffer* aVertexBuffer, size_t aVertexCount, graphics::Texture2D* aAtlas, CommonUtilities::Vector2f aSize)
+void Text::Initialize(graphics::VertexBuffer* aVertexBuffer, size_t aVertexCount, graphics::ShaderResource* aAtlas, CommonUtilities::Vector2f aSize)
 {
 	myVertexBuffer = aVertexBuffer;
 	myVertexCount = aVertexCount;
@@ -177,6 +193,126 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 	text.Initialize(vertexBuffer.Get(), glyphCount, aFont.GetAtlas(), cursor);
 
 	return text;
+}
+
+Font TextRenderLayer::CreateFont(const wchar_t* aFontFile)
+{
+	std::ifstream file(aFontFile, std::ios::binary);
+
+	if (not file.is_open())
+	{
+		return {};
+	}
+
+	CommonUtilities::StreamReader reader(file);
+	reader.SetConstraints(
+		CommonUtilities::ReadConstraints{
+			.MaxSize = 10'485'760	// 10 MB size limit
+		}
+	);
+
+	CommonUtilities::Serializer serializer;
+
+	assets::FileHeader header;
+	if (not serializer.Read(header, reader))
+	{
+		//TODO: Log
+		return {};
+	}
+
+	if (memcmp(&header, &assets::FONT_FILE_HEADER, sizeof(header)) != 0)
+	{
+		//TODO: log
+		return {};
+	}
+
+	assets::Font font;
+	if (not serializer.Read(font, reader))
+	{
+		//TODO: Log
+		return {};
+	}
+
+	graphics::PImpl<graphics::Texture2D> atlasTexture;
+	{
+		graphics::TextureSubresourceData subResource{
+			.Data = font.Atlas.Data.data(),
+			.RowPitch = font.Atlas.RowPitch,
+			.DepthPitch = font.Atlas.DepthPitch
+		};
+
+		graphics::Texture2DDesc desc = {
+			.BindFlags = graphics::GRAPHICS_BIND_SHADER_RESOURCE,
+			.ResourceFlags = graphics::GRAPHICS_RESOURCE_NONE,
+			.Name = "Font Atlas",	//TODO: Actually use font name.
+			.Width = font.Atlas.Width,
+			.Height = font.Atlas.Height,
+			.MipLevels = 1,
+			.NumTextures = 1,
+			.Data = &subResource,
+			.NumData = 1,
+			.Format = graphics::GRAPHICS_FORMAT_B8G8R8A8_UNORM,
+			.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
+			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
+		};
+		HRESULT result = GetGraphicsEngine()->GetDevice()->CreateTexture2D(&atlasTexture, &desc);
+		if (FAILED(result))
+		{
+			//TODO: Log
+			return {};
+		}
+	}
+
+	graphics::PImpl<graphics::ShaderResource> atlasResource;
+	{
+		graphics::ShaderResourceDesc desc = {
+			.Name = "Font Atlas ShaderResource",
+			.Texture = atlasTexture.Get(),
+			.Format = graphics::GRAPHICS_FORMAT_UNKNOWN,
+			.ViewDimension = graphics::GRAPHICS_SHADER_RESOURCE_VIEW_DIMENSION_TEXTURE2D,
+			.FirstSlice = 0,
+			.NumSlices = 1,
+			.MipLevels = 1,
+			.MostDetailedMip = 0
+		};
+		HRESULT result = GetGraphicsEngine()->GetDevice()->CreateShaderResource(&atlasResource, &desc);
+		if (FAILED(result))
+		{
+			//TODO: Log
+			return {};
+		}
+	}
+
+	Font result;
+	result.myAtlas = atlasResource.Get();
+
+	result.myAdvanceHeight = font.AdvanceHeight;
+	result.myFontSize = font.FontSize;
+	result.myUnderlineHeight = font.UnderlineHeight;
+	result.myUnderlineThickness = font.UnderlineThickness;
+	result.myStrikethroughHeight = font.StrikethroughHeight;
+	result.myStrikethroughThickness = font.StrikethroughThickness;
+
+	for (const assets::Font::Glyph& glyph : font.Glyphs)
+	{
+		result.myGlyphMap[glyph.Character] = Font::Glyph{
+			.Bounds = {
+				glyph.Bounds[0],
+				glyph.Bounds[1],
+				glyph.Bounds[2],
+				glyph.Bounds[3]
+			},
+			.AtlasRect = {
+				glyph.AtlasRect[0],
+				glyph.AtlasRect[1],
+				glyph.AtlasRect[2],
+				glyph.AtlasRect[3]
+			},
+			.Advance = glyph.Advance
+		};
+	}
+
+	return result;
 }
 
 void TextRenderLayer::Draw(const Text& aText, const CommonUtilities::Matrix4x4f& aTransform)
@@ -429,6 +565,9 @@ void TextRenderLayer::OnRender()
 			&objectBuffer,
 			sizeof(objectBuffer)
 		);
+
+		GetContext()->BindShaderResources(&text.Text.myAtlas, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
+
 		const size_t stride = sizeof(GlyphVertex);
 		GetContext()->BindVertexBuffers(&text.Text.myVertexBuffer, 1, 0, &stride, nullptr);
 		GetContext()->Draw(static_cast<unsigned int>(text.Text.myVertexCount), 0u);

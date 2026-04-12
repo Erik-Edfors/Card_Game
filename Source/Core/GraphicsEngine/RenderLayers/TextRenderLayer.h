@@ -9,9 +9,16 @@
 #include <unordered_map>
 #include <string>
 
+#include <istream>
+
+#ifdef CreateFont
+#undef CreateFont
+#endif
+
 namespace graphics
 {
 	class Texture2D;
+	class ShaderResource;
 
 	class VertexShader;
 	class GeometryShader;
@@ -39,7 +46,6 @@ public:
 		float Advance;
 	};
 	
-	Font();
 	~Font();
 
 	const Glyph* FindGlyph(wchar_t aChar) const noexcept;
@@ -52,17 +58,19 @@ public:
 	float GetStrikethroughThickness() const noexcept;
 
 private:
-	graphics::Texture2D* GetAtlas() const noexcept;
+	Font();
+
+	graphics::ShaderResource* GetAtlas() const noexcept;
 
 	std::unordered_map<wchar_t, Glyph> myGlyphMap;
-	graphics::PImpl<graphics::Texture2D> myAtlas;
+	graphics::PImpl<graphics::ShaderResource> myAtlas;
 
 	float myFontSize;
+	float myAdvanceHeight;
 	float myUnderlineHeight;
 	float myUnderlineThickness;
 	float myStrikethroughHeight;
 	float myStrikethroughThickness;
-	float myAdvanceHeight;
 };
 
 class Text
@@ -75,12 +83,12 @@ public:
 	CommonUtilities::Vector2f GetSize() const noexcept;
 
 private:
-	void Initialize(graphics::VertexBuffer* aVertexBuffer, size_t aVertexCount, graphics::Texture2D* aAtlas, CommonUtilities::Vector2f aSize);
+	void Initialize(graphics::VertexBuffer* aVertexBuffer, size_t aVertexCount, graphics::ShaderResource* aAtlas, CommonUtilities::Vector2f aSize);
 
 	CommonUtilities::Vector2f mySize;
 	graphics::PImpl<graphics::VertexBuffer> myVertexBuffer;
 	size_t myVertexCount;
-	graphics::PImpl<graphics::Texture2D> myAtlas;
+	graphics::PImpl<graphics::ShaderResource> myAtlas;
 };
 
 class TextRenderLayer : public RenderLayer
@@ -96,6 +104,10 @@ public:
 		float aRoughness,
 		float aMetallicity
 	) const;
+
+	Font CreateFont(
+		const wchar_t* aFontFile
+	);
 
 	void Draw(const Text& aText, const CommonUtilities::Matrix4x4f& aTransform);
 

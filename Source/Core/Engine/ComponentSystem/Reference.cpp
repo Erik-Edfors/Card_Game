@@ -46,9 +46,9 @@ bool ActorRef::Expired() const noexcept
 {
 	if (mySystem != nullptr)
 	{
-		return mySystem->FindActor(myActorID) != nullptr;
+		return mySystem->FindActor(myActorID) == nullptr;
 	}
-	return false;
+	return true;
 }
 
 Actor* ActorRef::operator->() const noexcept
@@ -66,4 +66,22 @@ ActorRef::operator bool() const noexcept
 ActorRef::operator ActorID() const noexcept
 {
 	return myActorID;
+}
+
+bool ActorRef::operator==(std::nullptr_t) const noexcept
+{
+	return Expired();
+}
+bool ActorRef::operator!=(std::nullptr_t) const noexcept
+{
+	return not Expired();
+}
+
+bool ActorRef::operator==(Actor* aActor) const noexcept
+{
+	return Get() == aActor;
+}
+bool ActorRef::operator!=(Actor* aActor) const noexcept
+{
+	return Get() != aActor;
 }

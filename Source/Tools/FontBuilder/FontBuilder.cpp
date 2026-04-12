@@ -364,6 +364,8 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		return false;
 	}
 
+	output.Atlas.RowPitch = mappedResource.RowPitch;
+	output.Atlas.DepthPitch = mappedResource.DepthPitch;
 	output.Atlas.Data.resize(mappedResource.DepthPitch);
 	errno_t error = memcpy_s(output.Atlas.Data.data(), output.Atlas.Data.size() * sizeof(output.Atlas.Data[0]), mappedResource.pData, mappedResource.DepthPitch);
 
@@ -375,7 +377,7 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		return false;
 	}
 
-	std::ofstream file(aTarget);
+	std::ofstream file(aTarget, std::ios::binary);
 
 	CommonUtilities::StreamWriter writer(file);
 	CommonUtilities::Serializer serializer;

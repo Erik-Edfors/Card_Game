@@ -10,13 +10,19 @@
 #include <Core/GraphicsEngine/GraphicsEngine.h>
 #include <Core/GraphicsEngine/Projection.h>
 #include <Core/GraphicsEngine/RenderLayers/SpriteRenderLayer.h>
+#include <Core/GraphicsEngine/RenderLayers/TextRenderLayer.h>
 #include <Core/RenderHardwareInterface/Graphics.h>
+#include <Core/RenderHardwareInterface/Device.h>
+#include <Core/RenderHardwareInterface/Objects/ImmediateDeviceContext.h>
 #include <Core/RenderHardwareInterface/Objects/Texture2D.h>
+#include <Core/RenderHardwareInterface/Objects/RenderTarget.h>
+#include <Core/RenderHardwareInterface/Objects/DepthStencil.h>
 #include <Core/RenderHardwareInterface/DDSLoad.h>
 #include <Core/RenderHardwareInterface/DX11/Window_DX11Impl.h>
 #include <Core/Engine/ComponentSystem/ComponentSystem.h>
 #include <Core/Engine/ComponentSystem/Components/TransformComponent.h>
 #include <Core/Engine/ComponentSystem/Components/SpriteComponent.h>
+#include <Core/Engine/ComponentSystem/Components/TextComponent.h>
 #include <fstream>
 
 namespace client
@@ -34,9 +40,9 @@ namespace client
 	{
 		switch (uMsg)
 		{
-			case WM_CLOSE: case WM_DESTROY:
-				PostQuitMessage(0);
-				break;
+		case WM_CLOSE: case WM_DESTROY:
+			PostQuitMessage(0);
+			break;
 		}
 
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
@@ -70,8 +76,7 @@ namespace client
 			.MipSlice = 0
 		};
 
-		graphics::PImpl<graphics::RenderTarget> renderTarget;
-		device->CreateRenderTarget(&renderTarget, &rtDesc);
+		device->CreateRenderTarget(&myRenderTarget, &rtDesc);
 
 		std::ifstream file("../../Assets/Textures/Atlas.dds");
 
@@ -102,9 +107,51 @@ namespace client
 		device->CreateShaderResource(&atlasResource, &srDesc);
 
 		spriteRenderlayer->SetAtlas(atlasResource.Get());
-		spriteRenderlayer->SetTarget(renderTarget.Get());
+		spriteRenderlayer->SetTarget(myRenderTarget.Get());
 		spriteRenderlayer->SetView(CommonUtilities::Matrix4x4f());
-		spriteRenderlayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
+		spriteRenderlayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, -1.f, 1.f));
+
+
+
+		graphics::PImpl<graphics::Texture2D> depthTexture;
+		{
+			graphics::Texture2DDesc desc = {
+				.BindFlags = graphics::GRAPHICS_BIND_DEPTH_STENCIL | graphics::GRAPHICS_BIND_SHADER_RESOURCE,
+				.ResourceFlags = graphics::GRAPHICS_RESOURCE_NONE,
+				.Name = "Backbuffer Depth Texture",
+				.Width = backBufferTexture->GetDesc().Width,
+				.Height = backBufferTexture->GetDesc().Height,
+				.MipLevels = 1,
+				.NumTextures = 1,
+				.Data = nullptr,
+				.NumData = 0,
+				.Format = graphics::GRAPHICS_FORMAT_R32_TYPELESS,
+				.Usage = graphics::GRAPHICS_USAGE_DEFAULT,
+				.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
+			};
+			device->CreateTexture2D(&depthTexture, &desc);
+		}
+
+
+		{
+			graphics::DepthStencilDesc desc = {
+				.Flags = graphics::GRAPHICS_DEPTH_STENCIL_NONE,
+				.Name = "Backbuffer DepthStencil",
+				.Texture = depthTexture.Get(),
+				.Format = graphics::GRAPHICS_FORMAT_D32_FLOAT,
+				.ViewDimension = graphics::GRAPHICS_DEPTH_STENCIL_VIEW_DIMENSION_TEXTURE2D,
+				.FirstSlice = 0,
+				.NumSlices = 1,
+				.MipSlice = 0
+			};
+			device->CreateDepthStencil(&myDepthStencil, &desc);
+		}
+		TextRenderLayer* textRenderlayer = myEngine->GetGraphicsEngine().AddRenderLayer<TextRenderLayer>();
+		textRenderlayer->SetTargets(myRenderTarget.Get(), nullptr);
+		textRenderlayer->SetView(CommonUtilities::Matrix4x4f());
+		textRenderlayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, -1.f, 1.f));
+
+
 
 		myEngine->PushScene<client::LobbyScene>();
 
@@ -112,11 +159,15 @@ namespace client
 		ActorRef actor = compSys.CreateActor();
 		ComponentRef<TransformComponent> transform = compSys.AddComponent<TransformComponent>(actor);
 		ComponentRef<SpriteComponent> sprite = compSys.AddComponent<SpriteComponent>(actor);
+		ComponentRef<TextComponent> text = compSys.AddComponent<TextComponent>(actor);
 
-		transform->SetScaleLocal({ 0.1f, 0.2f, 1.f });
-		transform->SetTranslationLocal({ 0.5f, 0.5f, 0.f });
+		transform->SetScaleLocal({ 0.01f, 0.02f, 1.f });
+		transform->SetTranslationLocal({ 0.5f, 0.5f, 0.5f });
 
 		sprite->SetTextureRect({ { 0.003173828125f, 0.001953125f }, { 0.003173828125f + 0.01318359375f, 0.001953125f + 0.025390625f } });
+
+		text->SetFont(L"../../Assets/Fonts/arial.bf");
+		text->SetText(L"Hello World!");
 
 		return true;
 	}
@@ -133,11 +184,15 @@ namespace client
 
 				switch (msg.message)
 				{
-					case WM_QUIT:
-						myExiting = true;
-						break;
+				case WM_QUIT:
+					myExiting = true;
+					break;
 				}
 			}
+
+			float clearColor[4] = { 0.f, 0.f, 0.f, 0.f };
+			myEngine->GetGraphicsEngine().GetDeviceContext()->ClearRenderTarget(myRenderTarget.Get(), clearColor);
+			myEngine->GetGraphicsEngine().GetDeviceContext()->ClearDepthStencil(myDepthStencil.Get());
 
 			if (myEngine->BeginFrame())
 			{

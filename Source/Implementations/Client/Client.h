@@ -41,7 +41,15 @@
 #define NOMCX             // Modem Configuration Extensions
 #include <Windows.h>
 
+#include <Core/RenderHardwareInterface/PImpl.hpp>
+
 #include <memory>
+
+namespace graphics
+{
+	class RenderTarget;
+	class DepthStencil;
+}
 
 class Engine;
 
@@ -64,5 +72,8 @@ namespace client
 	private:
 		bool myExiting;
 		std::unique_ptr<Engine> myEngine;
+
+		graphics::PImpl<graphics::RenderTarget> myRenderTarget;
+		graphics::PImpl<graphics::DepthStencil> myDepthStencil;
 	};
 }

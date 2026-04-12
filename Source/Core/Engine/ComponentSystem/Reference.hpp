@@ -24,6 +24,12 @@ public:
 	operator bool() const noexcept;
 	operator ActorID() const noexcept;
 
+	bool operator==(std::nullptr_t) const noexcept;
+	bool operator!=(std::nullptr_t) const noexcept;
+
+	bool operator==(Actor* aActor) const noexcept;
+	bool operator!=(Actor* aActor) const noexcept;
+
 private:
 	ComponentSystem* mySystem;
 	ActorID myActorID;
@@ -51,6 +57,12 @@ public:
 	_Ty& operator*() const;
 
 	operator bool() const noexcept;
+
+	bool operator==(std::nullptr_t) const noexcept;
+	bool operator!=(std::nullptr_t) const noexcept;
+
+	bool operator==(_Ty* aComponent) const noexcept;
+	bool operator!=(_Ty* aComponent) const noexcept;
 
 private:
 	ComponentSystem* mySystem;
@@ -126,9 +138,9 @@ inline bool ComponentRef<_Ty>::Expired() const noexcept
 {
 	if (mySystem != nullptr)
 	{
-		return mySystem->FindComponent(myComponentID) != nullptr;
+		return mySystem->FindComponent(myComponentID) == nullptr;
 	}
-	return false;
+	return true;
 }
 
 template<class _Ty>
@@ -146,4 +158,26 @@ template<class _Ty>
 ComponentRef<_Ty>::operator bool() const noexcept
 {
 	return not Expired();
+}
+
+template<class _Ty>
+bool ComponentRef<_Ty>::operator==(std::nullptr_t) const noexcept
+{
+	return Expired();
+}
+template<class _Ty>
+bool ComponentRef<_Ty>::operator!=(std::nullptr_t) const noexcept
+{
+	return not Expired();
+}
+
+template<class _Ty>
+bool ComponentRef<_Ty>::operator==(_Ty* aComponent) const noexcept
+{
+	return Get() == aComponent;
+}
+template<class _Ty>
+bool ComponentRef<_Ty>::operator!=(_Ty* aComponent) const noexcept
+{
+	return Get() != aComponent;
 }
