@@ -167,7 +167,7 @@ namespace client
 		sprite->SetTextureRect({ { 0.003173828125f, 0.001953125f }, { 0.003173828125f + 0.01318359375f, 0.001953125f + 0.025390625f } });
 
 		text->SetFont(L"../../Assets/Fonts/arial.bf");
-		text->SetText(L"Hello World!\nThis is a test message!\nHello Again!");
+		text->SetText(L"Hello World!\nThis is a test message!\nHello Again!\n# A list:\n|\t1\t=2\n|\t123\t=3\n|\t12\t=1");
 
 		return true;
 	}

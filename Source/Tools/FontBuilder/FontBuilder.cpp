@@ -108,7 +108,7 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 	DWRITE_FONT_METRICS fontMetrics;
 	fontFace->GetMetrics(&fontMetrics);
 
-	//constexpr float dpi = 96.f;
+	constexpr float dpi = 96.f;
 	const float DUToEm = 1.f / static_cast<float>(fontMetrics.designUnitsPerEm);
 	const float EmToPx = static_cast<float>(aFontSize);
 	//const float PxToEm = 1.f / EmToPx;
@@ -267,15 +267,14 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		return false;
 	}
 
-
 	D2D1_RENDER_TARGET_PROPERTIES properties = {
 		.type = D2D1_RENDER_TARGET_TYPE_DEFAULT,
 		.pixelFormat = {
 			.format = DXGI_FORMAT_B8G8R8A8_UNORM,
 			.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED
 		},
-		.dpiX = 0.f,
-		.dpiY = 0.f,
+		.dpiX = dpi,
+		.dpiY = dpi,
 		.usage = D2D1_RENDER_TARGET_USAGE_NONE,
 		.minLevel = D2D1_FEATURE_LEVEL_DEFAULT
 	};
@@ -315,36 +314,6 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 
 	renderTarget->BeginDraw();
 
-	//renderTarget->DrawRectangle(
-	//	D2D1_RECT_F{
-	//		0.f * static_cast<float>(textureWidth),
-	//		0.f * static_cast<float>(textureHeight),
-	//		0.1f * static_cast<float>(textureWidth),
-	//		0.1f * static_cast<float>(textureHeight)
-	//	},
-	//	brush.Get()
-	//);
-
-	//renderTarget->DrawRectangle(
-	//	D2D1_RECT_F{
-	//		0.9f * static_cast<float>(textureWidth),
-	//		0.9f * static_cast<float>(textureHeight),
-	//		1.f * static_cast<float>(textureWidth),
-	//		1.f * static_cast<float>(textureHeight)
-	//	},
-	//	brush.Get()
-	//);
-
-	//renderTarget->DrawRectangle(
-	//	D2D1_RECT_F{
-	//		0.f * static_cast<float>(textureWidth),
-	//		0.f * static_cast<float>(textureHeight),
-	//		1.f * static_cast<float>(textureWidth),
-	//		1.f * static_cast<float>(textureHeight)
-	//	},
-	//	brush.Get()
-	//);
-
 	for (size_t i = 0; i < aNumCharacters; i++)
 	{
 		const FLOAT glyphAdvance = static_cast<FLOAT>(glyphMetrics[i].advanceWidth) * DUToEm;
@@ -378,16 +347,6 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 			brush.Get(),
 			DWRITE_MEASURING_MODE_NATURAL
 		);
-
-		//renderTarget->DrawRectangle(
-		//	D2D1_RECT_F{
-		//		output.Glyphs[i].AtlasRect[0] * static_cast<float>(textureWidth),
-		//		output.Glyphs[i].AtlasRect[1] * static_cast<float>(textureHeight),
-		//		output.Glyphs[i].AtlasRect[2] * static_cast<float>(textureWidth),
-		//		output.Glyphs[i].AtlasRect[3] * static_cast<float>(textureHeight)
-		//	},
-		//	brush.Get()
-		//);
 	}
 	result = renderTarget->EndDraw();
 	if (FAILED(result))

@@ -27,6 +27,8 @@
 #include <Core/CommonUtilities/Serialization/StreamWrapper.hpp>
 #include <Core/CommonUtilities/Serialization/Serializer.hpp>
 
+#include <cwctype>
+
 #ifdef CreateFont
 #undef CreateFont
 #endif
@@ -96,7 +98,7 @@ graphics::ShaderResource* Font::GetAtlas() const noexcept
 	return myAtlas.Get();
 }
 
-Text::Text() : 
+Text::Text() :
 	myVertexCount(0)
 {
 }
@@ -148,17 +150,24 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 
 		const CommonUtilities::Vector2f position = cursor;
 
-		if (c == L'\n')
+		switch (c)
 		{
-			cursor.y -= aFont.GetAdvanceHeight();
-			cursor.x = 0.f;
-		}
-		else if (glyph != nullptr)
-		{
-			cursor.x += glyph->Advance;
+			case L'\n':
+				cursor.y -= aFont.GetAdvanceHeight();
+				cursor.x = 0.f;
+				break;
+			case L'\t':
+				cursor.x += 2.f * aFont.GetFontSize() - std::fmodf(cursor.x, 2.f * aFont.GetFontSize());
+				break;
 		}
 
-		if (glyph == nullptr)
+		if (not std::iswprint(c) || glyph == nullptr)
+		{
+			continue;
+		}
+		cursor.x += glyph->Advance;
+
+		if (std::iswblank(c))
 		{
 			continue;
 		}

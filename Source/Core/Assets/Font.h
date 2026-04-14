@@ -10,7 +10,7 @@ namespace assets
 {
 	static constexpr FileHeader FONT_FILE_HEADER = FileHeader{
 		{ 'F', 'O', 'N', 'T' },
-		{ 0, 0, 0, 3 }
+		{ 0, 0, 0, 6 }
 	};
 
 	struct Font

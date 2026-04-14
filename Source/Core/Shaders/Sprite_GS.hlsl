@@ -1,6 +1,6 @@
 #include "Includes/Sprites.hlsli"
 
-[maxvertexcount(6)]
+[maxvertexcount(4)]
 void main(
 	point Sprite_GS_In input[1],
 	inout TriangleStream<Sprite_GS_Out> output
@@ -24,10 +24,7 @@ void main(
     bottomRight.Position = float4(sprite.Corners[3], 0.f, 1.f);
     bottomRight.UV = float2(sprite.UVRect[2], sprite.UVRect[3]);
 	    
-	output.Append(topLeft);
-	output.Append(topRight);
-    output.Append(bottomRight);
-    
+    output.Append(topRight);
     output.Append(topLeft);
     output.Append(bottomRight);
     output.Append(bottomLeft);

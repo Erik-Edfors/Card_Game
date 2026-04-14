@@ -1,6 +1,6 @@
 #include "Includes/Text.hlsli"
 
-[maxvertexcount(6)]
+[maxvertexcount(4)]
 void main(
 	point Text_GS_In input[1], 
 	inout TriangleStream<Text_GS_Out> output
@@ -24,10 +24,7 @@ void main(
     bottomRight.Position = glyph.Corners[3];
     bottomRight.UV = float2(glyph.UVRect[2], glyph.UVRect[1]);
 	    
-    output.Append(topLeft);
     output.Append(topRight);
-    output.Append(bottomRight);
-    
     output.Append(topLeft);
     output.Append(bottomRight);
     output.Append(bottomLeft);
