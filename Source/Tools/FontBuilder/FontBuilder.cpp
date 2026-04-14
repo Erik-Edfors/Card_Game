@@ -108,7 +108,7 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 	DWRITE_FONT_METRICS fontMetrics;
 	fontFace->GetMetrics(&fontMetrics);
 
-	constexpr float dpi = 92.f;
+	//constexpr float dpi = 96.f;
 	const float DUToEm = 1.f / static_cast<float>(fontMetrics.designUnitsPerEm);
 	const float EmToPx = static_cast<float>(aFontSize);
 	//const float PxToEm = 1.f / EmToPx;
@@ -163,7 +163,7 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 
 		output.Glyphs[i].Advance = static_cast<float>(metrics.advanceWidth) * DUToEm * EmToPx;
 		output.Glyphs[i].Bounds[0] = static_cast<float>(blackboxLeft) * DUToEm * EmToPx;
-		output.Glyphs[i].Bounds[1] = static_cast<float>(blackboxTop) * DUToEm * EmToPx;
+		output.Glyphs[i].Bounds[1] = static_cast<float>(blackboxTop) * DUToEm * EmToPx - 1.f;	// -1.f offset because it was clipping the top for some reason.
 		output.Glyphs[i].Bounds[2] = static_cast<float>(blackboxRight) * DUToEm * EmToPx;
 		output.Glyphs[i].Bounds[3] = static_cast<float>(blackboxBottom) * DUToEm * EmToPx;
 
@@ -272,10 +272,10 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		.type = D2D1_RENDER_TARGET_TYPE_DEFAULT,
 		.pixelFormat = {
 			.format = DXGI_FORMAT_B8G8R8A8_UNORM,
-			.alphaMode = D2D1_ALPHA_MODE_IGNORE
+			.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED
 		},
-		.dpiX = dpi,
-		.dpiY = dpi,
+		.dpiX = 0.f,
+		.dpiY = 0.f,
 		.usage = D2D1_RENDER_TARGET_USAGE_NONE,
 		.minLevel = D2D1_FEATURE_LEVEL_DEFAULT
 	};
@@ -292,8 +292,19 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 		return false;
 	}
 
+	D2D1_MATRIX_3X2_F transform = {};
+
+	transform.m11 = 1.f;
+	transform.m12 = 0.f;
+	transform.m21 = 0.f;
+	transform.m22 = 1.f;
+	transform.dx = 0.f;
+	transform.dy = 0.f;
+
+	renderTarget->SetTransform(transform);
+
 	Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> brush;
-	result = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &brush);
+	result = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White, 1.f), &brush);
 	if (FAILED(result))
 	{
 		//TODO: Log
@@ -303,6 +314,37 @@ bool FontBuilder::Build(const std::filesystem::path& aSource, const std::filesys
 
 
 	renderTarget->BeginDraw();
+
+	//renderTarget->DrawRectangle(
+	//	D2D1_RECT_F{
+	//		0.f * static_cast<float>(textureWidth),
+	//		0.f * static_cast<float>(textureHeight),
+	//		0.1f * static_cast<float>(textureWidth),
+	//		0.1f * static_cast<float>(textureHeight)
+	//	},
+	//	brush.Get()
+	//);
+
+	//renderTarget->DrawRectangle(
+	//	D2D1_RECT_F{
+	//		0.9f * static_cast<float>(textureWidth),
+	//		0.9f * static_cast<float>(textureHeight),
+	//		1.f * static_cast<float>(textureWidth),
+	//		1.f * static_cast<float>(textureHeight)
+	//	},
+	//	brush.Get()
+	//);
+
+	//renderTarget->DrawRectangle(
+	//	D2D1_RECT_F{
+	//		0.f * static_cast<float>(textureWidth),
+	//		0.f * static_cast<float>(textureHeight),
+	//		1.f * static_cast<float>(textureWidth),
+	//		1.f * static_cast<float>(textureHeight)
+	//	},
+	//	brush.Get()
+	//);
+
 	for (size_t i = 0; i < aNumCharacters; i++)
 	{
 		const FLOAT glyphAdvance = static_cast<FLOAT>(glyphMetrics[i].advanceWidth) * DUToEm;

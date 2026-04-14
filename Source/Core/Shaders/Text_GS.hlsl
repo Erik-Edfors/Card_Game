@@ -10,11 +10,11 @@ void main(
     
     Text_GS_Out topLeft;
     topLeft.Position = glyph.Corners[0];
-    topLeft.UV = float2(glyph.UVRect[0], glyph.UVRect[0]);
+    topLeft.UV = float2(glyph.UVRect[0], glyph.UVRect[1]);
 	
     Text_GS_Out topRight;
     topRight.Position = glyph.Corners[1];
-    topRight.UV = float2(glyph.UVRect[2], glyph.UVRect[0]);
+    topRight.UV = float2(glyph.UVRect[2], glyph.UVRect[1]);
     
     Text_GS_Out bottomLeft;
     bottomLeft.Position = glyph.Corners[2];

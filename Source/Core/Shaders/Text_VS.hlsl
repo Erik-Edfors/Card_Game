@@ -6,7 +6,7 @@ Text_VS_Out main(Text_VS_In input)
 {
     Text_VS_Out output;
     
-    const float4x4 transform = mul(OB_World, mul(FB_View, FB_Projection));
+    const float4x4 transform = mul(FB_Projection, mul(FB_View, OB_World));
     
     const float2 topLeft = input.Bounds.xy;
     const float2 topRight = input.Bounds.zy;

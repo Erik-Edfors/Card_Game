@@ -150,7 +150,7 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 
 		if (c == L'\n')
 		{
-			cursor.y += aFont.GetAdvanceHeight();
+			cursor.y -= aFont.GetAdvanceHeight();
 			cursor.x = 0.f;
 		}
 		else if (glyph != nullptr)
@@ -164,8 +164,8 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 		}
 
 		GlyphVertex& vertex = glyphs[glyphCount++];
-		vertex.Bounds.Min = position + CommonUtilities::Vector2f(glyph->Bounds[0], glyph->Bounds[1]);
-		vertex.Bounds.Max = position + CommonUtilities::Vector2f(glyph->Bounds[2], glyph->Bounds[3]);
+		vertex.Bounds.Min = position + CommonUtilities::Vector2f(glyph->Bounds[0], -glyph->Bounds[3]);
+		vertex.Bounds.Max = position + CommonUtilities::Vector2f(glyph->Bounds[2], -glyph->Bounds[1]);
 		vertex.TextureRect = {
 			{ glyph->AtlasRect[0], glyph->AtlasRect[1] },
 			{ glyph->AtlasRect[2], glyph->AtlasRect[3] }
