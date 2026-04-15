@@ -141,7 +141,7 @@ int wmain(int argc, wchar_t** argv)
 				extendedASCIIChars[c] = c;
 			}
 
-			bool result = data.FontBuilder->Build(aPath, target, data.FontSize, extendedASCIIChars.get(), 256);
+			bool result = data.FontBuilder->BuildSimpleAtlas(aPath, target, data.FontSize, extendedASCIIChars.get(), 256);
 			if (not result)
 			{
 				std::wcout << "Failed to build!\n";
