@@ -23,7 +23,7 @@ JFA_PS_Out main(JFA_PS_In input)
 
     output.Result = Texture.Sample(Sampler, input.UV);
     	
-    float minDistance = 1e20f;
+    float minDistance = 1e10f;
 
     [unroll]
     for (int i = 0; i < 9; i++)
@@ -31,9 +31,9 @@ JFA_PS_Out main(JFA_PS_In input)
         const float4 sample = Texture.Sample(Sampler, input.UV + Offsets[i] * JFAB_StepDistance);
         
         const float2 sampleUV = sample.rg;
-        const float sampleInitialized = sample.b;
+        const bool sampleInitialized = (length(sampleUV) != 0.f);
         
-        const float dist = distance(input.UV, sampleUV) + sampleInitialized * 1e20f;
+        const float dist = distance(input.UV, sampleUV) + (sampleInitialized ? 0.f : 1e12f);
         if (dist < minDistance)
         {
             minDistance = dist;

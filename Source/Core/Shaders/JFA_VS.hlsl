@@ -4,5 +4,6 @@ JFA_VS_Out main(JFA_VS_In input)
 {
     JFA_VS_Out output;
     output.Rectangle = input.Rectangle;
+    output.UVRectangle = input.UVRectangle;
 	return output;
 }

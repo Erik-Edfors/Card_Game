@@ -153,7 +153,7 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 		switch (c)
 		{
 			case L'\n':
-				cursor.y -= aFont.GetAdvanceHeight();
+				cursor.y -= aFont.GetAdvanceHeight() * aFont.GetFontSize();
 				cursor.x = 0.f;
 				break;
 			case L'\t':
@@ -165,7 +165,7 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 		{
 			continue;
 		}
-		cursor.x += glyph->Advance;
+		cursor.x += glyph->Advance * aFont.GetFontSize();
 
 		if (std::iswblank(c))
 		{
@@ -173,8 +173,8 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 		}
 
 		GlyphVertex& vertex = glyphs[glyphCount++];
-		vertex.Bounds.Min = position + CommonUtilities::Vector2f(glyph->Bounds[0], -glyph->Bounds[3]);
-		vertex.Bounds.Max = position + CommonUtilities::Vector2f(glyph->Bounds[2], -glyph->Bounds[1]);
+		vertex.Bounds.Min = position + CommonUtilities::Vector2f(glyph->Bounds[0], -glyph->Bounds[3]) * aFont.GetFontSize();
+		vertex.Bounds.Max = position + CommonUtilities::Vector2f(glyph->Bounds[2], -glyph->Bounds[1]) * aFont.GetFontSize();
 		vertex.TextureRect = {
 			{ glyph->AtlasRect[0], glyph->AtlasRect[1] },
 			{ glyph->AtlasRect[2], glyph->AtlasRect[3] }
@@ -216,7 +216,7 @@ Font TextRenderLayer::CreateFont(const wchar_t* aFontFile)
 	CommonUtilities::StreamReader reader(file);
 	reader.SetConstraints(
 		CommonUtilities::ReadConstraints{
-			.MaxSize = 10'485'760	// 10 MB size limit
+			.MaxSize = 100'000'000	// 100 MB size limit
 		}
 	);
 
@@ -260,7 +260,7 @@ Font TextRenderLayer::CreateFont(const wchar_t* aFontFile)
 			.NumTextures = 1,
 			.Data = &subResource,
 			.NumData = 1,
-			.Format = graphics::GRAPHICS_FORMAT_B8G8R8A8_UNORM,
+			.Format = graphics::GRAPHICS_FORMAT_R32G32B32A32_FLOAT,
 			.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
 			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
 		};
@@ -480,7 +480,7 @@ void TextRenderLayer::OnInit()
 	{
 		const graphics::SamplerStateDesc desc = {
 			.Name = "Text Atlas Sampler",
-			.Filter = graphics::GRAPHICS_SAMPLER_FILTER_MIN_MAG_MIP_LINEAR,
+			.Filter = graphics::GRAPHICS_SAMPLER_FILTER_MIN_MAG_POINT_MIP_LINEAR,
 			.AddressU = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
 			.AddressV = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
 			.AddressW = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
