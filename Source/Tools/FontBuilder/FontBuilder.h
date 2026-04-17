@@ -19,6 +19,13 @@ public:
 	bool BuildSimpleAtlas(const std::filesystem::path& aSource, const std::filesystem::path& aTarget, unsigned int aFontSize, const wchar_t* aCharacters, size_t aNumCharacters);
 	bool BuildAtlas(const std::filesystem::path& aSource, const std::filesystem::path& aTarget, unsigned int aFontSize, const wchar_t* aCharacters, size_t aNumCharacters);
 private:
+	struct __DownsampleObjects
+	{
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> Texture;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SRV;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> RTV;
+	};
+
 	Microsoft::WRL::ComPtr<ID3D11Device> myDevice;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mySwapChain;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> myDeviceContext;
@@ -38,9 +45,12 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> myJFAResourceTexture;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> myJFASRV;
 
+	std::vector<__DownsampleObjects> myDownSampleChain;
+
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> myJFAVertexShader;
 	Microsoft::WRL::ComPtr<ID3D11GeometryShader> myJFAGeometryShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> myJFAPixelShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> myJFAInitPixelShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> myJFADownSamplePixelShader;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> myJFAToSIDPixelShader;
 };

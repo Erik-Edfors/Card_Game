@@ -15,9 +15,9 @@ struct JFAVertex
 
 struct JFABuffer
 {
-	float StepDistance;
+	float StepDistance[2];
 
-	unsigned int _padding[3];
+	unsigned int _padding[2];
 };
 
 static void DebugExportTexture(ID3D11Device* aDevice, ID3D11DeviceContext* aContext, ID3D11Texture2D* aTexture, const wchar_t* aFile)
@@ -158,6 +158,31 @@ static size_t LoadStreamIntoMemory(void** outBuffer, std::istream& aStream, size
 	return cursor;
 }
 
+static HRESULT UpdateBuffer(ID3D11DeviceContext* aContext, ID3D11Buffer* aBuffer, const void* aData, size_t aDataSize)
+{
+	D3D11_SUBRESOURCE_DATA data = {
+		.pSysMem = aData,
+		.SysMemPitch = 0u,
+		.SysMemSlicePitch = 0u
+	};
+
+	D3D11_MAPPED_SUBRESOURCE mappedVertexBuffer = {};
+	HRESULT result = aContext->Map(aBuffer, 0, D3D11_MAP_WRITE_DISCARD, NULL, &mappedVertexBuffer);
+	if (FAILED(result))
+	{
+		//TODO: Log.
+		return result;
+	}
+	errno_t error = memcpy_s(mappedVertexBuffer.pData, mappedVertexBuffer.DepthPitch, aData, aDataSize);
+	if (error != 0)
+	{
+		return E_BOUNDS;
+	}
+	aContext->Unmap(aBuffer, 0);
+
+	return S_OK;
+}
+
 FontBuilder::FontBuilder()
 {
 }
@@ -167,6 +192,8 @@ FontBuilder::~FontBuilder()
 
 bool FontBuilder::Initialize()
 {
+	constexpr unsigned int JFATextureWidth = 4096;
+	constexpr unsigned int JFATextureHeight = 4096;
 
 	//DXGI_SWAP_CHAIN_DESC desc = {
 	//	.BufferDesc = DXGI_MODE_DESC{
@@ -337,6 +364,21 @@ bool FontBuilder::Initialize()
 	}
 
 	{
+		std::ifstream file("JFA_ToSID_PS.cso", std::ios::binary);
+		void* byteCode = nullptr;
+		size_t byteCodeSize = LoadStreamIntoMemory(&byteCode, file, 1'048'576);
+
+		result = myDevice->CreatePixelShader(byteCode, byteCodeSize, NULL, &myJFAToSIDPixelShader);
+
+		ReleaseBuffer(byteCode);
+		if (FAILED(result))
+		{
+			//TODO: Log
+			return false;
+		}
+	}
+
+	{
 		D3D11_SAMPLER_DESC desc = {
 			.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT,
 			.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP,
@@ -368,8 +410,8 @@ bool FontBuilder::Initialize()
 
 	{
 		D3D11_TEXTURE2D_DESC desc = {
-			.Width = 4096,
-			.Height = 4096,
+			.Width = JFATextureWidth,
+			.Height = JFATextureHeight,
 			.MipLevels = 1u,
 			.ArraySize = 1u,
 			.Format = DXGI_FORMAT_R32G32B32A32_FLOAT,
@@ -397,6 +439,57 @@ bool FontBuilder::Initialize()
 		{
 			//TODO: Log
 			return false;
+		}
+
+		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {
+			.Format = DXGI_FORMAT_UNKNOWN,
+			.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D,
+			.Texture2D = D3D11_TEX2D_RTV{
+				.MipSlice = 0
+			}
+		};
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+			.Format = DXGI_FORMAT_UNKNOWN,
+			.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
+			.Texture2D = D3D11_TEX2D_SRV{
+				.MostDetailedMip = 0u,
+				.MipLevels = 1u
+			}
+		};
+
+		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+		unsigned int width = JFATextureWidth / 2;
+		unsigned int height = JFATextureWidth / 2;
+		while (width > 1 && height > 1)
+		{
+			__DownsampleObjects& sampleObjects = myDownSampleChain.emplace_back();
+			desc.Width = width;
+			desc.Height = height;
+
+			result = myDevice->CreateTexture2D(&desc, NULL, &sampleObjects.Texture);
+			if (FAILED(result))
+			{
+				//TODO: Log
+				return false;
+			}
+
+			result = myDevice->CreateShaderResourceView(sampleObjects.Texture.Get(), &srvDesc, &sampleObjects.SRV);
+			if (FAILED(result))
+			{
+				//TODO: Log
+				return false;
+			}
+
+			result = myDevice->CreateRenderTargetView(sampleObjects.Texture.Get(), &rtvDesc, &sampleObjects.RTV);
+			if (FAILED(result))
+			{
+				//TODO: Log
+				return false;
+			}
+
+			width /= 2;
+			height /= 2;
 		}
 	}
 
@@ -1267,28 +1360,35 @@ bool FontBuilder::BuildAtlas(const std::filesystem::path& aSource, const std::fi
 
 #pragma endregion
 
+		const float uvOriginX = (glyphCellXOffsetEm * jfaFontSize) / static_cast<float>(jfaWidth);
+		const float uvOriginY = (glyphCellYOffsetEm * jfaFontSize) / static_cast<float>(jfaHeight);
+
+		float uvBoundsRect[4] = {
+			uvOriginX + output.Glyphs[i].Bounds[0] * jfaFontSize / static_cast<float>(jfaWidth),
+			uvOriginY + output.Glyphs[i].Bounds[1] * jfaFontSize / static_cast<float>(jfaHeight),
+			uvOriginX + output.Glyphs[i].Bounds[2] * jfaFontSize / static_cast<float>(jfaWidth),
+			uvOriginY + output.Glyphs[i].Bounds[3] * jfaFontSize / static_cast<float>(jfaHeight)
+		};
+
 		{
 			myDeviceContext->IASetVertexBuffers(0, 0, NULL, NULL, NULL);
 
 			JFAVertex vertex = {
-				.Rectangle = { 0.f, 0.f, 1.f, 1.f },
-				.UVRectangle = { 0.f, 0.f, 1.f, 1.f }
+				.Rectangle = {
+					uvBoundsRect[0],
+					uvBoundsRect[1],
+					uvBoundsRect[2],
+					uvBoundsRect[3]
+				},
+				.UVRectangle = {
+					uvBoundsRect[0],
+					uvBoundsRect[1],
+					uvBoundsRect[2],
+					uvBoundsRect[3]
+				}
 			};
-			D3D11_SUBRESOURCE_DATA data = {
-				.pSysMem = &vertex,
-				.SysMemPitch = 0u,
-				.SysMemSlicePitch = 0u
-			};
+			UpdateBuffer(myDeviceContext.Get(), myJFAVertexBuffer.Get(), &vertex, sizeof(vertex));
 
-			D3D11_MAPPED_SUBRESOURCE mappedVertexBuffer = {};
-			result = myDeviceContext->Map(myJFAVertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, NULL, &mappedVertexBuffer);
-			if (FAILED(result))
-			{
-				//TODO: Log.
-				continue;
-			}
-			memcpy_s(mappedVertexBuffer.pData, mappedVertexBuffer.DepthPitch, &vertex, sizeof(vertex));
-			myDeviceContext->Unmap(myJFAVertexBuffer.Get(), 0);
 			{
 				UINT vertexStride = sizeof(JFAVertex);
 				UINT offset = 0u;
@@ -1314,10 +1414,10 @@ bool FontBuilder::BuildAtlas(const std::filesystem::path& aSource, const std::fi
 
 		myDeviceContext->PSSetShader(myJFAPixelShader.Get(), NULL, 0);
 
-		float stepDistance = 1.f;
-		const float minStepDistance = 1.f / static_cast<float>((std::max)(jfaWidth, jfaHeight));
+		float stepDistance[2] = { 1.f, 1.f };
+		const float minStepDistance[2] = { 1.f / static_cast<float>(jfaWidth), 1.f / static_cast<float>(jfaHeight) };
 		size_t count = 0;
-		while (stepDistance >= minStepDistance)
+		while (stepDistance[0] >= minStepDistance[0] || stepDistance[1] >= minStepDistance[1])
 		{
 			myDeviceContext->OMSetRenderTargets(0, NULL, NULL);
 
@@ -1333,23 +1433,17 @@ bool FontBuilder::BuildAtlas(const std::filesystem::path& aSource, const std::fi
 				myDeviceContext->PSSetConstantBuffers(0, 1, &dummy);
 
 				JFABuffer jfaBuffer = {
-					.StepDistance = stepDistance
+					.StepDistance = {
+						stepDistance[0],
+						stepDistance[1]
+					}
 				};
-				D3D11_SUBRESOURCE_DATA data = {
-					.pSysMem = &jfaBuffer,
-					.SysMemPitch = 0u,
-					.SysMemSlicePitch = 0u
-				};
-
-				D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-				result = myDeviceContext->Map(myJFAConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, NULL, &mappedBuffer);
+				result = UpdateBuffer(myDeviceContext.Get(), myJFAConstantBuffer.Get(), &jfaBuffer, sizeof(jfaBuffer));
 				if (FAILED(result))
 				{
 					//TODO: Log.
 					continue;
 				}
-				memcpy_s(mappedBuffer.pData, mappedBuffer.DepthPitch, &jfaBuffer, sizeof(jfaBuffer));
-				myDeviceContext->Unmap(myJFAConstantBuffer.Get(), 0);
 			}
 
 			myDeviceContext->PSSetConstantBuffers(0, 1, myJFAConstantBuffer.GetAddressOf());
@@ -1359,7 +1453,8 @@ bool FontBuilder::BuildAtlas(const std::filesystem::path& aSource, const std::fi
 
 			myDeviceContext->Draw(1, 0);
 
-			stepDistance *= 0.5f;
+			stepDistance[0] *= 0.5f;
+			stepDistance[1] *= 0.5f;
 
 			//{
 			//	std::wstring file;
@@ -1373,6 +1468,150 @@ bool FontBuilder::BuildAtlas(const std::filesystem::path& aSource, const std::fi
 
 			++count;
 		}
+		{
+			ID3D11Buffer* dummy = NULL;
+			myDeviceContext->PSSetConstantBuffers(0, 1, &dummy);
+		}
+
+#pragma endregion
+
+#pragma region Down Sampling
+		//TODO: NEED to downsample in half increments so that pixels get proparly avaraged.
+
+		{
+			myDeviceContext->IASetVertexBuffers(0, 0, NULL, NULL, NULL);
+
+			JFAVertex vertex = {
+				.Rectangle = {
+					uvBoundsRect[0],
+					uvBoundsRect[1],
+					uvBoundsRect[2],
+					uvBoundsRect[3]
+				},
+				.UVRectangle = {
+					uvBoundsRect[0],
+					uvBoundsRect[1],
+					uvBoundsRect[2],
+					uvBoundsRect[3]
+				}
+			};
+			result = UpdateBuffer(myDeviceContext.Get(), myJFAVertexBuffer.Get(), &vertex, sizeof(vertex));
+			if (FAILED(result))
+			{
+				//TODO: Log.
+				return false;
+			}
+
+			{
+				UINT vertexStride = sizeof(JFAVertex);
+				UINT offset = 0u;
+				myDeviceContext->IASetVertexBuffers(0, 1, myJFAVertexBuffer.GetAddressOf(), &vertexStride, &offset);
+			}
+		}
+
+		myDeviceContext->PSSetSamplers(0, 1, myJFATrilinearClampSamplerState.GetAddressOf());
+
+		myDeviceContext->PSSetShader(myJFADownSamplePixelShader.Get(), NULL, 0);
+
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> downSampleResource = myJFASRV;
+
+		//{
+		//	myDeviceContext->OMSetRenderTargets(0, NULL, NULL);
+
+		//	{
+		//		ID3D11ShaderResourceView* dummy = NULL;
+		//		myDeviceContext->PSSetShaderResources(0, 1, &dummy);
+		//	}
+
+		//	std::wstring file;
+		//	file += L"JFAResource_";
+		//	file += std::to_wstring(static_cast<unsigned int>(aCharacters[i]));
+		//	file += L".bmp";
+		//	DebugExportTexture(myDevice.Get(), myDeviceContext.Get(), myJFAResourceTexture.Get(), file.c_str());
+		//}
+
+		float downSampleSizeFactor = 1.f;
+		for (size_t j = 0; j < myDownSampleChain.size(); j++)
+		{
+			__DownsampleObjects& downSample = myDownSampleChain[j];
+
+			downSampleSizeFactor *= 0.5f;
+
+			unsigned int toWidth;
+			unsigned int toHeight;
+			{
+				D3D11_TEXTURE2D_DESC desc = {};
+				downSample.Texture->GetDesc(&desc);
+				toWidth = desc.Width;
+				toHeight = desc.Height;
+			}
+
+			unsigned int fromWidth = toWidth * 2;
+			unsigned int fromHeight = toHeight * 2;
+
+			{
+				ID3D11Buffer* dummy = NULL;
+				myDeviceContext->PSSetConstantBuffers(0, 1, &dummy);
+
+				JFABuffer jfaBuffer = {
+					.StepDistance = {
+						1.f / ((uvBoundsRect[2] - uvBoundsRect[0]) * static_cast<float>(fromWidth)),
+						1.f / ((uvBoundsRect[3] - uvBoundsRect[1]) * static_cast<float>(fromHeight)),
+					}
+				};
+				result = UpdateBuffer(myDeviceContext.Get(), myJFAConstantBuffer.Get(), &jfaBuffer, sizeof(jfaBuffer));
+				if (FAILED(result))
+				{
+					//TODO: Log.
+					continue;
+				}
+			}
+
+			{
+				D3D11_VIEWPORT viewport = {
+					.TopLeftX = 0.f,
+					.TopLeftY = 0.f,
+					.Width = static_cast<FLOAT>(toWidth),
+					.Height = static_cast<FLOAT>(toHeight),
+					.MinDepth = 0.f,
+					.MaxDepth = 1.f
+				};
+				myDeviceContext->RSSetViewports(1, &viewport);
+			}
+
+			//FLOAT clearColor[4] = { 0.f, 0.f, 0.f, 0.f };
+			//myDeviceContext->ClearRenderTargetView(downSample.RTV.Get(), clearColor);
+
+			myDeviceContext->OMSetRenderTargets(1, downSample.RTV.GetAddressOf(), NULL);
+			myDeviceContext->PSSetShaderResources(0, 1, downSampleResource.GetAddressOf());
+
+			myDeviceContext->Draw(1, 0);
+
+			downSampleResource = downSample.SRV;
+
+			//{
+			//	myDeviceContext->OMSetRenderTargets(0, NULL, NULL);
+			//	{
+			//		ID3D11ShaderResourceView* dummy = NULL;
+			//		myDeviceContext->PSSetShaderResources(0, 1, &dummy);
+			//	}
+
+			//	std::wstring file;
+			//	file += L"DownSample_";
+			//	file += std::to_wstring(static_cast<unsigned int>(aCharacters[i]));
+			//	file += L"_";
+			//	file += std::to_wstring(j);
+			//	file += L".bmp";
+			//	DebugExportTexture(myDevice.Get(), myDeviceContext.Get(), downSample.Texture.Get(), file.c_str());
+			//}
+
+			// If the resulting texture is less than double the size of the fontsize, it is ready to be sampled. 
+			if (toWidth <= 2.f * aFontSize && toHeight <= 2.f * aFontSize)
+			{
+				break;
+			}
+		}
+
 #pragma endregion
 
 		myDeviceContext->OMSetRenderTargets(0, NULL, NULL);
@@ -1397,6 +1636,23 @@ bool FontBuilder::BuildAtlas(const std::filesystem::path& aSource, const std::fi
 		//	DebugExportTexture(myDevice.Get(), myDeviceContext.Get(), myJFATargetTexture.Get(), file.c_str());
 		//}
 
+		{
+			ID3D11Buffer* dummy = NULL;
+			myDeviceContext->PSSetConstantBuffers(0, 1, &dummy);
+
+			JFABuffer jfaBuffer = {
+				.StepDistance = {
+					0.f,
+					0.f
+				}
+			};
+			result = UpdateBuffer(myDeviceContext.Get(), myJFAConstantBuffer.Get(), &jfaBuffer, sizeof(jfaBuffer));
+			if (FAILED(result))
+			{
+				//TODO: Log.
+				continue;
+			}
+		}
 
 		{
 			D3D11_VIEWPORT viewport = {
@@ -1410,26 +1666,37 @@ bool FontBuilder::BuildAtlas(const std::filesystem::path& aSource, const std::fi
 			myDeviceContext->RSSetViewports(1, &viewport);
 		}
 
-		myDeviceContext->CopyResource(myJFAResourceTexture.Get(), myJFATargetTexture.Get());
-
-		myDeviceContext->OMSetRenderTargets(1, atlasRTV.GetAddressOf(), NULL);
-		myDeviceContext->PSSetShaderResources(0, 1, myJFASRV.GetAddressOf());
-
-		myDeviceContext->PSSetSamplers(0, 1, myJFATrilinearClampSamplerState.GetAddressOf());
+		//myDeviceContext->CopyResource(myJFAResourceTexture.Get(), myJFATargetTexture.Get());
 
 		myDeviceContext->PSSetShader(myJFADownSamplePixelShader.Get(), NULL, 0);
+
+		myDeviceContext->OMSetRenderTargets(1, atlasRTV.GetAddressOf(), NULL);
+		myDeviceContext->PSSetShaderResources(0, 1, downSampleResource.GetAddressOf());
 
 		{
 			myDeviceContext->IASetVertexBuffers(0, 0, NULL, NULL, NULL);
 
+			assets::Font::Glyph& glyph = output.Glyphs[i];
+
+
 			JFAVertex vertex = {
 				.Rectangle = {
-					output.Glyphs[i].AtlasRect[0],
-					1.f - output.Glyphs[i].AtlasRect[3],
-					output.Glyphs[i].AtlasRect[2],
-					1.f - output.Glyphs[i].AtlasRect[1]
+					glyph.AtlasRect[0],
+					glyph.AtlasRect[1],
+					glyph.AtlasRect[2],
+					glyph.AtlasRect[3]
 				},
-				.UVRectangle = { 0.f, 0.f, 1.f, 1.f }
+				.UVRectangle = {
+					uvBoundsRect[0],
+					uvBoundsRect[1],
+					uvBoundsRect[2],
+					uvBoundsRect[3]
+					//0.f, 0.f, 1.f, 1.f
+					//downSampleOriginX + output.Glyphs[i].Bounds[0] * downSampleSizeFactor * jfaFontSize / static_cast<float>(jfaWidth * downSampleSizeFactor),
+					//downSampleOriginY + output.Glyphs[i].Bounds[1] * downSampleSizeFactor * jfaFontSize / static_cast<float>(jfaHeight * downSampleSizeFactor),
+					//downSampleOriginX + output.Glyphs[i].Bounds[2] * downSampleSizeFactor * jfaFontSize / static_cast<float>(jfaWidth * downSampleSizeFactor),
+					//downSampleOriginY + output.Glyphs[i].Bounds[3] * downSampleSizeFactor * jfaFontSize / static_cast<float>(jfaHeight * downSampleSizeFactor)
+				}
 			};
 			D3D11_SUBRESOURCE_DATA data = {
 				.pSysMem = &vertex,
@@ -1453,18 +1720,16 @@ bool FontBuilder::BuildAtlas(const std::filesystem::path& aSource, const std::fi
 			}
 		}
 
-		//TODO: NEED to downsample in half increments so that pixels get proparly avaraged.
-
 		myDeviceContext->Draw(1, 0);
 
-		{
-			myDeviceContext->OMSetRenderTargets(0, NULL, NULL);
-			std::wstring file;
-			file += L"Atlas_";
-			file += std::to_wstring(static_cast<unsigned int>(aCharacters[i]));
-			file += L".bmp";
-			DebugExportTexture(myDevice.Get(), myDeviceContext.Get(), atlasTexture.Get(), file.c_str());
-		}
+		//{
+		//	myDeviceContext->OMSetRenderTargets(0, NULL, NULL);
+		//	std::wstring file;
+		//	file += L"Atlas_";
+		//	file += std::to_wstring(static_cast<unsigned int>(aCharacters[i]));
+		//	file += L".bmp";
+		//	DebugExportTexture(myDevice.Get(), myDeviceContext.Get(), atlasTexture.Get(), file.c_str());
+		//}
 	}
 
 	myDeviceContext->OMSetRenderTargets(0, NULL, NULL);
