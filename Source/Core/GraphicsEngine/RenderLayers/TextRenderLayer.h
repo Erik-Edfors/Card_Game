@@ -100,6 +100,7 @@ public:
 	Text CreateText(
 		const wchar_t* aText,
 		const Font& aFont,
+		float aFontSize,
 		const CommonUtilities::Vector4f& aColor,
 		float aRoughness,
 		float aMetallicity

@@ -629,11 +629,11 @@ bool FontBuilder::BuildSimpleAtlas(const std::filesystem::path& aSource, const s
 	const float EmToPx = static_cast<float>(aFontSize);
 	//const float PxToEm = 1.f / EmToPx;
 
-	output.AdvanceHeight = static_cast<float>(fontMetrics.ascent + fontMetrics.descent + fontMetrics.lineGap) * DUToEm * EmToPx;
-	output.StrikethroughHeight = static_cast<float>(fontMetrics.strikethroughPosition) * DUToEm * EmToPx;
-	output.StrikethroughThickness = static_cast<float>(fontMetrics.strikethroughThickness) * DUToEm * EmToPx;
-	output.UnderlineHeight = static_cast<float>(fontMetrics.underlinePosition) * DUToEm * EmToPx;
-	output.UnderlineThickness = static_cast<float>(fontMetrics.underlineThickness) * DUToEm * EmToPx;
+	output.AdvanceHeight = static_cast<float>(fontMetrics.ascent + fontMetrics.descent + fontMetrics.lineGap) * DUToEm;
+	output.StrikethroughHeight = static_cast<float>(fontMetrics.strikethroughPosition) * DUToEm;
+	output.StrikethroughThickness = static_cast<float>(fontMetrics.strikethroughThickness) * DUToEm;
+	output.UnderlineHeight = static_cast<float>(fontMetrics.underlinePosition) * DUToEm;
+	output.UnderlineThickness = static_cast<float>(fontMetrics.underlineThickness) * DUToEm;
 
 
 	std::unique_ptr<UINT32[]> codePoints = std::make_unique<UINT32[]>(aNumCharacters);
@@ -677,11 +677,11 @@ bool FontBuilder::BuildSimpleAtlas(const std::filesystem::path& aSource, const s
 		int width = blackboxRight - blackboxLeft;
 		int height = blackboxBottom - blackboxTop;
 
-		output.Glyphs[i].Advance = static_cast<float>(metrics.advanceWidth) * DUToEm * EmToPx;
-		output.Glyphs[i].Bounds[0] = static_cast<float>(blackboxLeft) * DUToEm * EmToPx;
-		output.Glyphs[i].Bounds[1] = static_cast<float>(blackboxTop) * DUToEm * EmToPx - 1.f;	// -1.f offset because it was clipping the top for some reason.
-		output.Glyphs[i].Bounds[2] = static_cast<float>(blackboxRight) * DUToEm * EmToPx;
-		output.Glyphs[i].Bounds[3] = static_cast<float>(blackboxBottom) * DUToEm * EmToPx;
+		output.Glyphs[i].Advance = static_cast<float>(metrics.advanceWidth) * DUToEm;
+		output.Glyphs[i].Bounds[0] = static_cast<float>(blackboxLeft) * DUToEm;
+		output.Glyphs[i].Bounds[1] = static_cast<float>(blackboxTop) * DUToEm;	// -1.f offset because it was clipping the top for some reason.
+		output.Glyphs[i].Bounds[2] = static_cast<float>(blackboxRight) * DUToEm;
+		output.Glyphs[i].Bounds[3] = static_cast<float>(blackboxBottom) * DUToEm;
 
 		if (width > 0 && static_cast<unsigned int>(width) > glyphWidth)
 		{
@@ -704,10 +704,10 @@ bool FontBuilder::BuildSimpleAtlas(const std::filesystem::path& aSource, const s
 
 	constexpr float cellBuffer = 8.f;
 
-	const float cellWidth = glyphWidth * DUToEm * EmToPx + cellBuffer;
-	const float cellHeight = glyphHeight * DUToEm * EmToPx + cellBuffer;
-	const float glyphCellXOffset = xOffset * DUToEm * EmToPx + 0.5f * cellBuffer;
-	const float glyphCellYOffset = yOffset * DUToEm * EmToPx + 0.5f * cellBuffer;
+	const float cellWidth = std::ceilf(glyphWidth * DUToEm * EmToPx + cellBuffer);
+	const float cellHeight = std::ceilf(glyphHeight * DUToEm * EmToPx + cellBuffer);
+	const float glyphCellXOffset = std::floorf(xOffset * DUToEm * EmToPx + 0.5f * cellBuffer);
+	const float glyphCellYOffset = std::floorf(yOffset * DUToEm * EmToPx + 0.5f * cellBuffer);
 
 	unsigned int textureWidth = 32;
 
@@ -834,10 +834,10 @@ bool FontBuilder::BuildSimpleAtlas(const std::filesystem::path& aSource, const s
 		const float originX = static_cast<float>(i % xCellCount) * cellWidth + glyphCellXOffset;
 		const float originY = static_cast<float>(i / xCellCount) * cellHeight + glyphCellYOffset;
 
-		output.Glyphs[i].AtlasRect[0] = (output.Glyphs[i].Bounds[0] + originX) / static_cast<float>(textureWidth);
-		output.Glyphs[i].AtlasRect[1] = (output.Glyphs[i].Bounds[1] + originY) / static_cast<float>(textureHeight);
-		output.Glyphs[i].AtlasRect[2] = (output.Glyphs[i].Bounds[2] + originX) / static_cast<float>(textureWidth);
-		output.Glyphs[i].AtlasRect[3] = (output.Glyphs[i].Bounds[3] + originY) / static_cast<float>(textureHeight);
+		output.Glyphs[i].AtlasRect[0] = (output.Glyphs[i].Bounds[0] * EmToPx + originX) / static_cast<float>(textureWidth);
+		output.Glyphs[i].AtlasRect[1] = (output.Glyphs[i].Bounds[1] * EmToPx + originY) / static_cast<float>(textureHeight);
+		output.Glyphs[i].AtlasRect[2] = (output.Glyphs[i].Bounds[2] * EmToPx + originX) / static_cast<float>(textureWidth);
+		output.Glyphs[i].AtlasRect[3] = (output.Glyphs[i].Bounds[3] * EmToPx + originY) / static_cast<float>(textureHeight);
 
 		const DWRITE_GLYPH_RUN glyphRun = {
 			.fontFace = fontFace.Get(),
@@ -1555,15 +1555,15 @@ bool FontBuilder::BuildAtlas(const std::filesystem::path& aSource, const std::fi
 
 				JFABuffer jfaBuffer = {
 					.StepDistance = {
-						1.f / ((uvBoundsRect[2] - uvBoundsRect[0]) * static_cast<float>(fromWidth)),
-						1.f / ((uvBoundsRect[3] - uvBoundsRect[1]) * static_cast<float>(fromHeight)),
+						1.f / static_cast<float>(fromWidth),
+						1.f / static_cast<float>(fromHeight),
 					}
 				};
 				result = UpdateBuffer(myDeviceContext.Get(), myJFAConstantBuffer.Get(), &jfaBuffer, sizeof(jfaBuffer));
 				if (FAILED(result))
 				{
-					//TODO: Log.
-					continue;
+					//TODO: Log
+					return false;
 				}
 			}
 

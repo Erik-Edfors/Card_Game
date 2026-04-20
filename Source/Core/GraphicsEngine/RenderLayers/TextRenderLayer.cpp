@@ -123,7 +123,7 @@ TextRenderLayer::~TextRenderLayer()
 {
 }
 
-Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const CommonUtilities::Vector4f& aColor, float aRoughness, float aMetallicity) const
+Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, float aFontSize, const CommonUtilities::Vector4f& aColor, float aRoughness, float aMetallicity) const
 {
 	//TODO: allow setting material.
 	aColor;
@@ -153,11 +153,11 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 		switch (c)
 		{
 			case L'\n':
-				cursor.y -= aFont.GetAdvanceHeight() * aFont.GetFontSize();
+				cursor.y -= aFont.GetAdvanceHeight() * aFontSize;
 				cursor.x = 0.f;
 				break;
 			case L'\t':
-				cursor.x += 2.f * aFont.GetFontSize() - std::fmodf(cursor.x, 2.f * aFont.GetFontSize());
+				cursor.x += 2.f * aFontSize - std::fmodf(cursor.x, 2.f * aFontSize);
 				break;
 		}
 
@@ -165,7 +165,7 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 		{
 			continue;
 		}
-		cursor.x += glyph->Advance * aFont.GetFontSize();
+		cursor.x += glyph->Advance * aFontSize;
 
 		if (std::iswblank(c))
 		{
@@ -173,8 +173,8 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, const 
 		}
 
 		GlyphVertex& vertex = glyphs[glyphCount++];
-		vertex.Bounds.Min = position + CommonUtilities::Vector2f(glyph->Bounds[0], -glyph->Bounds[3]) * aFont.GetFontSize();
-		vertex.Bounds.Max = position + CommonUtilities::Vector2f(glyph->Bounds[2], -glyph->Bounds[1]) * aFont.GetFontSize();
+		vertex.Bounds.Min = position + CommonUtilities::Vector2f(glyph->Bounds[0], -glyph->Bounds[3]) * aFontSize;
+		vertex.Bounds.Max = position + CommonUtilities::Vector2f(glyph->Bounds[2], -glyph->Bounds[1]) * aFontSize;
 		vertex.TextureRect = {
 			{ glyph->AtlasRect[0], glyph->AtlasRect[1] },
 			{ glyph->AtlasRect[2], glyph->AtlasRect[3] }
@@ -260,7 +260,7 @@ Font TextRenderLayer::CreateFont(const wchar_t* aFontFile)
 			.NumTextures = 1,
 			.Data = &subResource,
 			.NumData = 1,
-			.Format = graphics::GRAPHICS_FORMAT_R32G32B32A32_FLOAT,
+			.Format = graphics::GRAPHICS_FORMAT_B8G8R8A8_UNORM,
 			.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
 			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
 		};

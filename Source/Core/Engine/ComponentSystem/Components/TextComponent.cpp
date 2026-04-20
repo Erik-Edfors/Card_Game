@@ -36,6 +36,7 @@ void TextComponent::SetText(const wchar_t* aText) noexcept
 		myRenderLayer->CreateText(
 			aText,
 			*myFont,
+			0.1f,
 			{ 1.f, 1.f, 1.f, 1.f },
 			1.f,
 			0.f

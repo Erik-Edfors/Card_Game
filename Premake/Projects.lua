@@ -54,7 +54,7 @@ group("Tools")
         debugargs {
             "../../Assets/",
             "--regex=^.*\\.ttf$",
-            "--size=32",
+            "--size=96",
             "/rpd"
         }
 

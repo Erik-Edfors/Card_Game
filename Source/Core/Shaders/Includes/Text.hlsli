@@ -21,14 +21,14 @@ struct Text_GS_Out
 {
     float4 Position : SV_POSITION;
     float2 UV : TEXCOORD;
-    float2 LocalUV : LOCALUV;
+    //float2 LocalUV : LOCALUV;
 };
 
 struct Text_PS_In
 {
     float4 Position : SV_POSITION;
     float2 UV : TEXCOORD;
-    float2 LocalUV : LOCALUV;
+    //float2 LocalUV : LOCALUV;
 };
 
 struct Text_PS_Out

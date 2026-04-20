@@ -161,7 +161,7 @@ namespace client
 		ComponentRef<SpriteComponent> sprite = compSys.AddComponent<SpriteComponent>(actor);
 		ComponentRef<TextComponent> text = compSys.AddComponent<TextComponent>(actor);
 
-		transform->SetScaleLocal({ 0.002f, 0.002f, 1.f });
+		transform->SetScaleLocal({ 0.2f, 0.4f, 1.f });
 		transform->SetTranslationLocal({ 0.1f, 0.5f, 0.75f });
 
 		sprite->SetTextureRect({ { 0.003173828125f, 0.001953125f }, { 0.003173828125f + 0.01318359375f, 0.001953125f + 0.025390625f } });
