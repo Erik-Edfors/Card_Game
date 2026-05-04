@@ -149,9 +149,19 @@ void GraphicsEngine::Render()
 {
 	for (std::unique_ptr<RenderLayer>& layer : myRenderLayers)
 	{
-		layer->Prepare();
+		layer->PreRender();
+	}
+
+	//TODO: Run on seperate threads
+	for (std::unique_ptr<RenderLayer>& layer : myRenderLayers)
+	{
 		layer->Render();
+	}
+	
+	for (std::unique_ptr<RenderLayer>& layer : myRenderLayers)
+	{
 		GetDeviceContext()->ExecuteDeferredDeviceContext(layer->GetContext(), false);
+		layer->PostRender();
 	}
 
 	myDevice->Present(graphics::GRAPHICS_PRESENT_NONE);

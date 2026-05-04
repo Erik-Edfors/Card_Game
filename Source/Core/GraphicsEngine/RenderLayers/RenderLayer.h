@@ -22,15 +22,17 @@ public:
 
 protected:
 	virtual void OnInit() {};
-	virtual void OnPrepare() {};
 	virtual void OnRender() {};
+	virtual void OnPreRender() {};
+	virtual void OnPostRender() {};
 
 	graphics::DeferredDeviceContext* GetContext() const noexcept;
 
 private:
 	void Initialize(GraphicsEngine* aGraphicsEngine);
 
-	void Prepare();
+	void PreRender();
+	void PostRender();
 	void Render();
 
 	graphics::PImpl<graphics::DeferredDeviceContext> myContext;

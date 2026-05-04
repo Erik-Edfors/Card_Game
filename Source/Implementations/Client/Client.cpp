@@ -161,10 +161,10 @@ namespace client
 		ComponentRef<SpriteComponent> sprite = compSys.AddComponent<SpriteComponent>(actor);
 		ComponentRef<TextComponent> text = compSys.AddComponent<TextComponent>(actor);
 
-		transform->SetScaleLocal({ 0.2f, 0.4f, 1.f });
+		transform->SetScaleLocal({ 2.f * 1.f / 16.f, 4.f * 1.f / 9.f, 1.f });
 		transform->SetTranslationLocal({ 0.1f, 0.5f, 0.75f });
 
-		sprite->SetTextureRect({ { 0.003173828125f, 0.001953125f }, { 0.003173828125f + 0.01318359375f, 0.001953125f + 0.025390625f } });
+		sprite->SetTextureRect({ { 0.f, 0.f }, { 32.f / 4096.f, 64.f / 4096.f }});
 
 		text->SetFont(L"../../Assets/Fonts/arial.bf");
 		text->SetText(L"Hello World!\nThis is a test message!\nHello Again!\n# A list:\n|\t1\t=2\n|\t123\t=3\n|\t12\t=1");

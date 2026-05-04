@@ -78,6 +78,31 @@ group("Tools")
 implementationsDir = Settings.SourceDir .. "Implementations/"
 group("Implementations")
     
+    SharedDir = implementationsDir .. "Shared/"
+    project("Shared")
+        location(SharedDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+
+        links {
+            "Logger"
+        }
+
+        includedirs {
+            SharedDir
+        }
+
+        pchheader("Shared.pch.h")
+    	pchsource(SharedDir .. "Shared.pch.cpp")
+
+        files {
+    		SharedDir .. "**.h",
+    		SharedDir .. "**.hpp",
+    		SharedDir .. "**.cpp",
+    	}
+    
     ClientDir = implementationsDir .. "Client/"
     project("Client")
         location(ClientDir)
@@ -182,31 +207,6 @@ group("Core")
     		loggerDir .. "**.h",
     		loggerDir .. "**.hpp",
     		loggerDir .. "**.cpp",
-    	}
-
-    SharedDir = coreDir .. "Shared/"
-    project("Shared")
-        location(SharedDir)
-
-        kind("StaticLib")
-        language("C++")
-        cppdialect("C++20")
-
-        links {
-            "Logger"
-        }
-
-        includedirs {
-            SharedDir
-        }
-
-        pchheader("Shared.pch.h")
-    	pchsource(SharedDir .. "Shared.pch.cpp")
-
-        files {
-    		SharedDir .. "**.h",
-    		SharedDir .. "**.hpp",
-    		SharedDir .. "**.cpp",
     	}
 
     commonUtilitiesDir = coreDir .. "CommonUtilities/"

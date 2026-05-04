@@ -29,11 +29,14 @@ void RenderLayer::Initialize(GraphicsEngine* aGraphicsEngine)
 
 	OnInit();
 }
-void RenderLayer::Prepare()
+void RenderLayer::PreRender()
 {
-	OnPrepare();
+	OnPreRender();
 }
-
+void RenderLayer::PostRender()
+{
+	OnPostRender();
+}
 void RenderLayer::Render()
 {
 	OnRender();
