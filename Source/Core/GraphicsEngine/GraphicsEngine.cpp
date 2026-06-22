@@ -24,16 +24,29 @@
 
 #include "Common.h"
 
-GraphicsEngine::GraphicsEngine(graphics::Device* aDevice) :
-	myDevice(aDevice),
+#define FILE_CATEGORY "GraphicsEngine.cpp"
+#define CLASS_CATEGORY FILE_CATEGORY"->GraphicsEngine"
+
+GraphicsEngine::GraphicsEngine() :
+	myDevice(nullptr),
 	myNextLightEntryID(0)
 	//myRenderPass(nullptr)
 {
 }
 GraphicsEngine::~GraphicsEngine() = default;
 
-void GraphicsEngine::Initialize()
+bool GraphicsEngine::Initialize(graphics::Device* aDevice)
 {
+#define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
+	
+	myDevice = aDevice;
+
+	if (myDevice == nullptr)
+	{
+		LOG_ERROR(LOG_CATEGORY, "Failed to initialize GraphicsEngine! aDevice was nullptr!");
+		return false;
+	}
+
 	GetDevice()->CreateImmediateDeviceContext(&myDeviceContext);
 
 	//////////////////
@@ -143,6 +156,10 @@ void GraphicsEngine::Initialize()
 			&cbDesc
 		);
 	}
+
+	return true;
+
+#undef LOG_CATEGORY
 }
 
 void GraphicsEngine::Render()
@@ -391,3 +408,6 @@ LightEntryID GraphicsEngine::CreateLightEntryID()
 //	}
 //	return false;
 //}
+
+#undef FILE_CATEGORY 
+#undef CLASS_CATEGORY

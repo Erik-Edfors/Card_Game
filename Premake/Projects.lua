@@ -188,7 +188,8 @@ group("Core")
 
         files {
     		assetsDir .. "**.h",
-    		assetsDir .. "**.hpp"
+    		assetsDir .. "**.hpp",
+    		assetsDir .. "**.cpp",
     	}
 
     loggerDir = coreDir .. "Logger/"
@@ -295,6 +296,7 @@ group("Core")
         links {
             "CommonUtilities",
             "GraphicsEngine",
+            "Assets",
             "Logger"
         }
 

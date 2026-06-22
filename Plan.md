@@ -122,3 +122,34 @@ Effects are an action a card takes upon a specified trigger and conditions. An e
 
 #### End
 * End of Turn trigger.
+
+
+## Coding
+In order to implement all features alot of preperatory work is needed.
+
+### Assets
+All games need assets.
+
+#### AssetManager
+The Assetmanager should be initialized with a directory in which it will look for assets. It will log invalid assets or duplicate names.
+
+When it has initialized, the user should be able to load an asset by giving its name and type. It should log any inconsistensies like wrong asset type or missing assets.
+
+When loading an asset for the first time, the assetmanager should load said asset using a user defined function. It should then store that asset in memory until such a moment that the user no longer has use of the asset.
+
+How the assetmanager should determine if an asset is needed or not can be decided on later. For now, it can load all assets when initialized and store them in memory.
+
+If an asset is updated during runtime, the AssetManager should NOT update the asset without explicit order to do so. This is to prevent an asset updating during gameplay causing unintended issues.
+
+#### Game Elements
+Elements in the game, such as the player, hand, input manager and such can either be implemented through the component system, or through object oriented implementation inside specialized scenes. Where to add certain elements can be confusing.
+
+Cards will almost certainly be implemented through the component system as they have graphics, can move, cause effects and other things that are best implemented with components.
+
+Zones are probably best if they are game objects as well, as they have positions and will need to be accessed by the cards in order to produce certain effects.
+
+Players are an odd one. They will need to manage zones and resources. They do not need to manage client networking or player actions (commands) but they are closely connected as every action a client can make in a match is made through the player.
+
+Client manages connection and communications as well as actions/commands. A user makes an action, the Client creates a command, sends it to the server for verification and plays the command. It should also undo commands when asked by the server.
+
+Commands are EVERYTHING a user can do to interact with the game except for CLIENT ONLY actions, such as menus. Commands should be applied to a scene so that it is easy to access by a client in a known location. How commands interact with game objects is to be determined. But most likely networked objects will have IDs that identify them, probably given by the server.

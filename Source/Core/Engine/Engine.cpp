@@ -7,6 +7,10 @@
 #include <Core/GraphicsEngine/GraphicsEngine.h>
 
 #include <Core/CommonUtilities/InputManager.h>
+#include <Core/Assets/AssetManager.h>
+
+#define FILE_CATEGORY "Engine.cpp"
+#define CLASS_CATEGORY FILE_CATEGORY"->Engine"
 
 Engine::Engine()
 {
@@ -18,8 +22,14 @@ Engine::~Engine()
 	mySceneStack.clear();
 }
 
-void Engine::Initialize(HWND aWindow)
+bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 {
+#define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
+	std::unique_ptr<GraphicsEngine> graphicsEngine = std::make_unique<GraphicsEngine>();
+	std::unique_ptr<CommonUtilities::InputManager> inputManager = std::make_unique<CommonUtilities::InputManager>();
+	std::unique_ptr<assets::AssetManager> assetManager = std::make_unique<assets::AssetManager>();
+
+
 	graphics::PImpl<graphics::Window_DX11Impl> window = new graphics::Window_DX11Impl(aWindow);
 
 	graphics::GRAPHICS_DEVICE_FLAGS deviceFlags = graphics::GRAPHICS_DEVICE_ALLOW_TEARING
@@ -31,12 +41,33 @@ void Engine::Initialize(HWND aWindow)
 #endif
 
 	graphics::PImpl<graphics::Device> device;
-	graphics::CreateDevice(&device, window.Get(), deviceFlags);
+	graphics::result::Code result = graphics::CreateDevice(&device, window.Get(), deviceFlags);
+	if (GRAPHICS_FAILED(result))
+	{
+		const graphics::result::Message msg = graphics::result::GetErrorMessage(result);
+		LOG_ERROR(LOG_CATEGORY, "Failed to initialize Engine! graphics::CreateDevice returned error. Error: '%s: %s'.", msg.Type, msg.Desc);
+		return false;
+	}
 
-	myGraphicsEngine = std::make_unique<GraphicsEngine>(device.Get());
-	myGraphicsEngine->Initialize();
+	if (not graphicsEngine->Initialize(device.Get()))
+	{
+		LOG_ERROR(LOG_CATEGORY, "Failed to initialize Engine! Failed to initialize GraphicsEngine.");
+		return false;
+	}
 
-	myInputManager = std::make_unique<CommonUtilities::InputManager>();
+	if (not assetManager->Initialize(aAssetPath))
+	{
+		LOG_ERROR(LOG_CATEGORY, "Failed to initialize Engine! Failed to initialize AssetManager.");
+		return false;
+	}
+
+	myGraphicsEngine = std::move(graphicsEngine);
+	myInputManager = std::move(inputManager);
+	myAssetManager = std::move(assetManager);
+
+	return true;
+
+#undef LOG_CATEGORY
 }
 
 bool Engine::ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -95,3 +126,6 @@ void Engine::PopScene()
 		mySceneStack.pop_back();
 	}
 }
+
+#undef FILE_CATEGORY 
+#undef CLASS_CATEGORY

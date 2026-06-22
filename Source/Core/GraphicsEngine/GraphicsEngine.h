@@ -22,10 +22,10 @@ struct PipelineStateDesc;
 class GraphicsEngine
 {
 public:
-	GraphicsEngine(graphics::Device* aDevice);
+	GraphicsEngine();
 	~GraphicsEngine();
 
-	void Initialize();
+	bool Initialize(graphics::Device* aDevice);
 
 	void Render();
 

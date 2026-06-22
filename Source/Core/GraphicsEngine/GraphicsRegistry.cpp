@@ -143,9 +143,25 @@ void GraphicsRegistry::Draw(GraphicsEngine* aGraphicsEngine, const gengine::Came
 
 float GraphicsRegistry::_distanceToCamera(const RenderEntry* aRenderEntry, const CommonUtilities::Vector3<float>& aCameraPosition)
 {
-	return (aRenderEntry->GetTransform().Row(4).xyz() - aCameraPosition).Length();
+	const CommonUtilities::Matrix4x4f& transform = aRenderEntry->GetTransform();
+	const CommonUtilities::Sphere<float>& sphere = aRenderEntry->GetMesh().EncompassingSphere;
+	const float greatestScale = std::sqrtf(
+		std::max(
+			std::max(
+				transform.Row(1).LengthSqr(),
+				transform.Row(2).LengthSqr()
+			),
+			transform.Row(3).LengthSqr()
+		)
+	);
 
-	//TODO: Use encompassing sphere when implemented, if possible.
+	CommonUtilities::Sphere<float> globalSphere(
+		(sphere.Center.xyz1() * transform).xyz(),
+		sphere.Radius * greatestScale
+	);
+
+	return (globalSphere.Center - aCameraPosition).Length() - globalSphere.Radius;
+
 	//const Mesh& mesh = aRenderEntry->GetMesh();
 
 	//const CommonUtilities::Matrix4x4<float>& transform = aRenderEntry->GetTransform();

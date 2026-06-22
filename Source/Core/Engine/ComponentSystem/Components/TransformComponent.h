@@ -56,4 +56,9 @@ private:
 	CommonUtilities::Vector3f myScale;
 	CommonUtilities::Quaternionf myRotation;
 	CommonUtilities::Matrix4x4f myMatrix;
+
+	CommonUtilities::Vector3f myGlobalTranslation;
+	CommonUtilities::Vector3f myGlobalScale;
+	CommonUtilities::Quaternionf myGlobalRotation;
+	CommonUtilities::Matrix4x4f myGlobalMatrix;
 };

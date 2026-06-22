@@ -182,7 +182,6 @@ namespace graphics
 		D3D11_TEXTURE2D_DESC texDesc = {};
 		texture->GetTexture()->GetDesc(&texDesc);
 
-		//TODO: Make user submit view dimension for the SRV to create.
 		D3D11_SHADER_RESOURCE_VIEW_DESC desc = {};
 		desc.ViewDimension = dx11::GetD3D11SRVDimension(aDesc->ViewDimension);
 		desc.Format = dx11::GetDXGIFormat(aDesc->Format);

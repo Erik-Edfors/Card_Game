@@ -25,6 +25,9 @@
 #include <Core/Engine/ComponentSystem/Components/TextComponent.h>
 #include <fstream>
 
+#define FILE_CATEGORY "Client.cpp"
+#define CLASS_CATEGORY FILE_CATEGORY"->Client"
+
 namespace client
 {
 	Client::Client() :
@@ -50,12 +53,20 @@ namespace client
 
 	bool Client::Initialize(HWND aWindow, const wchar_t* const* aArgs, size_t aNumArgs)
 	{
+#define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
+
 		aWindow;
 		aArgs;
 		aNumArgs;
 
-		myEngine = std::make_unique<Engine>();
-		myEngine->Initialize(aWindow);
+		std::unique_ptr<Engine> engine = std::make_unique<Engine>();
+		if (not engine->Initialize(aWindow, L"../../Assets/"))
+		{
+			LOG_ERROR(LOG_CATEGORY, "Failed to initialize Client! Failed to initialize Engine.");
+			return false;
+		}
+
+		myEngine = std::move(engine);
 
 
 		//TEMPORARY:
@@ -170,6 +181,8 @@ namespace client
 		text->SetText(L"Hello World!\nThis is a test message!\nHello Again!\n# A list:\n|\t1\t=2\n|\t123\t=3\n|\t12\t=1");
 
 		return true;
+
+#undef LOG_CATEGORY
 	}
 
 	void Client::Run()
@@ -210,3 +223,6 @@ namespace client
 		myExiting = true;
 	}
 }
+
+#undef FILE_CATEGORY 
+#undef CLASS_CATEGORY

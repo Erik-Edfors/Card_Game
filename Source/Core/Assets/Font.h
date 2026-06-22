@@ -9,8 +9,8 @@
 namespace assets
 {
 	static constexpr FileHeader FONT_FILE_HEADER = FileHeader{
-		{ 'F', 'O', 'N', 'T' },
-		{ 0, 0, 0, 6 }
+		.Type = { 'F', 'O', 'N', 'T' },
+		.Version = { 0, 0, 0, 6 }
 	};
 
 	struct Font

@@ -36,7 +36,6 @@ namespace CommonUtilities
 		void Compose(const Quaternion<T>& aRotation, const Vector3<T>& aScale);
 		void Compose(const T& aRotation, const Vector2<T>& aPosition, const Vector2<T>& aScale);
 
-		//TODO: Add decompose method. Preferably an affine transform decompose.
 		void Decompose(Quaternion<T>& outRotation, Vector3<T>& outScale) const;
 		void Decompose(T& outRotation, Vector2<T>& outPosition, Vector2<T>& outScale) const;
 
