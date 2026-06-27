@@ -33,6 +33,9 @@
 #undef CreateFont
 #endif
 
+#define FILE_CATEGORY "TextRenderLayer.cpp"
+#define CLASS_CATEGORY FILE_CATEGORY"->TextRenderLayer"
+
 struct GlyphVertex
 {
 	CommonUtilities::AABB2Df Bounds;
@@ -125,6 +128,7 @@ TextRenderLayer::~TextRenderLayer()
 
 Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, float aFontSize, const CommonUtilities::Vector4f& aColor, float aRoughness, float aMetallicity) const
 {
+#define LOG_CATEGORY CLASS_CATEGORY"::CreateText"
 	//TODO: allow setting material.
 	aColor;
 	aMetallicity;
@@ -193,7 +197,8 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, float 
 	graphics::result::Code result = GetGraphicsEngine()->GetDevice()->CreateVertexBuffer(&vertexBuffer, &desc);
 	if (GRAPHICS_FAILED(result))
 	{
-		//TODO: Log
+		const graphics::result::Message msg = graphics::result::GetErrorMessage(result);
+		LOG_ERROR(LOG_CATEGORY, "Failed to create Text! graphics::Device::CreateVertexBuffer failed. Error: '%s: %s'.", msg.Type, msg.Desc);
 		return {};
 	}
 
@@ -202,10 +207,14 @@ Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, float 
 	text.Initialize(vertexBuffer.Get(), glyphCount, aFont.GetAtlas(), cursor);
 
 	return text;
+
+#undef LOG_CATEGORY
 }
 
 Font TextRenderLayer::CreateFont(const wchar_t* aFontFile)
 {
+#define LOG_CATEGORY CLASS_CATEGORY"::CreateFont"
+
 	std::ifstream file(aFontFile, std::ios::binary);
 
 	if (not file.is_open())
@@ -225,13 +234,15 @@ Font TextRenderLayer::CreateFont(const wchar_t* aFontFile)
 	assets::FileHeader header;
 	if (not serializer.Read(header, reader))
 	{
-		//TODO: Log
+		LOG_ERROR(LOG_CATEGORY, "Failed to create Font! CommonUtilities::Serializer::Read failed. Error: '%s'.", serializer.GetLastException().what());
 		return {};
 	}
 
-	if (memcmp(&header, &assets::FONT_FILE_HEADER, sizeof(header)) != 0)
+	if (header != assets::FONT_FILE_HEADER)
 	{
-		//TODO: log
+		LOG_ERROR(LOG_CATEGORY, "Failed to create Font! Header '%s' of file '%s' did not match current file version '%s'.",
+			assets::to_string(header), aFontFile, assets::to_string(assets::FONT_FILE_HEADER)
+		);
 		return {};
 	}
 
@@ -239,6 +250,7 @@ Font TextRenderLayer::CreateFont(const wchar_t* aFontFile)
 	if (not serializer.Read(font, reader))
 	{
 		//TODO: Log
+		LOG_ERROR(LOG_CATEGORY, "Failed to create Font! CommonUtilities::Serializer::Read failed. Error: '%s'.", serializer.GetLastException().what());
 		return {};
 	}
 
@@ -322,6 +334,8 @@ Font TextRenderLayer::CreateFont(const wchar_t* aFontFile)
 	}
 
 	return result;
+
+#undef LOG_CATEGORY
 }
 
 void TextRenderLayer::Draw(const Text& aText, const CommonUtilities::Matrix4x4f& aTransform)
@@ -584,3 +598,6 @@ void TextRenderLayer::OnRender()
 
 	GetContext()->PopEvent();
 }
+
+#undef FILE_CATEGORY
+#undef CLASS_CATEGORY
