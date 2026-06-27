@@ -21,10 +21,16 @@ namespace assets
 		void SetRetention(ASSET_RETENTION aRetention) noexcept;
 		ASSET_RETENTION GetRetention() const noexcept;
 
+		void Acquire() noexcept;
+		void Release() noexcept;
+
+		size_t GetReferenceCount() const noexcept;
+
 	protected:
-		Asset() = default;
+		Asset();
 
 	private:
 		ASSET_RETENTION myRetention;
+		size_t myReferenceCount;
 	};
 }

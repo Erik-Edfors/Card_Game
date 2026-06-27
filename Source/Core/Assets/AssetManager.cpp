@@ -57,7 +57,7 @@ namespace assets
 		{
 			const __AssetEntry& entry = it->second;
 
-			if (entry.Asset->GetRetention() <= aRetention)
+			if (entry.Asset->GetReferenceCount() == 0 && entry.Asset->GetRetention() <= aRetention)
 			{
 				it = myAssets.erase(it);
 				++count;
