@@ -64,6 +64,7 @@ namespace client
 		LRESULT CALLBACK ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
 		bool Initialize(HWND aWindow, const wchar_t* const* aArgs, size_t aNumArgs);
+		bool Shutdown();
 
 		void Run();
 

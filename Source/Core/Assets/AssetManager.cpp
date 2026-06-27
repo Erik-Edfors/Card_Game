@@ -6,13 +6,10 @@
 
 namespace assets
 {
-	AssetManager::AssetManager() noexcept
-	{
-	}
+	std::unordered_map<std::wstring, AssetManager::__AssetEntry> AssetManager::myAssets = {};
+	std::unordered_map<std::wstring, std::filesystem::path> AssetManager::myAssetPaths = {};
 
-	AssetManager::~AssetManager() noexcept
-	{
-	}
+	std::filesystem::path AssetManager::myDirectory = {};
 
 	bool AssetManager::Initialize(const wchar_t* aDirectory)
 	{
@@ -47,6 +44,14 @@ namespace assets
 
 		return true;
 #undef LOG_CATEGORY
+	}
+
+	bool AssetManager::Shutdown()
+	{
+		myAssetPaths.clear();
+		myAssets.clear();
+		myDirectory.clear();
+		return true;
 	}
 
 	size_t AssetManager::Clear(ASSET_RETENTION aRetention)

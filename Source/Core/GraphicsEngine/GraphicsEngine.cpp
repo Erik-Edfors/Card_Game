@@ -162,6 +162,18 @@ bool GraphicsEngine::Initialize(graphics::Device* aDevice)
 #undef LOG_CATEGORY
 }
 
+bool GraphicsEngine::Shutdown()
+{
+	myRenderLayers.clear();
+	myConstantBuffers.clear();
+	myGraphicsRegistries.clear();
+	myLightRegistries.clear();
+	myNextLightEntryID = 0;
+	myDeviceContext.Reset();
+	myDevice.Reset();
+	return true;
+}
+
 void GraphicsEngine::Render()
 {
 	for (std::unique_ptr<RenderLayer>& layer : myRenderLayers)

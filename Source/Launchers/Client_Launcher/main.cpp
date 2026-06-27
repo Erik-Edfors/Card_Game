@@ -77,6 +77,8 @@ static int GuardedMain(const wchar_t* const* aArgs, size_t aNumArgs)
 
 	client.Run();
 
+	client.Shutdown();
+
 	if (DestroyWindow(window) == FALSE)
 	{
 		//TODO: Log failure.

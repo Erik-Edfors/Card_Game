@@ -27,8 +27,6 @@ bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 #define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
 	std::unique_ptr<GraphicsEngine> graphicsEngine = std::make_unique<GraphicsEngine>();
 	std::unique_ptr<CommonUtilities::InputManager> inputManager = std::make_unique<CommonUtilities::InputManager>();
-	std::unique_ptr<assets::AssetManager> assetManager = std::make_unique<assets::AssetManager>();
-
 
 	graphics::PImpl<graphics::Window_DX11Impl> window = new graphics::Window_DX11Impl(aWindow);
 
@@ -55,7 +53,7 @@ bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 		return false;
 	}
 
-	if (not assetManager->Initialize(aAssetPath))
+	if (not assets::AssetManager::Initialize(aAssetPath))
 	{
 		LOG_ERROR(LOG_CATEGORY, "Failed to initialize Engine! Failed to initialize AssetManager.");
 		return false;
@@ -63,9 +61,30 @@ bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 
 	myGraphicsEngine = std::move(graphicsEngine);
 	myInputManager = std::move(inputManager);
-	myAssetManager = std::move(assetManager);
 
 	return true;
+
+#undef LOG_CATEGORY
+}
+
+bool Engine::Shutdown()
+{
+#define LOG_CATEGORY CLASS_CATEGORY"::Shutdown"
+
+	bool result = true;
+	if (not myGraphicsEngine->Shutdown())
+	{
+		LOG_WARNING(LOG_CATEGORY, "Failed to shutdown Engine! Failed to shutdown GraphicsEngine.");
+		result = false;
+	}
+	myGraphicsEngine.reset();
+	myInputManager.reset();
+	if (not assets::AssetManager::Shutdown())
+	{
+		LOG_WARNING(LOG_CATEGORY, "Failed to shutdown Engine! Failed to shutdown AssetManager.");
+		result = false;
+	}
+	return result;
 
 #undef LOG_CATEGORY
 }

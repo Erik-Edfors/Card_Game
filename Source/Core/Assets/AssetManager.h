@@ -11,17 +11,18 @@ namespace assets
 	class AssetManager
 	{
 	public:
-		AssetManager() noexcept;
-		~AssetManager() noexcept;
-
-		bool Initialize(const wchar_t* aDirectory);
+		static bool Initialize(const wchar_t* aDirectory);
+		static bool Shutdown();
 
 		template<class _AssetTy>
-		_AssetTy* Get(const wchar_t* aName, ASSET_RETENTION aRetention = ASSET_RETENTION_WEAK);
+		static _AssetTy* Get(const wchar_t* aName, ASSET_RETENTION aRetention = ASSET_RETENTION_WEAK);
 
-		size_t Clear(ASSET_RETENTION aRetention);
+		static size_t Clear(ASSET_RETENTION aRetention);
 
 	private:
+		AssetManager() = delete;
+		~AssetManager() = delete;
+
 		struct __AssetEntry
 		{
 			std::unique_ptr<Asset> Asset;
@@ -29,10 +30,10 @@ namespace assets
 			std::filesystem::path Path;
 		};
 
-		std::unordered_map<std::wstring, __AssetEntry> myAssets;
-		std::unordered_map<std::wstring, std::filesystem::path> myAssetPaths;
+		static std::unordered_map<std::wstring, __AssetEntry> myAssets;
+		static std::unordered_map<std::wstring, std::filesystem::path> myAssetPaths;
 
-		std::filesystem::path myDirectory;
+		static std::filesystem::path myDirectory;
 	};
 
 	template<class _AssetTy>

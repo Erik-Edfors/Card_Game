@@ -185,6 +185,26 @@ namespace client
 #undef LOG_CATEGORY
 	}
 
+	bool Client::Shutdown()
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::Shutdown"
+
+		bool result = true;
+		if (not myEngine->Shutdown())
+		{
+			LOG_ERROR(LOG_CATEGORY, "Failed to shutdown Client! Failed to shutdown Engine.");
+			result = false;
+		}
+		myEngine.reset();
+		myRenderTarget.Reset();
+		myDepthStencil.Reset();
+		myExiting = false;
+
+		return result;
+
+#undef LOG_CATEGORY
+	}
+
 	void Client::Run()
 	{
 		while (myExiting == false)

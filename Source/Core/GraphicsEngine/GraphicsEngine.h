@@ -26,6 +26,7 @@ public:
 	~GraphicsEngine();
 
 	bool Initialize(graphics::Device* aDevice);
+	bool Shutdown();
 
 	void Render();
 

@@ -50,11 +50,6 @@ namespace CommonUtilities
 	class Timer;
 }
 
-namespace assets
-{
-	class AssetManager;
-}
-
 class GraphicsEngine;
 class Scene;
 
@@ -65,6 +60,7 @@ public:
 	~Engine();
 
 	bool Initialize(HWND aWindow, const wchar_t* aAssetPath);
+	bool Shutdown();
 
 	bool ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
@@ -90,8 +86,6 @@ private:
 	std::unique_ptr<GraphicsEngine> myGraphicsEngine;
 
 	std::vector<std::unique_ptr<Scene>> mySceneStack;
-
-	std::unique_ptr<assets::AssetManager> myAssetManager;
 };
 
 template<class _SceneTy>
