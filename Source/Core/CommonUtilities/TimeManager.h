@@ -11,15 +11,20 @@ namespace CommonUtilities
 
 		void Update();
 
-		[[nodiscard]] double GetDelta() const;
-		[[nodiscard]] double GetTotal() const;
+		void SetFactor(float aFactor) noexcept;
+
+		[[nodiscard]] float GetDelta() const noexcept;
+		[[nodiscard]] float GetUnmodifiedDelta() const noexcept;
+		[[nodiscard]] float GetTotal() const noexcept;
 
 	private:
 		std::chrono::high_resolution_clock::time_point myStartTimePoint;
 		std::chrono::high_resolution_clock::time_point myLastTimePoint;
 
-		double myDelta;
-		double myTotal;
+		float myFactor;
+		float myDelta;
+		float myUnmodifiedDelta;
+		float myTotal;
 	};
 }
 

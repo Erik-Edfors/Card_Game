@@ -10,6 +10,9 @@ namespace graphics
 	class ImmediateDeviceContext;
 	class DeferredDeviceContext;
 
+	class Data;
+	struct DataDesc;
+
 	class Texture2D;
 	struct Texture2DDesc;
 	class Texture2DArray;
@@ -68,6 +71,11 @@ namespace graphics
 		//########
 		// Objects
 		//########
+
+		virtual result::Code CreateData(
+			Data** outData,														// A pointer to a Data interface that will recieve the created data.
+			const DataDesc* aDesc												// A descriptor struct for a Data.
+		) = 0;
 
 		virtual result::Code CreateImmediateDeviceContext(
 			ImmediateDeviceContext** outDeviceContext							// A pointer to an ImmediateDeviceContext interface that will recieve the created context.
@@ -351,8 +359,16 @@ namespace graphics
 		virtual result::Code ClearState() = 0;
 
 		//Retreieves the backbuffer texture from the associated window with this device. WARNING: Make sure to remove all references to the backbuffer before calling UpdateBackbufferSize!
-		virtual result::Code GetBuffer(
-			Texture2D** outBuffer
+		virtual result::Code GetBufferTexture(
+			Texture2D** outTexture
+		) = 0;
+
+		virtual result::Code GetBufferRenderTarget(
+			RenderTarget** outRenderTarget
+		) = 0;
+
+		virtual result::Code GetBufferDepthStencil(
+			DepthStencil** outDepthStencil
 		) = 0;
 
 		virtual result::Code SetTopology(

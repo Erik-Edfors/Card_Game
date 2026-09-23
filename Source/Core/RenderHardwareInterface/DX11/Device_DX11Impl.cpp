@@ -6,6 +6,8 @@
 #include "Objects/ImmediateDeviceContext_DX11Impl.h"
 #include "Objects/DeferredDeviceContext_DX11Impl.h"
 
+#include "Objects/Data_DX11Impl.h"
+
 #include "Objects/Texture2D_DX11Impl.h"
 #include "Objects/Texture2DArray_DX11Impl.h"
 #include "Objects/ShaderResource_DX11Impl.h"
@@ -53,6 +55,11 @@ namespace graphics
 			LOG_WARNING(LOG_CATEGORY, "Failed to retrieve D3DUserDefinedAnnotation from " STRINGIFY(aDeviceContext) "!");
 		}
 
+		result::Code result = _createBackbufferTexture(&myBackbufferTexture);
+		result = _createBackbufferRenderTarget(&myBackbufferRenderTarget);
+		result = _createBackbufferDepthTexture(&myBackbufferDepthTexture);
+		result = _createBackbufferDepthStencil(&myBackbufferDepthStencil);
+
 #undef LOG_CATEGORY
 	}
 	Device_DX11Impl::~Device_DX11Impl() = default;
@@ -88,12 +95,33 @@ namespace graphics
 	{
 		return mySwapChain.Get();
 	}
+	result::Code Device_DX11Impl::CreateData(Data** outData, const DataDesc* aDesc)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::CreateData"
+		GRAPHICS_ASSERT(aDesc != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDesc) " cannot be nullptr!");
+		GRAPHICS_ASSERT(outData != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outData) " cannot be nullptr!");
+
+		if (*outData != nullptr)
+		{
+			(**outData).RemoveReference();
+		}
+		*outData = new Data_DX11Impl(_createGraphicsID(), *aDesc);
+		(**outData).AddReference();
+
+		return result::OK;
+#undef LOG_CATEGORY
+	}
 	result::Code Device_DX11Impl::CreateImmediateDeviceContext(ImmediateDeviceContext** outDeviceContext)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::CreateImmediateDeviceContext"
 		GRAPHICS_ASSERT(outDeviceContext != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outDeviceContext) " cannot be nullptr!");
 
+		if (*outDeviceContext != nullptr)
+		{
+			(**outDeviceContext).RemoveReference();
+		}
 		*outDeviceContext = new ImmediateDeviceContext_DX11Impl(_createGraphicsID(), GetDeviceContext());
+		(**outDeviceContext).AddReference();
 
 		return result::OK;
 #undef LOG_CATEGORY
@@ -108,7 +136,12 @@ namespace graphics
 
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateDeferredContext, LOG_CATEGORY);
 
+		if (*outDeviceContext != nullptr)
+		{
+			(**outDeviceContext).RemoveReference();
+		}
 		*outDeviceContext = new DeferredDeviceContext_DX11Impl(_createGraphicsID(), deviceContext.Get());
+		(**outDeviceContext).AddReference();
 
 		return result::OK;
 #undef LOG_CATEGORY
@@ -157,6 +190,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateTexture2D, LOG_CATEGORY);
 		result;
 
+		if (*outTexture2D != nullptr)
+		{
+			(**outTexture2D).RemoveReference();
+		}
 		*outTexture2D = new Texture2D_DX11Impl(_createGraphicsID(), texture.Get(), *aDesc);
 		(**outTexture2D).AddReference();
 
@@ -240,6 +277,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateShaderResourceView, LOG_CATEGORY);
 		result;
 
+		if (*outShaderResource != nullptr)
+		{
+			(**outShaderResource).RemoveReference();
+		}
 		*outShaderResource = new ShaderResource_DX11Impl(this, _createGraphicsID(), srv.Get(), *aDesc);
 		(**outShaderResource).AddReference();
 
@@ -255,11 +296,12 @@ namespace graphics
 		GRAPHICS_ASSERT(aDesc != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDesc)" cannot be nullptr!");
 		GRAPHICS_ASSERT(outRenderTarget != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outRenderTarget) " cannot be nullptr!");
 		GRAPHICS_ASSERT(aDesc->Texture != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDesc->Texture) " cannot be nullptr!");
+		//GRAPHICS_ASSERT(aDesc->Texture != myBackbufferTexture.Get(), LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDesc->Texture) " cannot be backbuffer texture! Call GetBufferRenderTarget instead.");
 		GRAPHICS_ASSERT(aDesc->ViewDimension != GRAPHICS_RENDER_TARGET_VIEW_DIMENSION_UNKNOWN, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDesc->ViewDimension) " cannot be " STRINGIFY(GRAPHICS_RENDER_TARGET_VIEW_DIMENSION_UNKNOWN) "!");
 		GRAPHICS_ASSERT(IsDeviceObject(aDesc->Texture), LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDesc->Texture) " (%u) was not from the same device (%u)!", GetID(), aDesc->Texture->GetID().Device);
 
 		Texture2D_DX11Impl* texture = dynamic_cast<Texture2D_DX11Impl*>(aDesc->Texture);
-		GRAPHICS_ASSERT(texture != nullptr, LOG_CATEGORY, result::INVALID_IMPLEMENTATION, "aTextureArray could not be cast to Texture2D_DX11Impl*!");
+		GRAPHICS_ASSERT(texture != nullptr, LOG_CATEGORY, result::INVALID_IMPLEMENTATION, STRINGIFY(aDesc->Texture) " could not be cast to Texture2D_DX11Impl*!");
 
 		D3D11_RENDER_TARGET_VIEW_DESC desc = {};
 		desc.Format = dx11::GetDXGIFormat(aDesc->Format);
@@ -307,6 +349,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateRenderTargetView, LOG_CATEGORY);
 		result;
 
+		if (*outRenderTarget != nullptr)
+		{
+			(**outRenderTarget).RemoveReference();
+		}
 		*outRenderTarget = new RenderTarget_DX11Impl(this, _createGraphicsID(), rtv.Get(), *aDesc);
 		(**outRenderTarget).AddReference();
 
@@ -370,6 +416,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateDepthStencilView, LOG_CATEGORY);
 		result;
 
+		if (*outDepthStencil != nullptr)
+		{
+			(**outDepthStencil).RemoveReference();
+		}
 		*outDepthStencil = new DepthStencil_DX11Impl(this, _createGraphicsID(), dsv.Get(), *aDesc);
 		(**outDepthStencil).AddReference();
 
@@ -427,6 +477,10 @@ namespace graphics
 
 		GRAPHICS_ASSERT_RESULT(result, LOG_CATEGORY, "Failed to create Constant buffer!");
 
+		if (*outConstantBuffer != nullptr)
+		{
+			(**outConstantBuffer).RemoveReference();
+		}
 		*outConstantBuffer = new ConstantBuffer_DX11Impl(_createGraphicsID(), aDesc->Size, buffer.Get());
 		(**outConstantBuffer).AddReference();
 
@@ -454,6 +508,10 @@ namespace graphics
 
 		GRAPHICS_ASSERT_RESULT(result, LOG_CATEGORY, "Failed to create Vertex buffer!");
 
+		if (*outVertexBuffer != nullptr)
+		{
+			(**outVertexBuffer).RemoveReference();
+		}
 		*outVertexBuffer = new VertexBuffer_DX11Impl(_createGraphicsID(), aDesc->Size, buffer.Get());
 		(**outVertexBuffer).AddReference();
 
@@ -481,6 +539,10 @@ namespace graphics
 
 		GRAPHICS_ASSERT_RESULT(result, LOG_CATEGORY, "Failed to create Index buffer!");
 
+		if (*outIndexBuffer != nullptr)
+		{
+			(**outIndexBuffer).RemoveReference();
+		}
 		*outIndexBuffer = new IndexBuffer_DX11Impl(_createGraphicsID(), aSize, buffer.Get());
 		(**outIndexBuffer).AddReference();
 
@@ -503,6 +565,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateVertexShader, LOG_CATEGORY);
 		result;
 
+		if (*outShader != nullptr)
+		{
+			(**outShader).RemoveReference();
+		}
 		*outShader = new VertexShader_DX11Impl(_createGraphicsID(), shader.Get());
 		(**outShader).AddReference();
 
@@ -525,6 +591,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateVertexShader, LOG_CATEGORY);
 		result;
 
+		if (*outShader != nullptr)
+		{
+			(**outShader).RemoveReference();
+		}
 		*outShader = new HullShader_DX11Impl(_createGraphicsID(), shader.Get());
 		(**outShader).AddReference();
 
@@ -547,6 +617,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateVertexShader, LOG_CATEGORY);
 		result;
 
+		if (*outShader != nullptr)
+		{
+			(**outShader).RemoveReference();
+		}
 		*outShader = new DomainShader_DX11Impl(_createGraphicsID(), shader.Get());
 		(**outShader).AddReference();
 
@@ -569,6 +643,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateVertexShader, LOG_CATEGORY);
 		result;
 
+		if (*outShader != nullptr)
+		{
+			(**outShader).RemoveReference();
+		}
 		*outShader = new GeometryShader_DX11Impl(_createGraphicsID(), shader.Get());
 		(**outShader).AddReference();
 
@@ -591,6 +669,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateVertexShader, LOG_CATEGORY);
 		result;
 
+		if (*outShader != nullptr)
+		{
+			(**outShader).RemoveReference();
+		}
 		*outShader = new PixelShader_DX11Impl(_createGraphicsID(), shader.Get());
 		(**outShader).AddReference();
 
@@ -613,6 +695,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateVertexShader, LOG_CATEGORY);
 		result;
 
+		if (*outShader != nullptr)
+		{
+			(**outShader).RemoveReference();
+		}
 		*outShader = new ComputeShader_DX11Impl(_createGraphicsID(), shader.Get());
 		(**outShader).AddReference();
 
@@ -695,6 +781,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateInputLayout, LOG_CATEGORY);
 		result;
 
+		if (*outInputLayout != nullptr)
+		{
+			(**outInputLayout).RemoveReference();
+		}
 		*outInputLayout = new InputLayout_DX11Impl(_createGraphicsID(), aDesc->LayoutDefinition, il.Get());
 		(**outInputLayout).AddReference();
 
@@ -738,6 +828,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateSamplerState, LOG_CATEGORY);
 		result;
 
+		if (*outSamplerState != nullptr)
+		{
+			(**outSamplerState).RemoveReference();
+		}
 		*outSamplerState = new SamplerState_DX11Impl(_createGraphicsID(), sampler.Get());
 		(**outSamplerState).AddReference();
 
@@ -823,6 +917,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateBlendState, LOG_CATEGORY);
 		result;
 
+		if (*outBlendState != nullptr)
+		{
+			(**outBlendState).RemoveReference();
+		}
 		*outBlendState = new BlendState_DX11Impl(_createGraphicsID(), blendState.Get());
 		(**outBlendState).AddReference();
 
@@ -861,6 +959,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateRasterizerState, LOG_CATEGORY);
 		result;
 
+		if (*outRasterizerState != nullptr)
+		{
+			(**outRasterizerState).RemoveReference();
+		}
 		*outRasterizerState = new RasterizerState_DX11Impl(_createGraphicsID(), rasterizerState.Get(), *aDesc);
 		(**outRasterizerState).AddReference();
 
@@ -898,6 +1000,10 @@ namespace graphics
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateDepthStencilState, LOG_CATEGORY);
 		result;
 
+		if (*outDepthStencilState != nullptr)
+		{
+			(**outDepthStencilState).RemoveReference();
+		}
 		*outDepthStencilState = new DepthStencilState_DX11Impl(_createGraphicsID(), depthStencilState.Get(), *aDesc);
 		(**outDepthStencilState).AddReference();
 
@@ -1428,6 +1534,7 @@ namespace graphics
 	result::Code Device_DX11Impl::ResizeTexture(Texture2D* aTexture, unsigned int aWidth, unsigned int aHeight)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::ResizeTexture"
+		GRAPHICS_ASSERT(aTexture != myBackbufferTexture.Get(), LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aTexture) " was the backbuffer texture! It cannot be resized.");
 
 		Texture2D_DX11Impl* texture = dynamic_cast<Texture2D_DX11Impl*>(aTexture);
 		GRAPHICS_ASSERT(texture != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aTexture) " could not be cast to " STRINGIFY(Texture2D_DX11Impl) "!");
@@ -1459,36 +1566,76 @@ namespace graphics
 		myDeviceContext->ClearState();
 		return result::OK;
 	}
-	result::Code Device_DX11Impl::GetBuffer(Texture2D** outBuffer)
+	result::Code Device_DX11Impl::GetBufferTexture(Texture2D** outTexture)
 	{
-#define LOG_CATEGORY CLASS_CATEGORY"::SetTopology"
+#define LOG_CATEGORY CLASS_CATEGORY"::GetBufferTexture"
 
-		Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
-		HRESULT result = mySwapChain->GetBuffer(0u, __uuidof(ID3D11Texture2D), &texture);
+		GRAPHICS_ASSERT(outTexture != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outTexture) " cannot be nullptr!");
 
-		GRAPHICS_ASSERT_WIN32_API_CALL(result, IDXGISwapChain::GetBuffer, LOG_CATEGORY);
-		result;
+		//Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+		//HRESULT result = mySwapChain->GetBuffer(0u, __uuidof(ID3D11Texture2D), &texture);
 
-		Texture2DDesc desc = {};
+		//GRAPHICS_ASSERT_WIN32_API_CALL(result, IDXGISwapChain::GetBuffer, LOG_CATEGORY);
+		//result;
 
-		D3D11_TEXTURE2D_DESC dx11Desc = {};
-		texture->GetDesc(&dx11Desc);
+		//Texture2DDesc desc = {};
 
-		desc.Name = "Backbuffer Texture";
-		desc.BindFlags = dx11::GetGraphicsTextureFlags(static_cast<D3D11_BIND_FLAG>(dx11Desc.BindFlags));
-		desc.ResourceFlags = dx11::GetGraphicsResourceFlags(static_cast<D3D11_RESOURCE_MISC_FLAG>(dx11Desc.MiscFlags));
-		desc.Width = dx11Desc.Width;
-		desc.Height = dx11Desc.Height;
-		desc.MipLevels = dx11Desc.MipLevels;
-		desc.NumTextures = dx11Desc.ArraySize;
-		desc.Data = nullptr;
-		desc.NumData = 0;
-		desc.Format = dx11::GetGraphicsFormat(dx11Desc.Format);
-		desc.Usage = dx11::GetGraphicsUsage(dx11Desc.Usage);
-		desc.CPUAccessFlags = dx11::GetGraphicsCPUAccessFlags(static_cast<D3D11_CPU_ACCESS_FLAG>(dx11Desc.CPUAccessFlags));
+		//D3D11_TEXTURE2D_DESC dx11Desc = {};
+		//texture->GetDesc(&dx11Desc);
 
-		*outBuffer = new Texture2D_DX11Impl(_createGraphicsID(), texture.Get(), desc);
-		(**outBuffer).AddReference();
+		//desc.Name = "Backbuffer Texture";
+		//desc.BindFlags = dx11::GetGraphicsTextureFlags(static_cast<D3D11_BIND_FLAG>(dx11Desc.BindFlags));
+		//desc.ResourceFlags = dx11::GetGraphicsResourceFlags(static_cast<D3D11_RESOURCE_MISC_FLAG>(dx11Desc.MiscFlags));
+		//desc.Width = dx11Desc.Width;
+		//desc.Height = dx11Desc.Height;
+		//desc.MipLevels = dx11Desc.MipLevels;
+		//desc.NumTextures = dx11Desc.ArraySize;
+		//desc.Data = nullptr;
+		//desc.NumData = 0;
+		//desc.Format = dx11::GetGraphicsFormat(dx11Desc.Format);
+		//desc.Usage = dx11::GetGraphicsUsage(dx11Desc.Usage);
+		//desc.CPUAccessFlags = dx11::GetGraphicsCPUAccessFlags(static_cast<D3D11_CPU_ACCESS_FLAG>(dx11Desc.CPUAccessFlags));
+
+		//*outBuffer = new Texture2D_DX11Impl(_createGraphicsID(), texture.Get(), desc);
+		//(**outBuffer).AddReference();
+		if (*outTexture != nullptr)
+		{
+			(**outTexture).RemoveReference();
+		}
+		*outTexture = myBackbufferTexture.Get();
+		(**outTexture).AddReference();
+
+		return result::OK;
+#undef LOG_CATEGORY
+	}
+	result::Code Device_DX11Impl::GetBufferRenderTarget(RenderTarget** outRenderTarget)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::GetBufferRenderTarget"
+		GRAPHICS_ASSERT(outRenderTarget != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outRenderTarget) " cannot be nullptr!");
+
+		if (*outRenderTarget != nullptr)
+		{
+			(**outRenderTarget).RemoveReference();
+		}
+		*outRenderTarget = myBackbufferRenderTarget.Get();
+		(**outRenderTarget).AddReference();
+
+		return result::OK;
+
+#undef LOG_CATEGORY
+	}
+	result::Code Device_DX11Impl::GetBufferDepthStencil(DepthStencil** outDepthStencil)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::GetBufferDepthStencil"
+
+		GRAPHICS_ASSERT(outDepthStencil != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outDepthStencil) " cannot be nullptr!");
+
+		if (*outDepthStencil != nullptr)
+		{
+			(**outDepthStencil).RemoveReference();
+		}
+		*outDepthStencil = myBackbufferDepthStencil.Get();
+		(**outDepthStencil).AddReference();
 
 		return result::OK;
 #undef LOG_CATEGORY
@@ -1684,11 +1831,33 @@ namespace graphics
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::UpdateBackbufferSize"
 
+		Texture2D_DX11Impl* backbufferTexture = static_cast<Texture2D_DX11Impl*>(myBackbufferTexture.Get());
+		Texture2D_DX11Impl* backbufferDepthTexture = static_cast<Texture2D_DX11Impl*>(myBackbufferDepthTexture.Get());
+		RenderTarget_DX11Impl* backbufferRenderTarget = static_cast<RenderTarget_DX11Impl*>(myBackbufferRenderTarget.Get());
+
+		//ULONG count = backbufferTexture->GetTexture()->Release();
+		//count;
+		
+		backbufferTexture->SetTexture(nullptr);
+		backbufferRenderTarget->SetNull();	// Releases captures texture.
+
 		myDeviceContext->ClearState();
 		HRESULT result = mySwapChain->ResizeBuffers(0, static_cast<UINT>(aWidth), static_cast<UINT>(aHeight), DXGI_FORMAT_UNKNOWN, mySwapChainFlags);
-
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, IDXGISwapChain::ResizeBuffers, LOG_CATEGORY);
-		result;
+
+		//Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+		//result = mySwapChain->GetBuffer(0u, __uuidof(ID3D11Texture2D), &texture);
+		//GRAPHICS_ASSERT_WIN32_API_CALL(result, IDXGISwapChain::ResizeBuffers, LOG_CATEGORY);
+
+		PImpl<Texture2D> texture;
+		_createBackbufferTexture(&texture);
+		backbufferTexture->SetTexture(static_cast<Texture2D_DX11Impl*>(texture.Get())->GetTexture());
+
+		PImpl<Texture2D> depthTexture;
+		_createBackbufferDepthTexture(&depthTexture);
+		backbufferDepthTexture->SetTexture(static_cast<Texture2D_DX11Impl*>(depthTexture.Get())->GetTexture());
+
+		backbufferRenderTarget->Clean();
 
 		return result::OK;
 #undef LOG_CATEGORY
@@ -1732,6 +1901,135 @@ namespace graphics
 		}
 		return result::OK;
 	}
+	result::Code Device_DX11Impl::_createBackbufferTexture(Texture2D** outTexture)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::_createBackbufferTexture"
+		GRAPHICS_ASSERT(outTexture != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(outTexture) " cannot be nullptr!");
+
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+		HRESULT result = mySwapChain->GetBuffer(0u, __uuidof(ID3D11Texture2D), &texture);
+
+		GRAPHICS_ASSERT_WIN32_API_CALL(result, IDXGISwapChain::GetBuffer, LOG_CATEGORY);
+		result;
+
+		Texture2DDesc desc = {};
+
+		D3D11_TEXTURE2D_DESC dx11Desc = {};
+		texture->GetDesc(&dx11Desc);
+
+		desc.Name = "Backbuffer Texture";
+		desc.BindFlags = dx11::GetGraphicsTextureFlags(static_cast<D3D11_BIND_FLAG>(dx11Desc.BindFlags));
+		desc.ResourceFlags = dx11::GetGraphicsResourceFlags(static_cast<D3D11_RESOURCE_MISC_FLAG>(dx11Desc.MiscFlags));
+		desc.Width = dx11Desc.Width;
+		desc.Height = dx11Desc.Height;
+		desc.MipLevels = dx11Desc.MipLevels;
+		desc.NumTextures = dx11Desc.ArraySize;
+		desc.Data = nullptr;
+		desc.NumData = 0;
+		desc.Format = dx11::GetGraphicsFormat(dx11Desc.Format);
+		desc.Usage = dx11::GetGraphicsUsage(dx11Desc.Usage);
+		desc.CPUAccessFlags = dx11::GetGraphicsCPUAccessFlags(static_cast<D3D11_CPU_ACCESS_FLAG>(dx11Desc.CPUAccessFlags));
+
+		if (*outTexture != nullptr)
+		{
+			(**outTexture).RemoveReference();
+		}
+		*outTexture = new Texture2D_DX11Impl(_createGraphicsID(), texture.Get(), desc);
+		(**outTexture).AddReference();
+
+		return result::OK;
+
+#undef LOG_CATEGORY
+	}
+	result::Code Device_DX11Impl::_createBackbufferDepthTexture(Texture2D** outTexture)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::_createBackbufferDepthTexture"
+
+		GRAPHICS_ASSERT(myBackbufferTexture != nullptr, LOG_CATEGORY, result::INVALID_STATE, "Failed to create Backbuffer Depth Texture as Backbuffer Texture was nullptr!");
+
+		const Texture2DDesc& backbufferDesc = myBackbufferTexture->GetDesc();
+
+		const Texture2DDesc desc = {
+			.BindFlags = GRAPHICS_BIND_SHADER_RESOURCE | GRAPHICS_BIND_DEPTH_STENCIL,
+			.ResourceFlags = GRAPHICS_RESOURCE_NONE,
+			.Name = "Backbuffer Depth Texture",
+			.Width = backbufferDesc.Width,
+			.Height = backbufferDesc.Height,
+			.MipLevels = 1,
+			.NumTextures = 1,
+			.Data = nullptr,
+			.NumData = 0,
+			.Format = GRAPHICS_FORMAT_R32_TYPELESS,
+			.Usage = GRAPHICS_USAGE_DEFAULT,
+			.CPUAccessFlags = GRAPHICS_CPU_ACCESS_NONE
+		};
+
+		return CreateTexture2D(outTexture, &desc);
+
+#undef LOG_CATEGORY
+	}
+	result::Code Device_DX11Impl::_createBackbufferRenderTarget(RenderTarget** outRenderTarget)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::_createBackbufferTexture"
+
+		graphics::RenderTargetDesc desc = {
+			.Name = "Backbuffer RenderTarget",
+			.Texture = myBackbufferTexture.Get(),
+			.Format = graphics::GRAPHICS_FORMAT_UNKNOWN,
+			.ViewDimension = graphics::GRAPHICS_RENDER_TARGET_VIEW_DIMENSION_TEXTURE2D,
+			.FirstSlice = 0,
+			.NumSlices = 1,
+			.MipSlice = 0
+		};
+
+		D3D11_RENDER_TARGET_VIEW_DESC dx11desc = {
+			.Format = DXGI_FORMAT_UNKNOWN,
+			.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D,
+			.Texture2D = D3D11_TEX2D_RTV {
+				.MipSlice = 0
+			}
+		};
+
+		Texture2D_DX11Impl* texture = dynamic_cast<Texture2D_DX11Impl*>(myBackbufferTexture.Get());
+
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> rtv;
+		HRESULT result = myDevice->CreateRenderTargetView(texture->GetTexture(), &dx11desc, &rtv);
+		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateRenderTargetView, LOG_CATEGORY);
+		result;
+
+		if (*outRenderTarget != nullptr)
+		{
+			(**outRenderTarget).RemoveReference();
+		}
+		*outRenderTarget = new RenderTarget_DX11Impl(this, _createGraphicsID(), rtv.Get(), desc);
+		(**outRenderTarget).AddReference();
+
+		_setName(desc.Name.c_str(), *outRenderTarget);
+		
+		return result::OK;
+
+#undef LOG_CATEGORY
+	}
+	result::Code Device_DX11Impl::_createBackbufferDepthStencil(DepthStencil** outDepthStencil)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::_createBackbufferDepthStencil"
+
+		GRAPHICS_ASSERT(myBackbufferDepthTexture != nullptr, LOG_CATEGORY, result::INVALID_STATE, "Failed to create Backbuffer DepthStencil as Backbuffer Depth Texture was nullptr!");
+
+		graphics::DepthStencilDesc desc = {
+			.Name = "Backbuffer DepthStencil",
+			.Texture = myBackbufferDepthTexture.Get(),
+			.Format = graphics::GRAPHICS_FORMAT_D32_FLOAT,
+			.ViewDimension = graphics::GRAPHICS_RENDER_TARGET_VIEW_DIMENSION_TEXTURE2D,
+			.FirstSlice = 0,
+			.NumSlices = 1,
+			.MipSlice = 0
+		};
+
+		return CreateDepthStencil(outDepthStencil, &desc);
+
+#undef LOG_CATEGORY
+	}
 	result::Code Device_DX11Impl::_createBuffer(ID3D11Buffer** outBuffer, UINT aBindFlags, const void* aData, size_t aSize, GRAPHICS_USAGE aUsage, GRAPHICS_CPU_ACCESS_FLAGS aCPUAccessFlags)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::_createBuffer"
@@ -1754,7 +2052,7 @@ namespace graphics
 			D3D11_SUBRESOURCE_DATA data = {};
 			data.pSysMem = aData;
 			data.SysMemPitch = static_cast<UINT>(aSize);
-			data.SysMemSlicePitch = 0;
+			data.SysMemSlicePitch = static_cast<UINT>(aSize);
 
 			dataPtr = &data;
 		}

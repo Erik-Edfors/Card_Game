@@ -10,13 +10,13 @@ namespace graphics
 
 	namespace detail
 	{
-		graphics::result::Code ReadFile(const char* aPath, char** outBuffer, size_t* outSize);
+		graphics::result::Code ReadFile(const wchar_t* aPath, char** outBuffer, size_t* outSize);
 	}
 
 	result::Code CreateTexture2DFromFile(
 		Device* aDevice, 													//A device to create the texture on
 		const char* aName,													//The name the texture will have after creation
-		const char* aFilePath,												//The path to the file containing the texture.
+		const wchar_t* aFilePath,											//The path to the file containing the texture.
 		Texture2D** outTexture2D,											//A pointer to a Texture2D interface that will recieve the created texture.
 		GRAPHICS_BIND_FLAGS aFlags,											//Bind flags for the texture.
 		GRAPHICS_RESOURCE_FLAGS aResourceFlags,								//Resource flags for the texture.

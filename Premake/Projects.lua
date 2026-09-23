@@ -52,7 +52,7 @@ group("Tools")
         cppdialect("C++20")
 
         debugargs {
-            "../../Assets/",
+            "../../../Assets/",
             "--regex=^.*\\.ttf$",
             "--size=96",
             "/rpd"

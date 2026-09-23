@@ -105,7 +105,7 @@ void TransformComponent::SetMatrixLocal(const CommonUtilities::Matrix4x4f& aMatr
 {
 	FlagDirty();
 	myMatrix = aMatrix;
-	myMatrix.Decompose(myTranslation, myRotation, myScale);
+	myMatrix.Decompose(&myTranslation, &myRotation, &myScale);
 }
 void TransformComponent::SetMatrixGlobal(const CommonUtilities::Matrix4x4f& aMatrix) noexcept
 {
@@ -159,7 +159,7 @@ void TransformComponent::Clean() noexcept
 		if (not myParent.Expired())
 		{
 			myGlobalMatrix = myMatrix * myParent->GetMatrixGlobal();
-			myGlobalMatrix.Decompose(myGlobalTranslation, myGlobalRotation, myGlobalScale);
+			myGlobalMatrix.Decompose(&myGlobalTranslation, &myGlobalRotation, &myGlobalScale);
 		}
 		else
 		{

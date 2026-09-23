@@ -65,7 +65,8 @@ void SpriteRenderLayer::OnInit()
 
 	{
 		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../Assets/Shaders/Sprite_VS.cso", std::ios::binary);
+		std::ifstream file("../../../Assets/Shaders/Sprite_VS.cso", std::ios::binary);
+		if (not file.is_open()) __debugbreak();
 
 		size_t shaderSize = 0;
 
@@ -112,7 +113,7 @@ void SpriteRenderLayer::OnInit()
 	}
 	{
 		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../Assets/Shaders/Sprite_GS.cso", std::ios::binary);
+		std::ifstream file("../../../Assets/Shaders/Sprite_GS.cso", std::ios::binary);
 
 		size_t shaderSize = 0;
 
@@ -128,7 +129,7 @@ void SpriteRenderLayer::OnInit()
 		delete[] shaderBuffer;
 	}
 	{
-		std::ifstream file("../../Assets/Shaders/Sprite_PS.cso", std::ios::binary);
+		std::ifstream file("../../../Assets/Shaders/Sprite_PS.cso", std::ios::binary);
 
 		size_t shaderSize = 0;
 

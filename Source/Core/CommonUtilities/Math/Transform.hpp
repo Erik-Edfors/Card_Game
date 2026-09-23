@@ -22,22 +22,24 @@ namespace CommonUtilities
 		const Quaternion<_Ty>& GetRotation() const;
 		const Vector3<_Ty>& GetTranslation() const;
 
-		const Matrix4x4<_Ty>& GetMatrix();
-		Matrix4x4<_Ty> GetInverseMatrix();
-		Vector3<_Ty> GetForward();
-		Vector3<_Ty> GetUp();
-		Vector3<_Ty> GetRight();
+		void SetMatrix(const Matrix4x4<_Ty>& aMatrix);
+		const Matrix4x4<_Ty>& GetMatrix() const;
+		Matrix4x4<_Ty> GetInverseMatrix() const;
+
+		Vector3<_Ty> GetForward() const;
+		Vector3<_Ty> GetUp() const;
+		Vector3<_Ty> GetRight() const;
 
 	private:
-		void Update();
+		void Clean() const;
 
-		bool myIsDirty;
+		mutable bool myIsDirty;
+		mutable Matrix4x4<_Ty> myMatrix;
 
 		Vector3<_Ty> myScale;
 		Quaternion<_Ty> myRotation;
 		Vector3<_Ty> myTranslation;
 
-		Matrix4x4<_Ty> myMatrix;
 	};
 
 	using Transformf = Transform<float>;
@@ -103,15 +105,22 @@ namespace CommonUtilities
 		return myTranslation;
 	}
 	template<typename _Ty>
-	inline const Matrix4x4<_Ty>& Transform<_Ty>::GetMatrix()
+	inline void Transform<_Ty>::SetMatrix(const Matrix4x4<_Ty>& aMatrix)
 	{
-		Update();
+		aMatrix.Decompose(&myTranslation, &myRotation, &myScale);
+		myMatrix = aMatrix;
+		myIsDirty = false;	// Everything is set.
+	}
+	template<typename _Ty>
+	inline const Matrix4x4<_Ty>& Transform<_Ty>::GetMatrix() const
+	{
+		Clean();
 		return myMatrix;
 	}
 	template<typename _Ty>
-	inline Matrix4x4<_Ty> Transform<_Ty>::GetInverseMatrix()
+	inline Matrix4x4<_Ty> Transform<_Ty>::GetInverseMatrix() const
 	{
-		Update();
+		Clean();
 
 		Matrix4x4<float> inv = Matrix4x4<float>::CreateRotation(-myRotation);
 
@@ -129,22 +138,22 @@ namespace CommonUtilities
 		return inv;
 	}
 	template<typename _Ty>
-	inline Vector3<_Ty> Transform<_Ty>::GetForward()
+	inline Vector3<_Ty> Transform<_Ty>::GetForward() const
 	{
 		return GetMatrix().Row(3).xyz();
 	}
 	template<typename _Ty>
-	inline Vector3<_Ty> Transform<_Ty>::GetUp()
+	inline Vector3<_Ty> Transform<_Ty>::GetUp() const
 	{
 		return GetMatrix().Row(2).xyz();
 	}
 	template<typename _Ty>
-	inline Vector3<_Ty> Transform<_Ty>::GetRight()
+	inline Vector3<_Ty> Transform<_Ty>::GetRight() const
 	{
 		return GetMatrix().Row(1).xyz();
 	}
 	template<typename _Ty>
-	inline void Transform<_Ty>::Update()
+	inline void Transform<_Ty>::Clean() const
 	{
 		if (myIsDirty)
 		{

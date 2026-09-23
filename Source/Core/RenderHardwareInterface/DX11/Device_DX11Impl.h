@@ -37,6 +37,11 @@ namespace graphics
 		// Objects
 		//########
 
+		result::Code CreateData(
+			Data** outData,
+			const DataDesc* aDesc
+		) override;
+
 		result::Code CreateImmediateDeviceContext(
 			ImmediateDeviceContext** outDeviceContext
 		) override;
@@ -291,8 +296,16 @@ namespace graphics
 
 		result::Code ClearState() override;
 
-		result::Code GetBuffer(
-			Texture2D** outBuffer
+		result::Code GetBufferTexture(
+			Texture2D** outTexture
+		) override;
+
+		result::Code GetBufferRenderTarget(
+			RenderTarget** outRenderTarget
+		) override;
+
+		result::Code GetBufferDepthStencil(
+			DepthStencil** outDepthStencil
 		) override;
 
 		result::Code SetTopology(
@@ -368,6 +381,22 @@ namespace graphics
 		) override;
 
 	private:
+		result::Code _createBackbufferTexture(
+			Texture2D** outTexture
+		);
+
+		result::Code _createBackbufferDepthTexture(
+			Texture2D** outTexture
+		);
+
+		result::Code _createBackbufferRenderTarget(
+			RenderTarget** outRenderTarget
+		);
+
+		result::Code _createBackbufferDepthStencil(
+			DepthStencil** outDepthStencil
+		);
+
 		result::Code _createBuffer(
 			ID3D11Buffer** outBuffer,
 			UINT aBindFlags,
@@ -387,6 +416,12 @@ namespace graphics
 		);
 
 		PImpl<Window_DX11Impl> myWindow;
+
+		PImpl<Texture2D> myBackbufferTexture;
+		PImpl<Texture2D> myBackbufferDepthTexture;
+		PImpl<RenderTarget> myBackbufferRenderTarget;
+		PImpl<DepthStencil> myBackbufferDepthStencil;
+
 		Microsoft::WRL::ComPtr<ID3D11Device> myDevice;
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> myDeviceContext;
 		Microsoft::WRL::ComPtr<IDXGISwapChain> mySwapChain;

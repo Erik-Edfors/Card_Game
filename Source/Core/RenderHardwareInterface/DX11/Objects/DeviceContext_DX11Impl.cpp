@@ -295,30 +295,38 @@ namespace graphics
 
 		GRAPHICS_ASSERT(aVertexBuffers != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aVertexBuffers) " cannot be nullptr!");
 		GRAPHICS_ASSERT(aNumBuffers > 0, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aNumBuffers) " must be greater than 0!");
+		GRAPHICS_ASSERT(aNumBuffers <= D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aNumBuffers) " must be lesser than " STRINGIFY(D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT) "!");
 
-		UINT* strides = new UINT[aNumBuffers];
-		UINT* offsets = new UINT[aNumBuffers];
-		ID3D11Buffer** buffers = new ID3D11Buffer * [aNumBuffers];
-		for (size_t i = 0; i < aNumBuffers; i++)
+		UINT strides[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT];
+		UINT offsets[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT];
+		ID3D11Buffer* buffers[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT];
+
+		if (aStrides)
 		{
-			if (aStrides)
+			for (size_t i = 0; i < aNumBuffers; i++)
 			{
 				strides[i] = static_cast<UINT>(aStrides[i]);
 			}
-			else
-			{
-				strides[i] = 0;
-			}
+		}
+		else
+		{
+			std::fill(strides, strides + D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT, (UINT)0);
+		}
 
-			if (aOffsets)
+		if (aOffsets)
+		{
+			for (size_t i = 0; i < aNumBuffers; i++)
 			{
 				offsets[i] = static_cast<UINT>(aOffsets[i]);
 			}
-			else
-			{
-				offsets[i] = 0;
-			}
+		}
+		else
+		{
+			std::fill(offsets, offsets + D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT, (UINT)0);
+		}
 
+		for (size_t i = 0; i < aNumBuffers; i++)
+		{
 			if (aVertexBuffers[i])
 			{
 				VertexBuffer_DX11Impl* vertexBuffer = dynamic_cast<VertexBuffer_DX11Impl*>(aVertexBuffers[i]);
@@ -333,10 +341,6 @@ namespace graphics
 		}
 
 		myDeviceContext->IASetVertexBuffers(static_cast<UINT>(aStartSlot), static_cast<UINT>(aNumBuffers), buffers, strides, offsets);
-
-		delete[] strides;
-		delete[] offsets;
-		delete[] buffers;
 
 		return result::OK;
 #undef LOG_CATEGORY
@@ -811,7 +815,7 @@ namespace graphics
 		return result::OK;
 #undef LOG_CATEGORY
 	}
-	result::Code DeviceContext_DX11Impl::SetViewports(Viewport* aViewports, size_t aNumViewports)
+	result::Code DeviceContext_DX11Impl::SetViewports(const Viewport* aViewports, size_t aNumViewports)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::SetViewports"
 

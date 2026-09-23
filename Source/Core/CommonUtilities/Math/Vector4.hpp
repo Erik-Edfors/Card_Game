@@ -1,13 +1,10 @@
 #pragma once
 #include <cmath>
+#include "Vector3.hpp"
+#include "Vector2.hpp"
 
 namespace CommonUtilities
 {
-	template <class _Ty>
-	class Vector2;
-	template <class _Ty>
-	class Vector3;
-
 	template <class _Ty>
 	class Vector4
 	{
@@ -27,6 +24,8 @@ namespace CommonUtilities
 		Vector4<_Ty>(const _Ty& aX, const _Ty& aY, const _Ty& aZ, const _Ty& aW);
 		//Creates a vector (aValues[0], aValues[1], aValues[2], aValues[3])
 		Vector4<_Ty>(const _Ty aValues[4]);
+		//Creates a vector from a Vector3 and a W scalar.
+		Vector4<_Ty>(const Vector3<_Ty>& aVector3, const _Ty& aW);
 		//Creates a zero-vector
 		Vector4<_Ty>();
 		//Copy constructor (compiler generated)
@@ -255,20 +254,19 @@ namespace CommonUtilities
 	using Vector4ui = Vector4<unsigned int>;
 
 	template<class _Ty>
-	inline Vector4<_Ty>::Vector4(const _Ty& aX, const _Ty& aY, const _Ty& aZ, const _Ty& aW)
+	inline Vector4<_Ty>::Vector4(const _Ty& aX, const _Ty& aY, const _Ty& aZ, const _Ty& aW) : 
+		x(aX), y(aY), z(aZ), w(aW)
 	{
-		this->x = aX;
-		this->y = aY;
-		this->z = aZ;
-		this->w = aW;
 	}
 	template<class _Ty>
-	inline Vector4<_Ty>::Vector4(const _Ty aValues[4])
+	inline Vector4<_Ty>::Vector4(const _Ty aValues[4]) :
+		x(aValues[0]), y(aValues[1]), z(aValues[2]), w(aValues[3])
 	{
-		this->x = aValues[0];
-		this->y = aValues[1];
-		this->z = aValues[2];
-		this->w = aValues[3];
+	}
+	template<class _Ty>
+	inline Vector4<_Ty>::Vector4(const Vector3<_Ty>& aVector3, const _Ty& aW) :
+		x(aVector3.x), y(aVector3.y), z(aVector3.z), w(aW)
+	{
 	}
 	template<class _Ty>
 	inline Vector4<_Ty>::Vector4() : Vector4<_Ty>(0, 0, 0, 0)
@@ -287,17 +285,17 @@ namespace CommonUtilities
 	template<class OtherVectorClass>
 	inline Vector4<_Ty>::operator OtherVectorClass() const
 	{
-		return OtherVectorClass(this->x, this->y, this->z, this->w);
+		return OtherVectorClass(x, y, z, w);
 	}
 	template<class _Ty>
 	inline Vector4<_Ty> Vector4<_Ty>::operator-() const
 	{
-		return Vector4<_Ty>(-this->x, -this->y, -this->z, -this->w);
+		return Vector4<_Ty>(-x, -y, -z, -w);
 	}
 	template<class _Ty>
 	inline _Ty Vector4<_Ty>::LengthSqr() const
 	{
-		return this->x * this->x + this->y * this->y + this->z * this->z + this->w * this->w;
+		return x * x + y * y + z * z + w * w;
 	}
 	template<class _Ty>
 	inline _Ty Vector4<_Ty>::Length() const
@@ -315,15 +313,15 @@ namespace CommonUtilities
 	inline void Vector4<_Ty>::Normalize()
 	{
 		_Ty len = Length();
-		this->x /= len;
-		this->y /= len;
-		this->z /= len;
-		this->w /= len;
+		x /= len;
+		y /= len;
+		z /= len;
+		w /= len;
 	}
 	template<class _Ty>
 	inline _Ty Vector4<_Ty>::Dot(const Vector4<_Ty>& aVector) const
 	{
-		return this->x * aVector.x + this->y * aVector.y + this->z * aVector.z + this->w * aVector.w;
+		return x * aVector.x + y * aVector.y + z * aVector.z + w * aVector.w;
 	}
 	//Returns the vector sum of aVector0 and aVector1
 	template <class _Ty>

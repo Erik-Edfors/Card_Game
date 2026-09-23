@@ -180,7 +180,7 @@ namespace graphics
 		) override;
 
 		result::Code SetViewports(
-			Viewport* aViewports,
+			const Viewport* aViewports,
 			size_t aNumViewports
 		) override;
 

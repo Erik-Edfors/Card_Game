@@ -16,6 +16,9 @@ namespace graphics
 
 		void SetName(const char* aName) override;
 
+		void Clean();
+		void SetNull();
+
 		ID3D11RenderTargetView* GetRenderTargetView();
 
 	private:

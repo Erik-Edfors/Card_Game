@@ -71,7 +71,7 @@ bool LoadStreamIntoMemory(void** outBuffer, size_t* outSize, std::istream& aStre
 
 		cursor += aStream.gcount();
 
-	} while (aStream.eof() == false);
+	} while (aStream.eof() == false && not aStream.fail());
 
 	*outBuffer = buffer;
 	*outSize = cursor;

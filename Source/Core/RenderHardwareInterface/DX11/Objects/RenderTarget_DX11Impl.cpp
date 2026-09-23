@@ -23,9 +23,9 @@ void graphics::RenderTarget_DX11Impl::SetName(const char* aName)
 	SetLocalName(aName);
 }
 
-ID3D11RenderTargetView* graphics::RenderTarget_DX11Impl::GetRenderTargetView()
+void graphics::RenderTarget_DX11Impl::Clean()
 {
-#define LOG_CATEGORY CLASS_CATEGORY"::GetRenderTargetView"
+#define LOG_CATEGORY CLASS_CATEGORY"::Clean"
 
 	unsigned int textureVersion = GetTexture() == nullptr ? 0u : GetTexture()->GetVersion();
 	if (myLastTextureVersion != textureVersion)
@@ -38,13 +38,27 @@ ID3D11RenderTargetView* graphics::RenderTarget_DX11Impl::GetRenderTargetView()
 		if (GRAPHICS_FAILED(result))
 		{
 			LOG_ERROR(LOG_CATEGORY, "Failed to update RenderTarget '%s'! Texture has a new version and RenderTarget failed to update itself.", GetName());
-			return myRenderTargetView.Get();
+			return;
 		}
 		RenderTarget_DX11Impl* newRTImpl = static_cast<RenderTarget_DX11Impl*>(newRT.Get());
 		myRenderTargetView = newRTImpl->GetRenderTargetView();
 
 		myLastTextureVersion = textureVersion;
 	}
+#undef LOG_CATEGORY
+}
+
+void graphics::RenderTarget_DX11Impl::SetNull()
+{
+	myRenderTargetView.Reset();
+	myLastTextureVersion = UINT_MAX;
+}
+
+ID3D11RenderTargetView* graphics::RenderTarget_DX11Impl::GetRenderTargetView()
+{
+#define LOG_CATEGORY CLASS_CATEGORY"::GetRenderTargetView"
+
+	Clean();
 
 	return myRenderTargetView.Get();
 

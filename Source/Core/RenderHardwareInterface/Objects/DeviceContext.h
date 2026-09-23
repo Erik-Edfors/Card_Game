@@ -195,7 +195,7 @@ namespace graphics
 		) = 0;
 
 		virtual result::Code SetViewports(
-			Viewport* aViewports,
+			const Viewport* aViewports,
 			size_t aNumViewports
 		) = 0;
 

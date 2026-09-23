@@ -60,34 +60,22 @@ namespace client
 		aNumArgs;
 
 		std::unique_ptr<Engine> engine = std::make_unique<Engine>();
-		if (not engine->Initialize(aWindow, L"../../Assets/"))
+		if (not engine->Initialize(aWindow, L"../../../Assets/"))
 		{
 			LOG_ERROR(LOG_CATEGORY, "Failed to initialize Client! Failed to initialize Engine.");
 			return false;
 		}
 
 		myEngine = std::move(engine);
+		graphics::PImpl<graphics::Device> device = myEngine->GetGraphicsEngine().GetDevice();
+
+		device->GetBufferRenderTarget(&myRenderTarget);
+		device->GetBufferDepthStencil(&myDepthStencil);
 
 
 		//TEMPORARY:
 		//locSpriteRenderLayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>();
 		SpriteRenderLayer* spriteRenderlayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>();
-		graphics::PImpl<graphics::Device> device = myEngine->GetGraphicsEngine().GetDevice();
-
-		graphics::PImpl<graphics::Texture2D> backBufferTexture;
-		device->GetBuffer(&backBufferTexture);
-
-		graphics::RenderTargetDesc rtDesc = {
-			.Name = "Backbuffer RenderTarget",
-			.Texture = backBufferTexture.Get(),
-			.Format = graphics::GRAPHICS_FORMAT_UNKNOWN,
-			.ViewDimension = graphics::GRAPHICS_RENDER_TARGET_VIEW_DIMENSION_TEXTURE2D,
-			.FirstSlice = 0,
-			.NumSlices = 1,
-			.MipSlice = 0
-		};
-
-		device->CreateRenderTarget(&myRenderTarget, &rtDesc);
 
 		std::ifstream file("../../Assets/Textures/Atlas.dds");
 
@@ -95,7 +83,7 @@ namespace client
 		graphics::CreateTexture2DFromFile(
 			device.Get(),
 			"Sprite Atlas",
-			"../../Assets/Textures/Atlas.dds",
+			L"../../../Assets/Textures/Atlas.dds",
 			&atlas,
 			graphics::GRAPHICS_BIND_SHADER_RESOURCE,
 			graphics::GRAPHICS_RESOURCE_NONE,
@@ -123,40 +111,6 @@ namespace client
 		spriteRenderlayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, -1.f, 1.f));
 
 
-
-		graphics::PImpl<graphics::Texture2D> depthTexture;
-		{
-			graphics::Texture2DDesc desc = {
-				.BindFlags = graphics::GRAPHICS_BIND_DEPTH_STENCIL | graphics::GRAPHICS_BIND_SHADER_RESOURCE,
-				.ResourceFlags = graphics::GRAPHICS_RESOURCE_NONE,
-				.Name = "Backbuffer Depth Texture",
-				.Width = backBufferTexture->GetDesc().Width,
-				.Height = backBufferTexture->GetDesc().Height,
-				.MipLevels = 1,
-				.NumTextures = 1,
-				.Data = nullptr,
-				.NumData = 0,
-				.Format = graphics::GRAPHICS_FORMAT_R32_TYPELESS,
-				.Usage = graphics::GRAPHICS_USAGE_DEFAULT,
-				.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
-			};
-			device->CreateTexture2D(&depthTexture, &desc);
-		}
-
-
-		{
-			graphics::DepthStencilDesc desc = {
-				.Flags = graphics::GRAPHICS_DEPTH_STENCIL_NONE,
-				.Name = "Backbuffer DepthStencil",
-				.Texture = depthTexture.Get(),
-				.Format = graphics::GRAPHICS_FORMAT_D32_FLOAT,
-				.ViewDimension = graphics::GRAPHICS_DEPTH_STENCIL_VIEW_DIMENSION_TEXTURE2D,
-				.FirstSlice = 0,
-				.NumSlices = 1,
-				.MipSlice = 0
-			};
-			device->CreateDepthStencil(&myDepthStencil, &desc);
-		}
 		TextRenderLayer* textRenderlayer = myEngine->GetGraphicsEngine().AddRenderLayer<TextRenderLayer>();
 		textRenderlayer->SetTargets(myRenderTarget.Get(), nullptr);
 		textRenderlayer->SetView(CommonUtilities::Matrix4x4f());
@@ -177,7 +131,7 @@ namespace client
 
 		sprite->SetTextureRect({ { 0.f, 0.f }, { 32.f / 4096.f, 64.f / 4096.f }});
 
-		text->SetFont(L"../../Assets/Fonts/arial.bf");
+		text->SetFont(L"../../../Assets/Fonts/arial.bf");
 		text->SetText(L"Hello World!\nThis is a test message!\nHello Again!\n# A list:\n|\t1\t=2\n|\t123\t=3\n|\t12\t=1");
 
 		return true;

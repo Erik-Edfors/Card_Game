@@ -369,7 +369,7 @@ void TextRenderLayer::OnInit()
 
 	{
 		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../Assets/Shaders/Text_VS.cso", std::ios::binary);
+		std::ifstream file("../../../Assets/Shaders/Text_VS.cso", std::ios::binary);
 
 		size_t shaderSize = 0;
 
@@ -405,7 +405,7 @@ void TextRenderLayer::OnInit()
 	}
 	{
 		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../Assets/Shaders/Text_GS.cso", std::ios::binary);
+		std::ifstream file("../../../Assets/Shaders/Text_GS.cso", std::ios::binary);
 
 		size_t shaderSize = 0;
 
@@ -422,7 +422,7 @@ void TextRenderLayer::OnInit()
 		delete[] shaderBuffer;
 	}
 	{
-		std::ifstream file("../../Assets/Shaders/Text_PS.cso", std::ios::binary);
+		std::ifstream file("../../../Assets/Shaders/Text_PS.cso", std::ios::binary);
 
 		size_t shaderSize = 0;
 

@@ -50,3 +50,6 @@ using namespace graphics::result;
 
 #define _STRINGIFY_INTERNAL(resolvedExpression) #resolvedExpression
 #define STRINGIFY(expression) _STRINGIFY_INTERNAL(expression)
+
+#define _WSTRINGIFY_INTERNAL(resolvedExpression) L#resolvedExpression
+#define WSTRINGIFY(expression) _WSTRINGIFY_INTERNAL(expression)

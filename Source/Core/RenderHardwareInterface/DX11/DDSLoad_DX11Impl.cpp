@@ -5,6 +5,7 @@
 #include "GAssert_DX11.h"
 #include "Detail/DDSTextureLoader11.h"
 #include "Common_DX11.h"
+#include <Core/CommonUtilities/StringHelper.h>
 #include <fstream>
 
 #undef FILE_CATEGORY
@@ -12,13 +13,13 @@
 #define FILE_CATEGORY "DDSLoad_DX11Impl.cpp"
 #define CLASS_CATEGORY FILE_CATEGORY"->"
 
-graphics::result::Code graphics::detail::ReadFile(const char* aPath, char** outBuffer, size_t* outSize)
+graphics::result::Code graphics::detail::ReadFile(const wchar_t* aPath, char** outBuffer, size_t* outSize)
 {
 #define LOG_CATEGORY CLASS_CATEGORY"::ReadFile"
 
 	std::ifstream file(aPath, std::ios::binary);
 
-	GRAPHICS_ASSERT(file.is_open(), LOG_CATEGORY, result::UNABLE_TO_OPEN_FILE, "File: '%s'!", aPath);
+	GRAPHICS_ASSERT(file.is_open(), LOG_CATEGORY, result::UNABLE_TO_OPEN_FILE, "File: '%s'!", CommonUtilities::ANSI(aPath));
 
 	size_t bufferSize = 1048576;	//1 MB
 	size_t cursor = 0;
@@ -50,7 +51,7 @@ graphics::result::Code graphics::detail::ReadFile(const char* aPath, char** outB
 #undef LOG_CATEGORY
 }
 
-graphics::result::Code graphics::CreateTexture2DFromFile(Device* aDevice, const char* aName, const char* aFilePath, Texture2D** outTexture2D, GRAPHICS_BIND_FLAGS aBindFlags, GRAPHICS_RESOURCE_FLAGS aResourceFlags, GRAPHICS_USAGE aUsage, GRAPHICS_CPU_ACCESS_FLAGS aCPUAccessFlags)
+graphics::result::Code graphics::CreateTexture2DFromFile(Device* aDevice, const char* aName, const wchar_t* aFilePath, Texture2D** outTexture2D, GRAPHICS_BIND_FLAGS aBindFlags, GRAPHICS_RESOURCE_FLAGS aResourceFlags, GRAPHICS_USAGE aUsage, GRAPHICS_CPU_ACCESS_FLAGS aCPUAccessFlags)
 {
 #define LOG_CATEGORY CLASS_CATEGORY"::CreateTexture2DFromFile"
 	GRAPHICS_ASSERT(aDevice != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDevice) " cannot be nullptr!");
@@ -59,7 +60,7 @@ graphics::result::Code graphics::CreateTexture2DFromFile(Device* aDevice, const 
 	char* fileData;
 	size_t fileSize;
 	result::Code result = detail::ReadFile(aFilePath, &fileData, &fileSize);
-	GRAPHICS_ASSERT_RESULT(result, LOG_CATEGORY, "Failed to read file: '%s'!", aFilePath);
+	GRAPHICS_ASSERT_RESULT(result, LOG_CATEGORY, "Failed to read file: '%s'!", CommonUtilities::ANSI(aFilePath));
 
 	result = CreateTexture2DFromDDS(
 		aDevice,

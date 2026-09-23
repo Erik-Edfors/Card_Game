@@ -44,7 +44,7 @@ namespace CommonUtilities
 		Matrix4x4<T> GetInverse() const;
 
 		void Compose(const Vector3<T>& aTranslation, const Quaternion<T>& aRotation, const Vector3<T>& aScale);
-		void Decompose(Vector3<T>& outTranslation, Quaternion<T>& outRotation, Vector3<T>& outScale) const;
+		void Decompose(Vector3<T>* outTranslation, Quaternion<T>* outRotation, Vector3<T>* outScale) const;
 
 		//Vector3<T> GetEulerAnglesZYX() const;
 
@@ -299,7 +299,7 @@ namespace CommonUtilities
 	}
 
 	template<typename T>
-	inline void Matrix4x4<T>::Decompose(Vector3<T>& outTranslation, Quaternion<T>& outRotation, Vector3<T>& outScale) const
+	inline void Matrix4x4<T>::Decompose(Vector3<T>* outTranslation, Quaternion<T>* outRotation, Vector3<T>* outScale) const
 	{
 		T sx = std::sqrt(myData[0] * myData[0] + myData[1] * myData[1] + myData[2] * myData[2]);
 		const T sy = std::sqrt(myData[4] * myData[4] + myData[5] * myData[5] + myData[6] * myData[6]);
@@ -309,9 +309,9 @@ namespace CommonUtilities
 		const T det = GetDeterminant();
 		if (det < static_cast<T>(0)) sx = -sx;
 
-		outTranslation.x = myData[12];
-		outTranslation.y = myData[13];
-		outTranslation.z = myData[14];
+		outTranslation->x = myData[12];
+		outTranslation->y = myData[13];
+		outTranslation->z = myData[14];
 
 		// scale the rotation part
 		Matrix4x4<T> _m1 = *this;
@@ -344,45 +344,45 @@ namespace CommonUtilities
 		{
 			const T s = static_cast<T>(1) / (static_cast<T>(2) * std::sqrt(trace + static_cast<T>(1)));
 
-			outRotation.w = static_cast<T>(1) / (s * static_cast<T>(4));
-			outRotation.x = (m32 - m23) * s;
-			outRotation.y = (m13 - m31) * s;
-			outRotation.z = (m21 - m12) * s;
+			outRotation->w = static_cast<T>(1) / (s * static_cast<T>(4));
+			outRotation->x = (m32 - m23) * s;
+			outRotation->y = (m13 - m31) * s;
+			outRotation->z = (m21 - m12) * s;
 		}
 		else if (m11 > m22 && m11 > m33)
 		{
 
 			const T s = static_cast<T>(2) * std::sqrt(static_cast<T>(1) + m11 - m22 - m33);
 
-			outRotation.w = (m32 - m23) / s;
-			outRotation.x = s / static_cast<T>(4);
-			outRotation.y = (m12 + m21) / s;
-			outRotation.z = (m13 + m31) / s;
+			outRotation->w = (m32 - m23) / s;
+			outRotation->x = s / static_cast<T>(4);
+			outRotation->y = (m12 + m21) / s;
+			outRotation->z = (m13 + m31) / s;
 		}
 		else if (m22 > m33)
 		{
 
 			const T s = static_cast<T>(2) * std::sqrt(static_cast<T>(1) + m22 - m11 - m33);
 
-			outRotation.w = (m13 - m31) / s;
-			outRotation.x = (m12 + m21) / s;
-			outRotation.y = s / static_cast<T>(4);
-			outRotation.z = (m23 + m32) / s;
+			outRotation->w = (m13 - m31) / s;
+			outRotation->x = (m12 + m21) / s;
+			outRotation->y = s / static_cast<T>(4);
+			outRotation->z = (m23 + m32) / s;
 		}
 		else
 		{
 
 			const T s = static_cast<T>(2) * std::sqrt(static_cast<T>(1) + m33 - m11 - m22);
 
-			outRotation.w = (m21 - m12) / s;
-			outRotation.x = (m13 + m31) / s;
-			outRotation.y = (m23 + m32) / s;
-			outRotation.z = s / static_cast<T>(4);
+			outRotation->w = (m21 - m12) / s;
+			outRotation->x = (m13 + m31) / s;
+			outRotation->y = (m23 + m32) / s;
+			outRotation->z = s / static_cast<T>(4);
 		}
 
-		outScale.x = sx;
-		outScale.y = sy;
-		outScale.z = sz;
+		outScale->x = sx;
+		outScale->y = sy;
+		outScale->z = sz;
 	}
 
 	//template<typename T>

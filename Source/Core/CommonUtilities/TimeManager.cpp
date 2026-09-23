@@ -2,30 +2,41 @@
 
 namespace CommonUtilities
 {
-	TimeManager::TimeManager()
+	TimeManager::TimeManager() : 
+		myFactor(1.f),
+		myUnmodifiedDelta(0.f),
+		myDelta(0.f)
 	{
-		this->myStartTimePoint = std::chrono::high_resolution_clock::now();
-		this->myLastTimePoint = this->myStartTimePoint;
-		this->myDelta = 0;
-		this->myTotal = 0;
+		myStartTimePoint = std::chrono::steady_clock::now();
+		myLastTimePoint = myStartTimePoint;
 	}
 	TimeManager::~TimeManager()
 	{
 	}
 	void TimeManager::Update()
 	{
-		std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+		std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 
-		this->myDelta = std::chrono::duration_cast<std::chrono::duration<double, std::chrono::seconds::period>>(now - this->myLastTimePoint).count();
-		this->myLastTimePoint = now;
-		this->myTotal = std::chrono::duration_cast<std::chrono::duration<double, std::chrono::seconds::period>>(now - this->myStartTimePoint).count();
+		myUnmodifiedDelta = std::chrono::duration_cast<std::chrono::duration<float>>(now - myLastTimePoint).count();
+		myDelta = myUnmodifiedDelta * myFactor;
+
+		myLastTimePoint = now;
+		myTotal = std::chrono::duration_cast<std::chrono::duration<float>>(now - myStartTimePoint).count();
 	}
-	double TimeManager::GetDelta() const
+	void TimeManager::SetFactor(float aFactor) noexcept
 	{
-		return this->myDelta;
+		myFactor = aFactor;
 	}
-	double TimeManager::GetTotal() const
+	float TimeManager::GetDelta() const noexcept
 	{
-		return this->myTotal;
+		return myDelta;
+	}
+	float TimeManager::GetUnmodifiedDelta() const noexcept
+	{
+		return myUnmodifiedDelta;
+	}
+	float TimeManager::GetTotal() const noexcept
+	{
+		return myTotal;
 	}
 }
