@@ -43,37 +43,88 @@ group("Launchers")
 toolsDir = Settings.SourceDir .. "Tools/"
 group("Tools")
     
-    fontBuilderDir = toolsDir .. "FontBuilder/"
-    project("FontBuilder")
-        location(fontBuilderDir)
+    AssetBuilderDir = toolsDir .. "AssetBuilder/"
+    project("AssetBuilder")
+        location(AssetBuilderDir)
 
         kind("ConsoleApp")
         language("C++")
         cppdialect("C++20")
 
-        debugargs {
-            "../../../Assets/",
-            "--regex=^.*\\.ttf$",
-            "--size=96",
-            "/rpd"
+        links {
+            "CommonUtilities",
+            "Assets",
+            
+            "msdf-atlas-gen.lib",
+            "msdfgen-ext.lib",
+            "msdfgen-core.lib",
+            "kernel32.lib",
+            "user32.lib",
+            "gdi32.lib",
+            "winspool.lib",
+            "shell32.lib",
+            "ole32.lib",
+            "oleaut32.lib",
+            "uuid.lib",
+            "comdlg32.lib",
+            "advapi32.lib",
         }
 
-        links {
-            "GraphicsEngine",
-            "CommonUtilities",
-
-            "d3d11.lib",
-            "d2d1.lib",
-            "dwrite.lib",
-            "dxguid.lib",
-            "dxgi.lib",
+        includedirs {
+            Settings.ExternalDir .. "msdfgen",
+            Settings.ExternalDir .. "artery-font",
+            Settings.ExternalDir .. "msdf-atlas-gen",
         }
 
         files {
-    		fontBuilderDir .. "**.h",
-    		fontBuilderDir .. "**.hpp",
-    		fontBuilderDir .. "**.cpp",
-    	}
+            AssetBuilderDir .. "**.h",
+            AssetBuilderDir .. "**.hpp",
+            AssetBuilderDir .. "**.cpp",
+        }
+
+        filter("configurations:Debug")
+            links {
+                "libpng16d.lib",
+                "zd.lib"
+            }
+
+        filter("configurations:Release")
+            links {
+                "libpng16.lib",
+                "z.lib"
+            }
+
+    -- fontBuilderDir = toolsDir .. "FontBuilder/"
+    -- project("FontBuilder")
+    --     location(fontBuilderDir)
+
+    --     kind("ConsoleApp")
+    --     language("C++")
+    --     cppdialect("C++20")
+
+    --     debugargs {
+    --         "../../../Assets/",
+    --         "--regex=^.*\\.ttf$",
+    --         "--size=96",
+    --         "/rpd"
+    --     }
+
+    --     links {
+    --         "GraphicsEngine",
+    --         "CommonUtilities",
+
+    --         "d3d11.lib",
+    --         "d2d1.lib",
+    --         "dwrite.lib",
+    --         "dxguid.lib",
+    --         "dxgi.lib",
+    --     }
+
+    --     files {
+    -- 		fontBuilderDir .. "**.h",
+    -- 		fontBuilderDir .. "**.hpp",
+    -- 		fontBuilderDir .. "**.cpp",
+    -- 	}
 
 implementationsDir = Settings.SourceDir .. "Implementations/"
 group("Implementations")
