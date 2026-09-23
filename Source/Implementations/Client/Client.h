@@ -67,7 +67,7 @@ namespace client
 		Client();
 		~Client();
 
-		LRESULT CALLBACK ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
+		bool ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
 		bool Initialize(HWND aWindow, const wchar_t* const* aArgs, size_t aNumArgs);
 		bool Shutdown();
@@ -75,6 +75,10 @@ namespace client
 		void Run();
 
 		void Exit();
+
+		assets::FontRegistry& GetFontRegistry() const noexcept;
+		assets::ShaderRegistry& GetShaderRegistry() const noexcept;
+		assets::TextureRegistry& GetTextureRegistry() const noexcept;
 
 	private:
 		std::unique_ptr<assets::FontRegistry> myFontRegistry;

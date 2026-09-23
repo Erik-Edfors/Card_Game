@@ -8,12 +8,15 @@
 static LRESULT CALLBACK locWinProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
 	client::Client* client = reinterpret_cast<client::Client*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-	if (client != nullptr)
+	if (client != nullptr && client->ProcessWindowsMessage(hWnd, uMsg, wParam, lParam))
 	{
-		return client->ProcessWindowsMessage(hWnd, uMsg, wParam, lParam);
+		return TRUE;
+	}
+	else
+	{
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
 
-	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
 static int GuardedMain(const wchar_t* const* aArgs, size_t aNumArgs)

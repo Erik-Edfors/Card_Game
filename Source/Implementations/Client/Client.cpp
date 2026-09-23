@@ -39,7 +39,8 @@
 namespace client
 {
 	Client::Client() :
-		myExiting(false)
+		myExiting(false),
+		myWindow(NULL)
 	{
 	}
 
@@ -47,16 +48,28 @@ namespace client
 	{
 	}
 
-	LRESULT CALLBACK Client::ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
+	bool Client::ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 	{
+		if (myEngine && myEngine->ProcessWindowsMessage(hWnd, uMsg, wParam, lParam))
+		{
+			return true;
+		}
+
 		switch (uMsg)
 		{
 		case WM_CLOSE: case WM_DESTROY:
+		{
 			PostQuitMessage(0);
-			break;
+		}
+		break;
+		case WM_SIZE:
+		{
+			myEngine->GetGraphicsEngine().GetDevice()->UpdateBackbufferSize(LOWORD(lParam), HIWORD(lParam));
+		}
+		break;
 		}
 
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+		return false;
 	}
 
 	bool Client::Initialize(HWND aWindow, const wchar_t* const* aArgs, size_t aNumArgs)
@@ -106,6 +119,8 @@ namespace client
 
 		renderLayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
 		spriteRenderLayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
+
+		myEngine->PushScene<LobbyScene>(this);
 
 		return true;
 
@@ -165,6 +180,19 @@ namespace client
 	void Client::Exit()
 	{
 		myExiting = true;
+	}
+
+	assets::FontRegistry& Client::GetFontRegistry() const noexcept
+	{
+		return *myFontRegistry;
+	}
+	assets::ShaderRegistry& Client::GetShaderRegistry() const noexcept
+	{
+		return *myShaderRegistry;
+	}
+	assets::TextureRegistry& Client::GetTextureRegistry() const noexcept
+	{
+		return *myTextureRegistry;
 	}
 }
 
