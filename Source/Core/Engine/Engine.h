@@ -47,7 +47,7 @@
 namespace CommonUtilities
 {
 	class InputManager;
-	class Timer;
+	class TimeManager;
 }
 
 class GraphicsEngine;
@@ -69,11 +69,12 @@ public:
 
 	const CommonUtilities::InputManager& GetInputManager() const noexcept;
 	GraphicsEngine& GetGraphicsEngine() noexcept;
+	const CommonUtilities::TimeManager& GetTimeManager() const noexcept;
 
 	Scene* GetScene() noexcept;
 
-	template<class _SceneTy>
-	void PushScene();
+	template<class _SceneTy, class... _Args>
+	void PushScene(_Args&&... aArgs);
 
 	template<class _SceneTy>
 	void ChangeScene();
@@ -85,13 +86,15 @@ private:
 
 	std::unique_ptr<GraphicsEngine> myGraphicsEngine;
 
+	std::unique_ptr<CommonUtilities::TimeManager> myTimeManager;
+
 	std::vector<std::unique_ptr<Scene>> mySceneStack;
 };
 
-template<class _SceneTy>
-inline void Engine::PushScene()
+template<class _SceneTy, class... _Args>
+inline void Engine::PushScene(_Args&&... aArgs)
 {
-	mySceneStack.push_back(std::make_unique<_SceneTy>());
+	mySceneStack.push_back(std::make_unique<_SceneTy>(std::forward<_Args>(aArgs)...));
 	mySceneStack.back()->Initialize(this);
 }
 

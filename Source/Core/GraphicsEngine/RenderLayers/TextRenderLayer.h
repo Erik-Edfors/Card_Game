@@ -1,151 +1,149 @@
 #pragma once
 #include "RenderLayer.h"
-
-#include <Core/CommonUtilities/Math/Vector.h>
-#include <Core/CommonUtilities/Math/AABB2D.hpp>
+#include <vector>
 #include <Core/CommonUtilities/Math/Matrix4x4.hpp>
+#include <Core/RenderHardwareInterface/Objects/ShaderResource.h>
 #include <Core/RenderHardwareInterface/Objects/Buffers/VertexBuffer.h>
-
-#include <unordered_map>
-#include <string>
-
-#include <istream>
-
-#ifdef CreateFont
-#undef CreateFont
-#endif
+#include <Core/RenderHardwareInterface/Objects/Buffers/ConstantBuffer.h>
+#include <Core/Assets/FileFormats/Font.h>	// TODO: Remove, this is temporary until a proper storage for fonts is made.
+//#include <Core/RenderHardwareInterface/Objects/Texture2D.h>
 
 namespace graphics
 {
-	class Texture2D;
 	class ShaderResource;
+	class RenderTarget;
+	class DepthStencil;
+	class SamplerState;
+
+	class VertexBuffer;
+	class ConstantBuffer;
+
+	class BlendState;
+	class InputLayout;
 
 	class VertexShader;
 	class GeometryShader;
 	class PixelShader;
-
-	class InputLayout;
-
-	class ConstantBuffer;
-
-	class BlendState;
-	class SamplerState;
-
-	class RenderTarget;
-	class DepthStencil;
 }
 
-class Font
+namespace assets
 {
-	friend class TextRenderLayer;
-public:
-	struct Glyph
-	{
-		float Bounds[4];
-		float AtlasRect[4];
-		float Advance;
-	};
-	
-	~Font();
+	class ShaderRegistry;
+}
 
-	const Glyph* FindGlyph(wchar_t aChar) const noexcept;
-
-	float GetFontSize() const noexcept;
-	float GetAdvanceHeight() const noexcept;
-	float GetUnderlineHeight() const noexcept;
-	float GetUnderlineThickness() const noexcept;
-	float GetStrikethroughHeight() const noexcept;
-	float GetStrikethroughThickness() const noexcept;
-
-private:
-	Font();
-
-	graphics::ShaderResource* GetAtlas() const noexcept;
-
-	std::unordered_map<wchar_t, Glyph> myGlyphMap;
-	graphics::PImpl<graphics::ShaderResource> myAtlas;
-
-	float myFontSize;
-	float myAdvanceHeight;
-	float myUnderlineHeight;
-	float myUnderlineThickness;
-	float myStrikethroughHeight;
-	float myStrikethroughThickness;
-};
+class TextRenderLayer;
 
 class Text
 {
 	friend class TextRenderLayer;
 public:
-	Text();
-	~Text();
+	struct GlyphVertex
+	{
+		float Bounds[4];
+		float UVRect[4];
+	};
 
-	CommonUtilities::Vector2f GetSize() const noexcept;
+	struct TextInstance
+	{
+		unsigned int VertexCount;
+		graphics::PImpl<graphics::ShaderResource> Atlas;
+		graphics::PImpl<graphics::VertexBuffer> VertexBuffer;
+		graphics::PImpl<graphics::ConstantBuffer> ObjectBuffer;
+	};
+
+	Text() noexcept;
+	~Text() noexcept;
+
+	void SetTransform(const CommonUtilities::Matrix4x4f& aTransform) noexcept;
+	const CommonUtilities::Matrix4x4f& GetTransform() const noexcept;
+
+	void SetColor(CommonUtilities::Vector4f aColor) noexcept;
+	CommonUtilities::Vector4f GetColor() const noexcept;
+
+	void SetBorderColor(CommonUtilities::Vector4f aColor) noexcept;
+	CommonUtilities::Vector4f GetBorderColor() const noexcept;
+
+	void SetBorderThickness(float aBorderThickness) noexcept;
+	float GetBorderThickness() const noexcept;
+
+	void SetAdvancePadding(float aPadding) noexcept;
+	float GetAdvancePadding() const noexcept;
+
+	void SetFont(const assets::FontFile* aFont) noexcept;
+	const assets::FontFile* GetFont() const noexcept;
+
+	void SetFontSize(float aFontSize) noexcept;
+	float GetFontSize() const noexcept;
+
+	void SetMaxWidth(float aMaxWidth) noexcept;
+	float GetMaxWidth() const noexcept;
+
+	void SetText(const wchar_t* aText) noexcept;
+	void SetText(const char* aText) noexcept;
+	std::wstring_view GetText() const noexcept;
+
+	TextInstance GetInstance(graphics::Device* aDevice) const;
 
 private:
-	void Initialize(graphics::VertexBuffer* aVertexBuffer, size_t aVertexCount, graphics::ShaderResource* aAtlas, CommonUtilities::Vector2f aSize);
+	void Clean(graphics::Device* aDevice) const;
 
-	CommonUtilities::Vector2f mySize;
-	graphics::PImpl<graphics::VertexBuffer> myVertexBuffer;
-	size_t myVertexCount;
-	graphics::PImpl<graphics::ShaderResource> myAtlas;
+	mutable bool myObjectBufferIsDirty;
+	mutable bool myVerticesIsDirty;
+	mutable bool myAtlasIsDirty;
+	// myInstance should only be updated to reflect the actual state of the Text object when used and needed as it is an intensive process.
+	mutable TextInstance myInstance;
+
+	CommonUtilities::Matrix4x4f myTransform;
+	const assets::FontFile* myFont;
+	std::wstring myText;
+	CommonUtilities::Vector4f myColor;
+	CommonUtilities::Vector4f myBorderColor;
+	float myBorderThickness;
+	float myAdvancePadding;
+	float myFontSize;
+	float myMaxWidth;
 };
 
 class TextRenderLayer : public RenderLayer
 {
 public:
-	TextRenderLayer();
-	~TextRenderLayer();
+	TextRenderLayer(assets::ShaderRegistry* aShaderRegistry);
+	~TextRenderLayer() = default;
 
-	Text CreateText(
-		const wchar_t* aText,
-		const Font& aFont,
-		float aFontSize,
-		const CommonUtilities::Vector4f& aColor,
-		float aRoughness,
-		float aMetallicity
-	) const;
+	void SetRenderTarget(graphics::RenderTarget* aRenderTarget);
+	void SetDepthStencil(graphics::DepthStencil* aDepthStencil);
 
-	Font CreateFont(
-		const wchar_t* aFontFile
-	);
+	void SetView(const CommonUtilities::Matrix4x4<float>& aView);
+	void SetProjection(const CommonUtilities::Matrix4x4<float>& aProjection);
 
-	void Draw(const Text& aText, const CommonUtilities::Matrix4x4f& aTransform);
+	void Draw(const Text& aText);
 
-	void SetTargets(graphics::RenderTarget* aRenderTarget, graphics::DepthStencil* aDepthStencil);
-
-	void SetView(const CommonUtilities::Matrix4x4f& aView) noexcept;
-	void SetProjection(const CommonUtilities::Matrix4x4f& aProjection) noexcept;
+	//Text CreateText(const char* aText, const assets::FontFile& aFont, float aSize, const CommonUtilities::Matrix4x4f& aTransform) const;
 
 protected:
-	void OnInit() override;
-	void OnRender() override;
+	virtual void OnInit() override;
+	virtual void OnRender() override;
+	//virtual void OnPreRender() override;
+	virtual void OnPostRender() override;
 
 private:
-	struct TextInstance
-	{
-		CommonUtilities::Matrix4x4f Transform;
-		Text Text;
-	};
+	assets::ShaderRegistry* myShaderRegistry;
 
-	std::vector<TextInstance> myTexts;
+	CommonUtilities::Matrix4x4<float> myView;
+	CommonUtilities::Matrix4x4<float> myProjection;
 
-	CommonUtilities::Matrix4x4f myView;
-	CommonUtilities::Matrix4x4f myProjection;
+	graphics::PImpl<graphics::RenderTarget> myRenderTarget;
+	graphics::PImpl<graphics::DepthStencil> myDepthStencil;
+
+	graphics::PImpl<graphics::BlendState> myBlendState;
+	graphics::PImpl<graphics::InputLayout> myInputLayout;
 
 	graphics::PImpl<graphics::VertexShader> myVertexShader;
 	graphics::PImpl<graphics::GeometryShader> myGeometryShader;
 	graphics::PImpl<graphics::PixelShader> myPixelShader;
 
-	graphics::PImpl<graphics::InputLayout> myInputLayout;
-
 	graphics::PImpl<graphics::ConstantBuffer> myFrameBuffer;
-	graphics::PImpl<graphics::ConstantBuffer> myObjectBuffer;
-	graphics::PImpl<graphics::ConstantBuffer> myMaterialBuffer;
+	graphics::PImpl<graphics::SamplerState> mySampler;
 
-	graphics::PImpl<graphics::BlendState> myBlendState;
-
-	graphics::PImpl<graphics::RenderTarget> myRenderTarget;
-	graphics::PImpl<graphics::DepthStencil> myDepthStencil;
-	graphics::PImpl<graphics::SamplerState> mySamplerState;
+	std::vector<Text::TextInstance> myInstances;
 };

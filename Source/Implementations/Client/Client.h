@@ -40,15 +40,21 @@
 #define NODEFERWINDOWPOS  // DeferWindowPos routines
 #define NOMCX             // Modem Configuration Extensions
 #include <Windows.h>
+#include <memory>
 
 #include <Core/RenderHardwareInterface/PImpl.hpp>
-
-#include <memory>
 
 namespace graphics
 {
 	class RenderTarget;
 	class DepthStencil;
+}
+
+namespace assets
+{
+	class FontRegistry;
+	class ShaderRegistry;
+	class TextureRegistry;
 }
 
 class Engine;
@@ -71,10 +77,11 @@ namespace client
 		void Exit();
 
 	private:
-		bool myExiting;
+		std::unique_ptr<assets::FontRegistry> myFontRegistry;
+		std::unique_ptr<assets::ShaderRegistry> myShaderRegistry;
+		std::unique_ptr<assets::TextureRegistry> myTextureRegistry;
 		std::unique_ptr<Engine> myEngine;
-
-		graphics::PImpl<graphics::RenderTarget> myRenderTarget;
-		graphics::PImpl<graphics::DepthStencil> myDepthStencil;
+		HWND myWindow;
+		bool myExiting;
 	};
 }

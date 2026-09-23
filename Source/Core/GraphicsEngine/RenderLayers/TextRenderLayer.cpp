@@ -1,603 +1,686 @@
 #include "GraphicsEngine.pch.h"
-#include "Common.h"
 #include "TextRenderLayer.h"
-#include "ConstantBuffers/FrameBuffer.h"
-#include "ConstantBuffers/ObjectBuffer.h"
-#include "ConstantBuffers/MaterialBuffer.h"
+
+#include <Core/CommonUtilities/Math/Vector2.hpp>
+#include <Core/CommonUtilities/StringHelper.h>
+
+#include <Core/Assets/ShaderRegistry.h>
 
 #include <Core/RenderHardwareInterface/Device.h>
+#include <Core/RenderHardwareInterface/Objects/DeferredDeviceContext.h>
 #include <Core/RenderHardwareInterface/Objects/Texture2D.h>
 #include <Core/RenderHardwareInterface/Objects/ShaderResource.h>
-#include <Core/RenderHardwareInterface/Objects/SamplerState.h>
-#include <Core/RenderHardwareInterface/Objects/BlendState.h>
-#include <Core/RenderHardwareInterface/Objects/InputLayout.h>
-#include <Core/RenderHardwareInterface/Objects/DeferredDeviceContext.h>
 #include <Core/RenderHardwareInterface/Objects/RenderTarget.h>
 #include <Core/RenderHardwareInterface/Objects/DepthStencil.h>
+#include <Core/RenderHardwareInterface/Objects/SamplerState.h>
 #include <Core/RenderHardwareInterface/Objects/Buffers/ConstantBuffer.h>
 #include <Core/RenderHardwareInterface/Objects/Buffers/VertexBuffer.h>
-
+#include <Core/RenderHardwareInterface/Objects/BlendState.h>
+#include <Core/RenderHardwareInterface/Objects/InputLayout.h>
 #include <Core/RenderHardwareInterface/Objects/Shaders/VertexShader.h>
 #include <Core/RenderHardwareInterface/Objects/Shaders/GeometryShader.h>
 #include <Core/RenderHardwareInterface/Objects/Shaders/PixelShader.h>
 
-#include <Core/GraphicsEngine/GraphicsEngine.h>
-
-#include <Core/Assets/Font.h>
-#include <Core/CommonUtilities/Serialization/StreamWrapper.hpp>
-#include <Core/CommonUtilities/Serialization/Serializer.hpp>
-
-#include <cwctype>
-
-#ifdef CreateFont
-#undef CreateFont
-#endif
-
-#define FILE_CATEGORY "TextRenderLayer.cpp"
-#define CLASS_CATEGORY FILE_CATEGORY"->TextRenderLayer"
-
-struct GlyphVertex
+struct FrameBuffer
 {
-	CommonUtilities::AABB2Df Bounds;
-	CommonUtilities::AABB2Df TextureRect;
+	CommonUtilities::Matrix4x4f View;
+	CommonUtilities::Matrix4x4f Projection;
+};
+struct ObjectBuffer
+{
+	CommonUtilities::Matrix4x4f Transform;
+	CommonUtilities::Vector4f Color;
+	CommonUtilities::Vector4f BorderColor;
+	float AtlasEmSize;
+	float SDLength;
+	float BorderThickness;
+
+	unsigned int _padding[1];
 };
 
-Font::Font() :
-	myFontSize(0),
-	myUnderlineHeight(0.f),
-	myUnderlineThickness(0.f),
-	myStrikethroughHeight(0.f),
-	myStrikethroughThickness(0.f),
-	myAdvanceHeight(0.f)
+Text::Text() noexcept :
+	myFont(nullptr),
+	myObjectBufferIsDirty(true),
+	myVerticesIsDirty(true),
+	myAtlasIsDirty(true),
+	myInstance({}),
+	myColor({ 0.f, 0.f, 0.f, 1.f }),
+	myBorderColor({ 1.f, 1.f, 1.f, 1.f }),
+	myBorderThickness(0.f),
+	myAdvancePadding(0.f),
+	myFontSize(24),
+	myMaxWidth(INFINITY)
 {
 }
 
-Font::~Font()
+Text::~Text() noexcept
 {
 }
 
-const Font::Glyph* Font::FindGlyph(wchar_t aChar) const noexcept
+void Text::SetTransform(const CommonUtilities::Matrix4x4f& aTransform) noexcept
 {
-	auto it = myGlyphMap.find(aChar);
-	if (it != myGlyphMap.end())
-	{
-		return &it->second;
-	}
-	return nullptr;
+	myObjectBufferIsDirty |= myTransform != aTransform;
+	myTransform = aTransform;
 }
 
-float Font::GetFontSize() const noexcept
+const CommonUtilities::Matrix4x4f& Text::GetTransform() const noexcept
+{
+	return myTransform;
+}
+
+void Text::SetColor(CommonUtilities::Vector4f aColor) noexcept
+{
+	myObjectBufferIsDirty |= true;
+	myColor = aColor;
+}
+
+CommonUtilities::Vector4f Text::GetColor() const noexcept
+{
+	return myColor;
+}
+
+void Text::SetBorderColor(CommonUtilities::Vector4f aColor) noexcept
+{
+	myObjectBufferIsDirty |= true;
+	myBorderColor = aColor;
+}
+
+CommonUtilities::Vector4f Text::GetBorderColor() const noexcept
+{
+	return myBorderColor;
+}
+
+void Text::SetBorderThickness(float aBorderThickness) noexcept
+{
+	myObjectBufferIsDirty |= true;
+	myBorderThickness = aBorderThickness;
+}
+
+float Text::GetBorderThickness() const noexcept
+{
+	return myBorderThickness;
+}
+
+void Text::SetAdvancePadding(float aPadding) noexcept
+{
+	myVerticesIsDirty |= true;
+	myAdvancePadding = aPadding;
+}
+
+float Text::GetAdvancePadding() const noexcept
+{
+	return myAdvancePadding;
+}
+
+void Text::SetFont(const assets::FontFile* aFont) noexcept
+{
+	myAtlasIsDirty |= true;
+	myVerticesIsDirty |= true;
+	myFont = aFont;
+}
+
+const assets::FontFile* Text::GetFont() const noexcept
+{
+	return myFont;
+}
+
+void Text::SetFontSize(float aFontSize) noexcept
+{
+	myObjectBufferIsDirty |= true;
+	myFontSize = aFontSize;
+}
+
+float Text::GetFontSize() const noexcept
 {
 	return myFontSize;
 }
 
-float Font::GetAdvanceHeight() const noexcept
+void Text::SetMaxWidth(float aMaxWidth) noexcept
 {
-	return myAdvanceHeight;
+	myVerticesIsDirty |= true;
+	myMaxWidth = aMaxWidth;
 }
 
-float Font::GetUnderlineHeight() const noexcept
+float Text::GetMaxWidth() const noexcept
 {
-	return myUnderlineHeight;
+	return myMaxWidth;
 }
 
-float Font::GetUnderlineThickness() const noexcept
+void Text::SetText(const wchar_t* aText) noexcept
 {
-	return myUnderlineThickness;
+	myVerticesIsDirty |= true;
+	myText = aText;
 }
 
-float Font::GetStrikethroughHeight() const noexcept
+void Text::SetText(const char* aText) noexcept
 {
-	return myStrikethroughHeight;
+	myVerticesIsDirty |= true;
+	myText = CommonUtilities::UTF8(aText);
 }
 
-float Font::GetStrikethroughThickness() const noexcept
+std::wstring_view Text::GetText() const noexcept
 {
-	return myStrikethroughThickness;
+	return myText;
 }
 
-graphics::ShaderResource* Font::GetAtlas() const noexcept
+Text::TextInstance Text::GetInstance(graphics::Device* aDevice) const
 {
-	return myAtlas.Get();
+	Clean(aDevice);
+	return myInstance;
 }
 
-Text::Text() :
-	myVertexCount(0)
+void Text::Clean(graphics::Device* aDevice) const
 {
-}
-
-Text::~Text()
-{
-}
-
-void Text::Initialize(graphics::VertexBuffer* aVertexBuffer, size_t aVertexCount, graphics::ShaderResource* aAtlas, CommonUtilities::Vector2f aSize)
-{
-	myVertexBuffer = aVertexBuffer;
-	myVertexCount = aVertexCount;
-	myAtlas = aAtlas;
-	mySize = aSize;
-}
-
-TextRenderLayer::TextRenderLayer()
-{
-}
-
-TextRenderLayer::~TextRenderLayer()
-{
-}
-
-Text TextRenderLayer::CreateText(const wchar_t* aText, const Font& aFont, float aFontSize, const CommonUtilities::Vector4f& aColor, float aRoughness, float aMetallicity) const
-{
-#define LOG_CATEGORY CLASS_CATEGORY"::CreateText"
-	//TODO: allow setting material.
-	aColor;
-	aMetallicity;
-	aRoughness;
-
-	if (aText == nullptr)
+	if (myObjectBufferIsDirty)
 	{
-		return {};
-	}
+		float emSize = 24.f;
+		float sdLength = 4.f;
 
-	size_t length = 0;
-	while (aText[length] != L'\0') ++length;
-
-	size_t glyphCount = 0;
-	std::unique_ptr<GlyphVertex[]> glyphs = std::make_unique<GlyphVertex[]>(length);
-
-	CommonUtilities::Vector2f cursor = { 0.f, 0.f };
-	for (size_t i = 0; i < length; i++)
-	{
-		const wchar_t c = aText[i];
-
-		const Font::Glyph* glyph = aFont.FindGlyph(c);
-
-		const CommonUtilities::Vector2f position = cursor;
-
-		switch (c)
+		if (myFont != nullptr)
 		{
-			case L'\n':
-				cursor.y -= aFont.GetAdvanceHeight() * aFontSize;
-				cursor.x = 0.f;
-				break;
-			case L'\t':
-				cursor.x += 2.f * aFontSize - std::fmodf(cursor.x, 2.f * aFontSize);
-				break;
+			emSize = myFont->MTSDFAtlas.EmSize;
+			sdLength = myFont->MTSDFAtlas.SDLength;
 		}
 
-		if (not std::iswprint(c) || glyph == nullptr)
-		{
-			continue;
-		}
-		cursor.x += glyph->Advance * aFontSize;
-
-		if (std::iswblank(c))
-		{
-			continue;
-		}
-
-		GlyphVertex& vertex = glyphs[glyphCount++];
-		vertex.Bounds.Min = position + CommonUtilities::Vector2f(glyph->Bounds[0], -glyph->Bounds[3]) * aFontSize;
-		vertex.Bounds.Max = position + CommonUtilities::Vector2f(glyph->Bounds[2], -glyph->Bounds[1]) * aFontSize;
-		vertex.TextureRect = {
-			{ glyph->AtlasRect[0], glyph->AtlasRect[1] },
-			{ glyph->AtlasRect[2], glyph->AtlasRect[3] }
-		};
-	}
-
-	graphics::VertexBufferDesc desc = {
-		.Name = "Text VertexBuffer",
-		.Data = glyphs.get(),
-		.Size = glyphCount * sizeof(glyphs[0]),
-		.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
-		.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
-	};
-
-	graphics::PImpl<graphics::VertexBuffer> vertexBuffer;
-	graphics::result::Code result = GetGraphicsEngine()->GetDevice()->CreateVertexBuffer(&vertexBuffer, &desc);
-	if (GRAPHICS_FAILED(result))
-	{
-		const graphics::result::Message msg = graphics::result::GetErrorMessage(result);
-		LOG_ERROR(LOG_CATEGORY, "Failed to create Text! graphics::Device::CreateVertexBuffer failed. Error: '%s: %s'.", msg.Type, msg.Desc);
-		return {};
-	}
-
-	Text text;
-	//TODO: Actually calculate size. And add an additional advance width at end.
-	text.Initialize(vertexBuffer.Get(), glyphCount, aFont.GetAtlas(), cursor);
-
-	return text;
-
-#undef LOG_CATEGORY
-}
-
-Font TextRenderLayer::CreateFont(const wchar_t* aFontFile)
-{
-#define LOG_CATEGORY CLASS_CATEGORY"::CreateFont"
-
-	std::ifstream file(aFontFile, std::ios::binary);
-
-	if (not file.is_open())
-	{
-		return {};
-	}
-
-	CommonUtilities::StreamReader reader(file);
-	reader.SetConstraints(
-		CommonUtilities::ReadConstraints{
-			.MaxSize = 100'000'000	// 100 MB size limit
-		}
-	);
-
-	CommonUtilities::Serializer serializer;
-
-	assets::FileHeader header;
-	if (not serializer.Read(header, reader))
-	{
-		LOG_ERROR(LOG_CATEGORY, "Failed to create Font! CommonUtilities::Serializer::Read failed. Error: '%s'.", serializer.GetLastException().what());
-		return {};
-	}
-
-	if (header != assets::FONT_FILE_HEADER)
-	{
-		LOG_ERROR(LOG_CATEGORY, "Failed to create Font! Header '%s' of file '%s' did not match current file version '%s'.",
-			assets::to_string(header), aFontFile, assets::to_string(assets::FONT_FILE_HEADER)
-		);
-		return {};
-	}
-
-	assets::Font font;
-	if (not serializer.Read(font, reader))
-	{
-		//TODO: Log
-		LOG_ERROR(LOG_CATEGORY, "Failed to create Font! CommonUtilities::Serializer::Read failed. Error: '%s'.", serializer.GetLastException().what());
-		return {};
-	}
-
-	graphics::PImpl<graphics::Texture2D> atlasTexture;
-	{
-		graphics::TextureSubresourceData subResource{
-			.Data = font.Atlas.Data.data(),
-			.RowPitch = font.Atlas.RowPitch,
-			.DepthPitch = font.Atlas.DepthPitch
+		const ObjectBuffer buffer = {
+			.Transform = myTransform,
+			.Color = myColor,
+			.BorderColor = myBorderColor,
+			.AtlasEmSize = emSize,
+			.SDLength = sdLength,
+			.BorderThickness = myBorderThickness,
+			._padding = {}
 		};
 
-		graphics::Texture2DDesc desc = {
-			.BindFlags = graphics::GRAPHICS_BIND_SHADER_RESOURCE,
-			.ResourceFlags = graphics::GRAPHICS_RESOURCE_NONE,
-			.Name = "Font Atlas",	//TODO: Actually use font name.
-			.Width = font.Atlas.Width,
-			.Height = font.Atlas.Height,
-			.MipLevels = 1,
-			.NumTextures = 1,
-			.Data = &subResource,
-			.NumData = 1,
-			.Format = graphics::GRAPHICS_FORMAT_B8G8R8A8_UNORM,
+		const graphics::ConstantBufferDesc desc = {
+			.Name = "Text ObjectBuffer",
+			.InitialData = &buffer,
+			.Size = sizeof(buffer),
 			.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
 			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
 		};
-		HRESULT result = GetGraphicsEngine()->GetDevice()->CreateTexture2D(&atlasTexture, &desc);
-		if (FAILED(result))
-		{
-			//TODO: Log
-			return {};
-		}
-	}
 
-	graphics::PImpl<graphics::ShaderResource> atlasResource;
+		graphics::result::Code result = aDevice->CreateConstantBuffer(&myInstance.ObjectBuffer, &desc);
+		result;
+		//TODO: Log errors.
+
+		myObjectBufferIsDirty = false;
+	}
+	if (myAtlasIsDirty)
 	{
-		graphics::ShaderResourceDesc desc = {
-			.Name = "Font Atlas ShaderResource",
-			.Texture = atlasTexture.Get(),
-			.Format = graphics::GRAPHICS_FORMAT_UNKNOWN,
-			.ViewDimension = graphics::GRAPHICS_SHADER_RESOURCE_VIEW_DIMENSION_TEXTURE2D,
-			.FirstSlice = 0,
-			.NumSlices = 1,
-			.MipLevels = 1,
-			.MostDetailedMip = 0
-		};
-		HRESULT result = GetGraphicsEngine()->GetDevice()->CreateShaderResource(&atlasResource, &desc);
-		if (FAILED(result))
+		myInstance.Atlas.Reset();
+
+		if (myFont != nullptr)
 		{
-			//TODO: Log
-			return {};
+			const assets::FontFile::Atlas& atlas = myFont->MTSDFAtlas;
+
+			graphics::PImpl<graphics::Texture2D> atlasTexture;
+			{
+				graphics::TextureSubresourceData data = {
+					.Data = atlas.Pixels.data(),
+					.RowPitch = sizeof(atlas.Pixels[0]) * atlas.Width,
+					.DepthPitch = static_cast<unsigned int>(sizeof(atlas.Pixels[0]) * atlas.Pixels.size())
+				};
+				graphics::Texture2DDesc desc = {
+					.BindFlags = graphics::GRAPHICS_BIND_SHADER_RESOURCE,
+					.ResourceFlags = graphics::GRAPHICS_RESOURCE_NONE,
+					.Name = "Text Atlas Texture",
+					.Width = atlas.Width,
+					.Height = static_cast<unsigned int>(atlas.Pixels.size()) / atlas.Width,
+					.MipLevels = 1,
+					.NumTextures = 1,
+					.Data = &data,
+					.NumData = 1,
+					.Format = graphics::GRAPHICS_FORMAT_R8G8B8A8_UNORM,
+					.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
+					.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
+				};
+				graphics::result::Code result = aDevice->CreateTexture2D(&atlasTexture, &desc);
+				result;
+				//TODO: Log errors.
+			}
+			{
+				graphics::ShaderResourceDesc desc = {
+					.Name = "Text Atlas ShaderResource",
+					.Texture = atlasTexture.Get(),
+					.Format = graphics::GRAPHICS_FORMAT_R8G8B8A8_UNORM,
+					.ViewDimension = graphics::GRAPHICS_SHADER_RESOURCE_VIEW_DIMENSION_TEXTURE2D,
+					.FirstSlice = 0,
+					.NumSlices = 1,
+					.MipLevels = 1,
+					.MostDetailedMip = 0
+				};
+				graphics::result::Code result = aDevice->CreateShaderResource(&myInstance.Atlas, &desc);
+				result;
+				//TODO: Log errors.
+			}
 		}
+
+		myAtlasIsDirty = false;
 	}
-
-	Font result;
-	result.myAtlas = atlasResource.Get();
-
-	result.myAdvanceHeight = font.AdvanceHeight;
-	result.myFontSize = font.FontSize;
-	result.myUnderlineHeight = font.UnderlineHeight;
-	result.myUnderlineThickness = font.UnderlineThickness;
-	result.myStrikethroughHeight = font.StrikethroughHeight;
-	result.myStrikethroughThickness = font.StrikethroughThickness;
-
-	for (const assets::Font::Glyph& glyph : font.Glyphs)
+	if (myVerticesIsDirty)
 	{
-		result.myGlyphMap[glyph.Character] = Font::Glyph{
-			.Bounds = {
-				glyph.Bounds[0],
-				glyph.Bounds[1],
-				glyph.Bounds[2],
-				glyph.Bounds[3]
-			},
-			.AtlasRect = {
-				glyph.AtlasRect[0],
-				glyph.AtlasRect[1],
-				glyph.AtlasRect[2],
-				glyph.AtlasRect[3]
-			},
-			.Advance = glyph.Advance
-		};
+		myInstance.VertexBuffer.Reset();
+		if (not myText.empty() && myFont != nullptr)
+		{
+			//const float atlasEmSize = 24;	// Number of pixels per Em distance in atlas.
+			//const float atlasDistanceFactor = 6;	
+
+			const float atlasWidth = static_cast<float>(myFont->MTSDFAtlas.Width);
+			const float atlasHeight = static_cast<float>(myFont->MTSDFAtlas.Pixels.size()) / atlasWidth;
+
+			//const float advancePadding = myBorderThickness * myFontSize;
+			const float advancePadding = myAdvancePadding * myFontSize;
+			const float advanceHeight = myFont->AdvanceHeight * myFontSize + advancePadding;
+
+			std::vector<GlyphVertex> vertices;
+			std::vector<GlyphVertex> wordVertices;
+			std::vector<wchar_t> wordCharacters;
+			CommonUtilities::Vector2f cursor;
+			const wchar_t* current = myText.c_str();
+			while (*current != '\0')
+			{
+				wchar_t c = *current++;
+				auto it = myFont->Glyphs.find(c);
+
+				const CommonUtilities::Vector2f currentCursor = cursor;
+
+				if (not wordVertices.empty())
+				{
+					GlyphVertex& lastVertex = wordVertices.back();
+
+					const float wordRight = lastVertex.Bounds[1];
+					if (wordRight > myMaxWidth)
+					{
+						const GlyphVertex& firstVertex = wordVertices.front();
+						const wchar_t firstCharacter = wordCharacters.front();
+						const assets::FontFile::Glyph& firstGlyph = myFont->Glyphs.at(firstCharacter);
+
+						const float wordOrigin = firstVertex.Bounds[0] - myFontSize * firstGlyph.PlaneBounds.Left;
+						const float wordAdvance = currentCursor.x - wordOrigin;
+
+						if (wordOrigin != 0.f)	// If the word is not already at the start of a new line
+						{
+							for (GlyphVertex& vertex : wordVertices)
+							{
+								vertex.Bounds[0] -= wordOrigin;
+								vertex.Bounds[1] -= wordOrigin;
+								vertex.Bounds[2] -= advanceHeight;
+								vertex.Bounds[3] -= advanceHeight;
+							}
+
+							cursor.y -= advanceHeight;
+							cursor.x = wordAdvance;
+						}
+					}
+				}
+
+				if (c == L'\n')
+				{
+					cursor.y -= advanceHeight;
+					cursor.x = 0.f;
+				}
+
+				if (it != myFont->Glyphs.end())
+				{
+					const assets::FontFile::Glyph& glyph = it->second;
+
+					if (not glyph.WhiteSpace)
+					{
+						GlyphVertex vertex = {
+							.Bounds = {
+								cursor.x + myFontSize * glyph.PlaneBounds.Left,
+								cursor.x + myFontSize * glyph.PlaneBounds.Right,
+								cursor.y + myFontSize * glyph.PlaneBounds.Top,
+								cursor.y + myFontSize * glyph.PlaneBounds.Bottom
+							},
+							.UVRect = {
+								(static_cast<float>(glyph.AtlasRect.Left) + 0.5f) / atlasWidth,		// 0.5 is added as otherwise there can be bleedover from other glyphs.
+								(static_cast<float>(glyph.AtlasRect.Right) - 0.5f) / atlasWidth,
+								(static_cast<float>(glyph.AtlasRect.Top) + 0.5f) / atlasHeight,
+								(static_cast<float>(glyph.AtlasRect.Bottom) - 0.5f) / atlasHeight
+							}
+						};
+						wordVertices.push_back(vertex);
+						wordCharacters.push_back(c);
+					}
+					else
+					{
+						vertices.insert(vertices.end(), wordVertices.begin(), wordVertices.end());
+						wordVertices.clear();
+						wordCharacters.clear();
+					}
+
+					cursor.x += glyph.Advance * myFontSize + advancePadding;
+				}
+			}
+
+			vertices.insert(vertices.end(), wordVertices.begin(), wordVertices.end());
+			wordVertices.clear();
+			wordCharacters.clear();
+
+			myInstance.VertexCount = static_cast<unsigned int>(vertices.size());
+
+			graphics::VertexBufferDesc desc = {
+				.Name = "Text VertexBuffer",
+				.Data = vertices.data(),
+				.Size = vertices.size() * sizeof(vertices[0]),
+				.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
+				.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
+			};
+
+			graphics::result::Code result = aDevice->CreateVertexBuffer(&myInstance.VertexBuffer, &desc);
+			result;
+			//TODO: Log errors.
+		}
+
+		myVerticesIsDirty = false;
 	}
-
-	return result;
-
-#undef LOG_CATEGORY
 }
 
-void TextRenderLayer::Draw(const Text& aText, const CommonUtilities::Matrix4x4f& aTransform)
+TextRenderLayer::TextRenderLayer(assets::ShaderRegistry* aShaderRegistry) :
+	myShaderRegistry(aShaderRegistry)
 {
-	myTexts.push_back(
-		TextInstance{
-			.Transform = aTransform,
-			.Text = aText
-		}
-	);
 }
 
-void TextRenderLayer::SetTargets(graphics::RenderTarget* aRenderTarget, graphics::DepthStencil* aDepthStencil)
+void TextRenderLayer::SetRenderTarget(graphics::RenderTarget* aRenderTarget)
 {
 	myRenderTarget = aRenderTarget;
+}
+
+void TextRenderLayer::SetDepthStencil(graphics::DepthStencil* aDepthStencil)
+{
 	myDepthStencil = aDepthStencil;
 }
 
-void TextRenderLayer::SetView(const CommonUtilities::Matrix4x4f& aView) noexcept
+void TextRenderLayer::SetView(const CommonUtilities::Matrix4x4<float>& aView)
 {
 	myView = aView;
 }
 
-void TextRenderLayer::SetProjection(const CommonUtilities::Matrix4x4f& aProjection) noexcept
+void TextRenderLayer::SetProjection(const CommonUtilities::Matrix4x4<float>& aProjection)
 {
 	myProjection = aProjection;
 }
 
+void TextRenderLayer::Draw(const Text& aText)
+{
+	myInstances.push_back(aText.GetInstance(GetDevice()));
+}
+
+//Text TextRenderLayer::CreateText(const char* aText, const assets::FontFile& aFont, float aSize, const CommonUtilities::Matrix4x4f& aTransform) const
+//{
+//	Text text;
+//
+//	text.SetFont(aFont);
+//	text.SetFontSize(24);
+//
+//	graphics::result::Code result;
+//	TextInstance instance = {};
+//
+//	float atlasWidth = static_cast<float>(aFont.MTSDFAtlas.Width);
+//	float atlasHeight = static_cast<float>(aFont.MTSDFAtlas.Pixels.size()) / atlasWidth;
+//
+//	graphics::PImpl<graphics::Texture2D> atlasTexture;
+//	{
+//		graphics::TextureSubresourceData data = {
+//			.Data = aFont.MTSDFAtlas.Pixels.data(),
+//			.RowPitch = sizeof(aFont.MTSDFAtlas.Pixels[0]) * aFont.MTSDFAtlas.Width,
+//			.DepthPitch = static_cast<unsigned int>(sizeof(aFont.MTSDFAtlas.Pixels[0]) * aFont.MTSDFAtlas.Pixels.size())
+//		};
+//		graphics::Texture2DDesc desc = {
+//			.BindFlags = graphics::GRAPHICS_BIND_SHADER_RESOURCE,
+//			.ResourceFlags = graphics::GRAPHICS_RESOURCE_NONE,
+//			.Name = "Text Atlas Texture",
+//			.Width = aFont.MTSDFAtlas.Width,
+//			.Height = static_cast<unsigned int>(aFont.MTSDFAtlas.Pixels.size()) / aFont.MTSDFAtlas.Width,
+//			.MipLevels = 1,
+//			.NumTextures = 1,
+//			.Data = &data,
+//			.NumData = 1,
+//			.Format = graphics::GRAPHICS_FORMAT_R8G8B8A8_UNORM,
+//			.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
+//			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
+//		};
+//		result = GetDevice()->CreateTexture2D(&atlasTexture, &desc);
+//	}
+//	{
+//		graphics::ShaderResourceDesc desc = {
+//			.Name = "Text Atlas ShaderResource",
+//			.Texture = atlasTexture.Get(),
+//			.Format = graphics::GRAPHICS_FORMAT_R8G8B8A8_UNORM,
+//			.ViewDimension = graphics::GRAPHICS_SHADER_RESOURCE_VIEW_DIMENSION_TEXTURE2D,
+//			.FirstSlice = 0,
+//			.NumSlices = 1,
+//			.MipLevels = 1,
+//			.MostDetailedMip = 0
+//		};
+//		result = GetDevice()->CreateShaderResource(&instance.Atlas, &desc);
+//	}
+//	{
+//		std::vector<TextInstance::GlyphVertex> vertices;
+//		CommonUtilities::Vector2f cursor;
+//		const char* current = aText;
+//		while (*current != '\0')
+//		{
+//			char c = *current++;
+//			auto it = aFont.Glyphs.find(c);
+//
+//			if (c == '\n')
+//			{
+//				cursor.y -= aFont.AdvanceHeight * aSize;
+//				cursor.x = 0.f;
+//				continue;
+//			}
+//
+//			if (it != aFont.Glyphs.end())
+//			{
+//				const assets::FontFile::Glyph& glyph = it->second;
+//
+//				if (not glyph.WhiteSpace)
+//				{
+//					TextInstance::GlyphVertex vertex = {
+//						.Bounds = {
+//							cursor.x + aSize * glyph.PlaneBounds.Left,
+//							cursor.x + aSize * glyph.PlaneBounds.Right,
+//							cursor.y + aSize * glyph.PlaneBounds.Top,
+//							cursor.y + aSize * glyph.PlaneBounds.Bottom
+//						},
+//						.UVRect = {
+//							static_cast<float>(glyph.AtlasRect.Left) / atlasWidth,
+//							static_cast<float>(glyph.AtlasRect.Right) / atlasWidth,
+//							static_cast<float>(glyph.AtlasRect.Top) / atlasHeight,
+//							static_cast<float>(glyph.AtlasRect.Bottom) / atlasHeight
+//						}
+//					};
+//					vertices.push_back(vertex);
+//				}
+//
+//				cursor.x += glyph.Advance * aSize;
+//			}
+//		}
+//
+//		instance.VertexCount = static_cast<unsigned int>(vertices.size());
+//
+//		graphics::VertexBufferDesc desc = {
+//			.Name = "Text VertexBuffer",
+//			.Data = vertices.data(),
+//			.Size = vertices.size() * sizeof(vertices[0]),
+//			.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
+//			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
+//		};
+//		result = GetDevice()->CreateVertexBuffer(&instance.VertexBuffer, &desc);
+//	}
+//	{
+//		graphics::ConstantBufferDesc desc = {
+//			.Name = "Text ObjectBuffer",
+//			.InitialData = &aTransform,
+//			.Size = sizeof(aTransform),
+//			.Usage = graphics::GRAPHICS_USAGE_DYNAMIC,
+//			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE
+//		};
+//		result = GetDevice()->CreateConstantBuffer(&instance.ObjectBuffer, &desc);
+//	}
+//
+//	return instance;
+//}
+
 void TextRenderLayer::OnInit()
 {
+	const assets::ShaderAsset* sh;
+	sh = myShaderRegistry->Get("core:text_vs");
 
 	{
-		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../../Assets/Shaders/Text_VS.cso", std::ios::binary);
-
-		size_t shaderSize = 0;
-
-		void* shaderBuffer = nullptr;
-		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
-
-		GetGraphicsEngine()->GetDevice()->CreateShader(
-			&myVertexShader,
-			"Text VertexShader",
-			shaderBuffer,
-			shaderSize
-		);
-
-
-		const graphics::InputLayoutDesc desc = {
+		graphics::InputLayoutDesc desc = {
 			.Name = "Text InputLayout",
 			.LayoutDefinition = {
-				graphics::LayoutElementDesc{
-					.SemanticName = "BOUNDS",
-					.Format = graphics::GRAPHICS_FORMAT_R32G32B32A32_FLOAT
-				},
-				graphics::LayoutElementDesc{
-					.SemanticName = "UVRECT",
-					.Format = graphics::GRAPHICS_FORMAT_R32G32B32A32_FLOAT
-				}
+				{ "BOUNDS", 0u, graphics::GRAPHICS_FORMAT_R32G32B32A32_FLOAT },
+				{ "UVRECT", 0u, graphics::GRAPHICS_FORMAT_R32G32B32A32_FLOAT },
 			},
-			.ShaderByteCode = shaderBuffer,
-			.NumBytes = shaderSize
+			.ShaderByteCode = sh->ByteCode.get(),
+			.NumBytes = sh->ByteCodeSize
 		};
-		GetGraphicsEngine()->GetDevice()->CreateInputLayout(&myInputLayout, &desc);
-
-		delete[] shaderBuffer;
+		GetDevice()->CreateInputLayout(&myInputLayout, &desc);
 	}
 	{
-		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../../Assets/Shaders/Text_GS.cso", std::ios::binary);
-
-		size_t shaderSize = 0;
-
-		void* shaderBuffer = nullptr;
-		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
-
-		GetGraphicsEngine()->GetDevice()->CreateShader(
-			&myGeometryShader,
-			"Text GeometryShader",
-			shaderBuffer,
-			shaderSize
-		);
-
-		delete[] shaderBuffer;
+		graphics::BlendStateDesc desc = {
+			.Name = "Text BlendState",
+			.EnableAlphaToCoverage = false,
+			.EnableIndependentBlend = false,
+			.RenderTargetBlendDescriptions = {
+				{
+					.EnableBlend = true,
+					.SourceBlend = graphics::GRAPHICS_BLEND_SRC_ALPHA,
+					.DestinationBlend = graphics::GRAPHICS_BLEND_INV_SRC_ALPHA,
+					.BlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
+					.AlphaSourceBlend = graphics::GRAPHICS_BLEND_ONE,
+					.AlphaDestinationBlend = graphics::GRAPHICS_BLEND_ZERO,
+					.AlphaBlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
+					.RenderTargetWriteMask = graphics::GRAPHICS_BLEND_COLOR_WRITE_ALL
+				}
+			}
+		};
+		GetDevice()->CreateBlendState(&myBlendState, &desc);
 	}
+
+	if (sh != nullptr)
 	{
-		std::ifstream file("../../../Assets/Shaders/Text_PS.cso", std::ios::binary);
-
-		size_t shaderSize = 0;
-
-		void* shaderBuffer = nullptr;
-		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
-
-		GetGraphicsEngine()->GetDevice()->CreateShader(
-			&myPixelShader,
-			"Text PixelShader",
-			shaderBuffer,
-			shaderSize
-		);
-
-		delete[] shaderBuffer;
+		sh->Shader->As(&myVertexShader);
+	}
+	sh = myShaderRegistry->Get("core:text_gs");
+	if (sh != nullptr)
+	{
+		sh->Shader->As(&myGeometryShader);
+	}
+	sh = myShaderRegistry->Get("core:text_ps");
+	if (sh != nullptr)
+	{
+		sh->Shader->As(&myPixelShader);
 	}
 
 	{
-		const graphics::ConstantBufferDesc desc = {
-			.Name = "Text FrameBuffer",
+		graphics::ConstantBufferDesc desc = {
+			.Name = "Frame Buffer",
 			.InitialData = nullptr,
 			.Size = sizeof(FrameBuffer),
 			.Usage = graphics::GRAPHICS_USAGE_DYNAMIC,
 			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE
 		};
-		GetGraphicsEngine()->GetDevice()->CreateConstantBuffer(&myFrameBuffer, &desc);
-	}
-	{
-		const graphics::ConstantBufferDesc desc = {
-			.Name = "Text Object Buffer",
-			.InitialData = nullptr,
-			.Size = sizeof(ObjectBuffer),
-			.Usage = graphics::GRAPHICS_USAGE_DYNAMIC,
-			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE
-		};
-		GetGraphicsEngine()->GetDevice()->CreateConstantBuffer(&myObjectBuffer, &desc);
-	}
-	{
-		const graphics::ConstantBufferDesc desc = {
-			.Name = "Text Material Buffer",
-			.InitialData = nullptr,
-			.Size = sizeof(MaterialBuffer),
-			.Usage = graphics::GRAPHICS_USAGE_DYNAMIC,
-			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE
-		};
-		GetGraphicsEngine()->GetDevice()->CreateConstantBuffer(&myMaterialBuffer, &desc);
+		graphics::result::Code result = GetDevice()->CreateConstantBuffer(&myFrameBuffer, &desc);
+		if (GRAPHICS_FAILED(result))
+		{
+			//TODO: LOG
+		}
 	}
 
 	{
-		const graphics::BlendStateDesc desc = {
-			.Name = "Text Blend State",
-			.EnableAlphaToCoverage = false,
-			.EnableIndependentBlend = false,
-			.RenderTargetBlendDescriptions = {
-				graphics::RenderTargetBlendDesc{
-					.EnableBlend = true,
-					.SourceBlend = graphics::GRAPHICS_BLEND_SRC_ALPHA,
-					.DestinationBlend = graphics::GRAPHICS_BLEND_INV_SRC_ALPHA,
-					.BlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
-					.AlphaSourceBlend = graphics::GRAPHICS_BLEND_SRC_ALPHA,
-					.AlphaDestinationBlend = graphics::GRAPHICS_BLEND_INV_SRC_ALPHA,
-					.AlphaBlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
-					.RenderTargetWriteMask = 0b1111
-				}
-			}
-		};
-		GetGraphicsEngine()->GetDevice()->CreateBlendState(&myBlendState, &desc);
-	}
-
-	{
-		const graphics::SamplerStateDesc desc = {
-			.Name = "Text Atlas Sampler",
-			.Filter = graphics::GRAPHICS_SAMPLER_FILTER_MIN_MAG_POINT_MIP_LINEAR,
-			.AddressU = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
-			.AddressV = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
-			.AddressW = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
+		graphics::SamplerStateDesc desc = {
+			.Name = "Trilinear Sampler",
+			.Filter = graphics::GRAPHICS_SAMPLER_FILTER_MIN_MAG_MIP_LINEAR,
+			.AddressU = graphics::GRAPHICS_TEXTURE_ADDRESS_WRAP,
+			.AddressV = graphics::GRAPHICS_TEXTURE_ADDRESS_WRAP,
+			.AddressW = graphics::GRAPHICS_TEXTURE_ADDRESS_WRAP,
 			.MipLODBias = 0.f,
 			.MaxAnistropy = 0,
 			.Comparison = graphics::GRAPHICS_COMPARISON_NEVER,
 			.BorderColor = { 0.f, 0.f, 0.f, 0.f },
-			.MinLOD = 0,
+			.MinLOD = 0.f,
 			.MaxLOD = FLT_MAX
 		};
-		GetGraphicsEngine()->GetDevice()->CreateSamplerState(&mySamplerState, &desc);
+
+		graphics::result::Code result = GetDevice()->CreateSamplerState(&mySampler, &desc);
+		if (GRAPHICS_FAILED(result))
+		{
+			//TODO: LOG
+		}
 	}
 }
 
 void TextRenderLayer::OnRender()
 {
-	GetContext()->ResetState();
+	if (not myRenderTarget)
+	{
+		return;
+	}
+	if (myInstances.empty())
+	{
+		return;
+	}
+
+	graphics::result::Code result;
 
 	GetContext()->PushEvent("Text Rendering");
 
-	//const float clearColor[4] = { 0.f, 0.f, 0.f, 0.f };
-	//GetContext()->ClearRenderTarget(myRenderTarget.Get(), clearColor);
+	//float clearColor[4] = { 0.f, 0.f, 0.f, 1.f };
+	//result = GetContext()->ClearRenderTarget(myRenderTarget.Get(), clearColor);
 
-	GetContext()->SetTopology(graphics::GRAPHICS_TOPOLOGY_POINTLIST);
+	//TODO: Set InputLayout
 
-	graphics::ConstantBuffer* buffers[] = {
-		myFrameBuffer.Get(),
-		myObjectBuffer.Get(),
-		myMaterialBuffer.Get()
+	FrameBuffer frameBuffer = {
+		.View = myView,
+		.Projection = myProjection
 	};
-	GetContext()->BindConstantBuffers(buffers, 3, 0, graphics::GRAPHICS_SHADER_STAGE_VERTEX | graphics::GRAPHICS_SHADER_STAGE_PIXEL);
+	result = GetContext()->UpdateConstantBuffer(myFrameBuffer.Get(), &frameBuffer, sizeof(frameBuffer));
+	result = GetContext()->SetInputLayout(myInputLayout.Get());
+	result = GetContext()->SetBlendState(myBlendState.Get());
+	result = GetContext()->BindConstantBuffers(&myFrameBuffer, 1, 0, graphics::GRAPHICS_SHADER_STAGE_VERTEX);
 
-	const CommonUtilities::Vector4f cameraPosition = myView.GetInverse().Row(4);
+	result = GetContext()->BindSamplerStates(&mySampler, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
 
-	const FrameBuffer frameBuffer = {
-		.View = {
-			{ myView(1, 1), myView(1, 2), myView(1, 3), myView(1, 4) },
-			{ myView(2, 1), myView(2, 2), myView(2, 3), myView(2, 4) },
-			{ myView(3, 1), myView(3, 2), myView(3, 3), myView(3, 4) },
-			{ myView(4, 1), myView(4, 2), myView(4, 3), myView(4, 4) }
-		},
-		.Projection = {
-			{ myProjection(1, 1), myProjection(1, 2), myProjection(1, 3), myProjection(1, 4) },
-			{ myProjection(2, 1), myProjection(2, 2), myProjection(2, 3), myProjection(2, 4) },
-			{ myProjection(3, 1), myProjection(3, 2), myProjection(3, 3), myProjection(3, 4) },
-			{ myProjection(4, 1), myProjection(4, 2), myProjection(4, 3), myProjection(4, 4) }
-		},
-		.CameraPosition = { cameraPosition.x, cameraPosition.y, cameraPosition.z, cameraPosition.w }
-	};
+	result = GetContext()->BindVertexShader(myVertexShader.Get());
+	result = GetContext()->BindGeometryShader(myGeometryShader.Get());
+	result = GetContext()->BindPixelShader(myPixelShader.Get());
 
-	GetContext()->UpdateConstantBuffer(myFrameBuffer.Get(), &frameBuffer, sizeof(frameBuffer));
+	result = GetContext()->SetTopology(graphics::GRAPHICS_TOPOLOGY_POINTLIST);
 
-	GetContext()->SetBlendState(myBlendState.Get());
+	const graphics::Texture2DDesc& desc = myRenderTarget->GetDesc().Texture->GetDesc();
 
-	GetContext()->SetInputLayout(myInputLayout.Get());
-	GetContext()->BindVertexShader(myVertexShader.Get());
-	GetContext()->BindGeometryShader(myGeometryShader.Get());
-	GetContext()->BindPixelShader(myPixelShader.Get());
-
-	GetContext()->BindTargets(&myRenderTarget, 1, myDepthStencil.Get());
-	GetContext()->BindSamplerStates(&mySamplerState, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
-
-	graphics::Viewport viewport = {
+	const graphics::Viewport viewport = {
 		.Left = 0.f,
-		.Right = static_cast<float>(myRenderTarget->GetTexture()->GetDesc().Width),
+		.Right = static_cast<float>(desc.Width),
 		.Top = 0.f,
-		.Bottom = static_cast<float>(myRenderTarget->GetTexture()->GetDesc().Height),
+		.Bottom = static_cast<float>(desc.Height),
 		.Front = 0.f,
 		.Back = 1.f
 	};
-	GetContext()->SetViewports(&viewport, 1);
 
-	std::vector<TextInstance> texts = std::move(myTexts);
-	myTexts = {};
+	result = GetContext()->SetViewports(&viewport, 1);
+	result = GetContext()->BindTargets(&myRenderTarget, 1, myDepthStencil.Get());
 
-	for (size_t i = 0; i < texts.size(); i++)
+	for (const Text::TextInstance& instance : myInstances)
 	{
-		const TextInstance& text = texts[i];
+		result = GetContext()->BindShaderResources(&instance.Atlas, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
+		constexpr size_t stride = sizeof(Text::GlyphVertex);
+		result = GetContext()->BindVertexBuffers(&instance.VertexBuffer, 1, 0, &stride, nullptr);
+		result = GetContext()->BindConstantBuffers(&instance.ObjectBuffer, 1, 1, graphics::GRAPHICS_SHADER_STAGE_VERTEX | graphics::GRAPHICS_SHADER_STAGE_PIXEL);
 
-		ObjectBuffer objectBuffer = { };
-		objectBuffer.ID = 0;
-		errno_t error = memcpy_s(&objectBuffer.Transform, sizeof(objectBuffer.Transform), &text.Transform, sizeof(text.Transform));
-		if (error != 0)
-		{
-			//TODO: Log
-			throw std::exception("memcpy_s failed!");
-		}
-
-		GetContext()->UpdateConstantBuffer(
-			myObjectBuffer.Get(),
-			&objectBuffer,
-			sizeof(objectBuffer)
-		);
-
-		GetContext()->BindShaderResources(&text.Text.myAtlas, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
-
-		const size_t stride = sizeof(GlyphVertex);
-		GetContext()->BindVertexBuffers(&text.Text.myVertexBuffer, 1, 0, &stride, nullptr);
-		GetContext()->Draw(static_cast<unsigned int>(text.Text.myVertexCount), 0u);
+		GetContext()->Draw(instance.VertexCount, 0);
 	}
 
 	GetContext()->PopEvent();
 }
 
-#undef FILE_CATEGORY
-#undef CLASS_CATEGORY
+void TextRenderLayer::OnPostRender()
+{
+	myInstances.clear();
+}

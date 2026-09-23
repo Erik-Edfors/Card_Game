@@ -29,7 +29,8 @@
 
 GraphicsEngine::GraphicsEngine() :
 	myDevice(nullptr),
-	myNextLightEntryID(0)
+	myNextLightEntryID(0),
+	myVSyncEnabled(true)
 	//myRenderPass(nullptr)
 {
 }
@@ -38,7 +39,7 @@ GraphicsEngine::~GraphicsEngine() = default;
 bool GraphicsEngine::Initialize(graphics::Device* aDevice)
 {
 #define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
-	
+
 	myDevice = aDevice;
 
 	if (myDevice == nullptr)
@@ -130,7 +131,7 @@ bool GraphicsEngine::Initialize(graphics::Device* aDevice)
 			&cbDesc
 		);
 	}
-	
+
 	{
 		graphics::ConstantBufferDesc cbDesc = {};
 		cbDesc.Name = "Bloom Buffer";
@@ -174,8 +175,27 @@ bool GraphicsEngine::Shutdown()
 	return true;
 }
 
+void GraphicsEngine::SetVSyncEnabled(bool aEnabled) noexcept
+{
+	myVSyncEnabled = aEnabled;
+}
+
+bool GraphicsEngine::IsVSyncEnabled() const noexcept
+{
+	return myVSyncEnabled;
+}
+
 void GraphicsEngine::Render()
 {
+	const float clearColor[4] = { 0.f, 0.f, 0.f, 1.f };
+	graphics::PImpl<graphics::RenderTarget> backbufferRenderTarget;
+	GetDevice()->GetBufferRenderTarget(&backbufferRenderTarget);
+	GetDevice()->ClearRenderTarget(backbufferRenderTarget.Get(), clearColor);
+
+	graphics::PImpl<graphics::DepthStencil> backbufferDepthStencil;
+	GetDevice()->GetBufferDepthStencil(&backbufferDepthStencil);
+	GetDevice()->ClearDepthStencil(backbufferDepthStencil.Get());
+
 	for (std::unique_ptr<RenderLayer>& layer : myRenderLayers)
 	{
 		layer->PreRender();
@@ -186,14 +206,25 @@ void GraphicsEngine::Render()
 	{
 		layer->Render();
 	}
-	
+
 	for (std::unique_ptr<RenderLayer>& layer : myRenderLayers)
 	{
 		GetDeviceContext()->ExecuteDeferredDeviceContext(layer->GetContext(), false);
+	}
+
+	for (std::unique_ptr<RenderLayer>& layer : myRenderLayers)
+	{
 		layer->PostRender();
 	}
 
-	myDevice->Present(graphics::GRAPHICS_PRESENT_NONE);
+	graphics::GRAPHICS_PRESENT_FLAGS flags = graphics::GRAPHICS_PRESENT_NONE;
+
+	if (not IsVSyncEnabled())
+	{
+		flags |= graphics::GRAPHICS_PRESENT_ALLOW_TEARING;
+	}
+
+	myDevice->Present(flags);
 }
 
 graphics::Device* GraphicsEngine::GetDevice() const noexcept

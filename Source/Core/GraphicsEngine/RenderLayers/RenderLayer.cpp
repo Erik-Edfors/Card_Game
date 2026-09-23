@@ -18,6 +18,10 @@ GraphicsEngine* RenderLayer::GetGraphicsEngine() const noexcept
 {
 	return myGraphicsEngine;
 }
+graphics::Device* RenderLayer::GetDevice() const noexcept
+{
+	return myDevice.Get();
+}
 graphics::DeferredDeviceContext* RenderLayer::GetContext() const noexcept
 {
 	return myContext.Get();
@@ -25,12 +29,14 @@ graphics::DeferredDeviceContext* RenderLayer::GetContext() const noexcept
 void RenderLayer::Initialize(GraphicsEngine* aGraphicsEngine)
 {
 	myGraphicsEngine = aGraphicsEngine;
+	myDevice = aGraphicsEngine->GetDevice();
 	aGraphicsEngine->GetDevice()->CreateDeferredDeviceContext(&myContext);
 
 	OnInit();
 }
 void RenderLayer::PreRender()
 {
+	myContext->ClearState();
 	OnPreRender();
 }
 void RenderLayer::PostRender()

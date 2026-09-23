@@ -1,78 +1,64 @@
 #pragma once
-#include "Asset.h"
-#include <filesystem>
-#include <Core/CommonUtilities/StringHash.hpp>
-#include <unordered_map>
-#include <memory>
+#include "ResourceID.h"
+
 #include <fstream>
+#include <unordered_map>
+#include <filesystem>
 
 namespace assets
 {
 	class AssetManager
 	{
 	public:
-		static bool Initialize(const wchar_t* aDirectory);
+		static bool Initialize(const std::filesystem::path& aAssetsPath);
+
 		static bool Shutdown();
 
-		template<class _AssetTy>
-		static _AssetTy* Get(const wchar_t* aName, ASSET_RETENTION aRetention = ASSET_RETENTION_WEAK);
+		//template<class _Ty>
+		//static _Ty* Load(const std::filesystem::path& aFile);
 
-		static size_t Clear(ASSET_RETENTION aRetention);
+		static std::filesystem::path NormalizeFilePath(const std::filesystem::path& aPath);
+
+		static const std::filesystem::path& GetAssetsPath();
+
+		static assets::ResourceID GetID(const char* aNameSpace, const std::filesystem::path& aPath);
 
 	private:
-		AssetManager() = delete;
-		~AssetManager() = delete;
-
-		struct __AssetEntry
+		struct AssetRegistry
 		{
-			std::unique_ptr<Asset> Asset;
-			const std::type_info* Type;
-			std::filesystem::path Path;
+			void* Asset;
 		};
 
-		static std::unordered_map<std::wstring, __AssetEntry> myAssets;
-		static std::unordered_map<std::wstring, std::filesystem::path> myAssetPaths;
+		//static size_t OpenFileContents(const std::filesystem::path& aPath, const void** outContents);
+		//static void FreeFileContents(void* aFileContents);
 
-		static std::filesystem::path myDirectory;
+		std::filesystem::path myAssetsPath;
+
+		//static std::unordered_map<std::filesystem::path, AssetRegistry> myAssets;
 	};
 
-	template<class _AssetTy>
-	inline _AssetTy* AssetManager::Get(const wchar_t* aName, ASSET_RETENTION aRetention)
-	{
-		constexpr const std::type_info& type = typeid(_AssetTy);
+	//template<class _Ty>
+	//inline _Ty* AssetManager::Load(const std::filesystem::path& aFile)
+	//{
+	//	std::filesystem::path path = NormalizeFilePath(aFile);
 
-		auto it = myAssets.find(aName);
-		if (it != myAssets.end())
-		{
-			__AssetEntry& entry = it->second;
+	//	{
+	//		auto it = myAssets.find(path);
+	//		if (it != myAssets.end())
+	//		{
+	//			return it->second.Asset;
+	//		}
+	//	}
 
-			if (entry.Asset == nullptr)
-			{
-				_AssetTy* rawAsset = new _AssetTy();
-				rawAsset->SetRetention(aRetention);
-				std::unique_ptr<Asset> asset = std::unique_ptr<_AssetTy>(rawAsset);
+	//	void* contents = OpenFileContents(path);
 
-				if (not rawAsset->Load(entry.Path.c_str()))
-				{
-					return nullptr;
-				}
+	//	//TODO: assign asset with deleter.
+	//	myAssets[path] = AssetRegistry{
+	//		.Asset = nullptr
+	//	};
 
-				entry.Asset = std::move(asset);
-				entry.Type = &type;
-				return entry.Asset.get();
-			}
-			else if (*entry.Type == type)
-			{
-				if (aRetention > entry.Asset->GetRetention())
-				{
-					entry.Asset->SetRetention(aRetention);
-				}
-				return entry.Asset.get();
-			}
-			else
-			{
-				return nullptr;
-			}
-		}
-	}
+	//	FreeFileContents(contents);
+
+	//	return myAssets[path].Asset.get();
+	//}
 }

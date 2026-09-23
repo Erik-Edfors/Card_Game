@@ -284,6 +284,32 @@ group("Core")
     		graphicsEngineDir .. "**.hpp",
     		graphicsEngineDir .. "**.cpp",
     	}
+
+    componentSystemDir = coreDir .. "ComponentSystem/"
+    project("ComponentSystem")
+        location(componentSystemDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+        
+        links {
+            "CommonUtilities",
+            "Logger"
+        }
+
+        includedirs {
+            componentSystemDir
+        }
+
+        pchheader("ComponentSystem.pch.h")
+    	pchsource(componentSystemDir .. "ComponentSystem.pch.cpp")
+
+        files {
+    		componentSystemDir .. "**.h",
+    		componentSystemDir .. "**.hpp",
+    		componentSystemDir .. "**.cpp",
+    	}
     
     engineDir = coreDir .. "Engine/"
     project("Engine")
@@ -296,6 +322,7 @@ group("Core")
         links {
             "CommonUtilities",
             "GraphicsEngine",
+            "ComponentSystem",
             "Assets",
             "Logger"
         }

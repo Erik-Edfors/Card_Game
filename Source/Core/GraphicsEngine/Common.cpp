@@ -11,37 +11,18 @@ bool LoadFileIntoMemory(void** outBuffer, size_t* outSize, const char* aFilePath
 		return false;
 	}
 
-	//size_t bufferSize = aInitialBufferSize;	//1 MB
-	//size_t cursor = 0;
-	//char* buffer = new char[bufferSize];
+	return LoadStreamIntoMemory(outBuffer, outSize, file, aInitialBufferSize, aMaxSize);
+}
 
-	//do
-	//{
-	//	if (cursor == bufferSize)
-	//	{
-	//		bufferSize = bufferSize << 1;
-	//		if (bufferSize > aMaxSize)
-	//		{
-	//			delete[] buffer;
-	//			file.close();
-	//			return false;
-	//		}
-	//		char* newBuffer = new char[bufferSize];
-	//		memcpy(newBuffer, buffer, cursor);
-	//		delete[] buffer;
-	//		buffer = newBuffer;
-	//	}
+bool LoadFileIntoMemory(void** outBuffer, size_t* outSize, const wchar_t* aFilePath, size_t aInitialBufferSize, size_t aMaxSize)
+{
+	std::ifstream file(aFilePath, std::ios::binary);
 
-	//	file.read(&buffer[cursor], bufferSize - cursor);
+	if (file.is_open() == false)
+	{
+		return false;
+	}
 
-	//	cursor += file.gcount();
-
-	//} while (file.eof() == false);
-
-	//file.close();
-
-	//*outBuffer = buffer;
-	//*outSize = cursor;
 	return LoadStreamIntoMemory(outBuffer, outSize, file, aInitialBufferSize, aMaxSize);
 }
 
@@ -71,9 +52,14 @@ bool LoadStreamIntoMemory(void** outBuffer, size_t* outSize, std::istream& aStre
 
 		cursor += aStream.gcount();
 
-	} while (aStream.eof() == false && not aStream.fail());
+	} while (aStream.eof() == false);
 
 	*outBuffer = buffer;
 	*outSize = cursor;
 	return true;
+}
+
+void ReleaseFromMemory(void* aBuffer)
+{
+	delete[] aBuffer;
 }

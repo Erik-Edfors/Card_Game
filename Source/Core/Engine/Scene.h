@@ -1,9 +1,10 @@
 #pragma once
 #include <memory>
+#include <Core/ComponentSystem/ComponentSystem.h>
 
 class Engine;
 
-class ComponentSystem;
+//class ComponentSystem;
 
 class Scene
 {
@@ -11,19 +12,19 @@ class Scene
 public:
 	virtual ~Scene();
 
-	void Update();
+	void Update(float aDeltaTime);
 
-	ComponentSystem& GetComponentSystem() noexcept;
 	Engine& GetEngine() noexcept;
+	cs::ComponentSystem& GetComponentSystem() noexcept;
 
 protected:
 	Scene();
 	virtual void OnInit() {};
-	virtual void OnUpdate() {};
+	virtual void OnUpdate(float aDeltaTime) { aDeltaTime; };
 
 private:
 	void Initialize(Engine* aEngine);
 
-	std::unique_ptr<ComponentSystem> myComponentSystem;
 	Engine* myEngine;
+	cs::ComponentSystem myComponentSystem;
 };

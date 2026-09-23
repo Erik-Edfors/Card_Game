@@ -1,32 +1,31 @@
 #include "Engine.pch.h"
 #include "Scene.h"
-#include "ComponentSystem/ComponentSystem.h"
+#include "Engine.h"
 
 Scene::Scene() :
-	myComponentSystem(nullptr),
 	myEngine(nullptr)
 {
 }
 void Scene::Initialize(Engine* aEngine)
 {
 	myEngine = aEngine;
-	myComponentSystem = std::make_unique<ComponentSystem>(this);
 
 	OnInit();
 }
 Scene::~Scene()
 {
-	myComponentSystem->DestroyAll();
 }
-void Scene::Update()
+void Scene::Update(float aDeltaTime)
 {
-	myComponentSystem->Update();
-}
-ComponentSystem& Scene::GetComponentSystem() noexcept
-{
-	return *myComponentSystem;
+	//TODO: Actually get delta time!
+	GetComponentSystem().Update(aDeltaTime);
+	OnUpdate(aDeltaTime);
 }
 Engine& Scene::GetEngine() noexcept
 {
 	return *myEngine;
+}
+cs::ComponentSystem& Scene::GetComponentSystem() noexcept
+{
+	return myComponentSystem;
 }

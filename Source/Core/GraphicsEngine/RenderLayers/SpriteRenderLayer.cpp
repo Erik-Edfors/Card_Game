@@ -1,378 +1,319 @@
 #include "GraphicsEngine.pch.h"
 #include "SpriteRenderLayer.h"
 
-#include "GraphicsEngine.h"
-#include "Common.h"
-
-#include "ConstantBuffers/FrameBuffer.h"
-#include "ConstantBuffers/ObjectBuffer.h"
-#include "ConstantBuffers/MaterialBuffer.h"
+#include <Core/Assets/ShaderRegistry.h>
 
 #include <Core/RenderHardwareInterface/Device.h>
 #include <Core/RenderHardwareInterface/Objects/DeferredDeviceContext.h>
 #include <Core/RenderHardwareInterface/Objects/Texture2D.h>
 #include <Core/RenderHardwareInterface/Objects/RenderTarget.h>
+#include <Core/RenderHardwareInterface/Objects/DepthStencil.h>
+#include <Core/RenderHardwareInterface/Objects/InputLayout.h>
+#include <Core/RenderHardwareInterface/Objects/BlendState.h>
+#include <Core/RenderHardwareInterface/Objects/SamplerState.h>
+#include <Core/RenderHardwareInterface/Objects/Shaders/VertexShader.h>
+#include <Core/RenderHardwareInterface/Objects/Shaders/PixelShader.h>
 
-#include <Core/RenderHardwareInterface/Objects/Buffers/ConstantBuffer.h>
-#include <Core/RenderHardwareInterface/Objects/Buffers/VertexBuffer.h>
-
-#include <algorithm>
-
-struct SpriteVertex
+struct FrameBuffer
 {
-	float Position[2];
-	float Size[2];
-	float UVRect[4];
-	float Pivot[2];
-	float Rotation;
+	CommonUtilities::Matrix4x4f View;
+	CommonUtilities::Matrix4x4f Projection;
 };
 
-SpriteRenderLayer::SpriteRenderLayer()
+struct ObjectBuffer
+{
+	CommonUtilities::Matrix4x4f Transform;
+	CommonUtilities::Vector4f Tint;
+	CommonUtilities::AABB2Df AtlasRect;
+	CommonUtilities::Vector2f Origin;
+
+	unsigned int _padding[2];
+};
+
+Sprite::Sprite() :
+	myObjectBufferIsDirty(true),
+	myAtlasRect({ 0.f, 0.f }, { 1.f, 1.f }),
+	myTint(1.f, 1.f, 1.f, 1.f)
+{
+}
+Sprite::~Sprite()
 {
 }
 
+void Sprite::SetAtlas(graphics::ShaderResource* aAtlas) noexcept
+{
+	myInstance.Atlas = aAtlas;
+}
+graphics::ShaderResource* Sprite::GetAtlas() const noexcept
+{
+	return myInstance.Atlas.Get();
+}
+
+void Sprite::SetAtlasRect(CommonUtilities::AABB2Df aRect) noexcept
+{
+	myObjectBufferIsDirty = true;
+	myAtlasRect = aRect;
+}
+CommonUtilities::AABB2Df Sprite::GetAtlasRect() const noexcept
+{
+	return myAtlasRect;
+}
+
+void Sprite::SetTint(CommonUtilities::Vector4f aTint) noexcept
+{
+	myObjectBufferIsDirty = true;
+	myTint = aTint;
+}
+CommonUtilities::Vector4f Sprite::GetTint() const noexcept
+{
+	return myTint;
+}
+
+void Sprite::SetOrigin(CommonUtilities::Vector2f aOrigin) noexcept
+{
+	myObjectBufferIsDirty = true;
+	myOrigin = aOrigin;
+}
+CommonUtilities::Vector2f Sprite::GetOrigin() const noexcept
+{
+	return myOrigin;
+}
+
+void Sprite::SetTransform(const CommonUtilities::Matrix4x4f& aTransform) noexcept
+{
+	if (myTransform != aTransform)
+	{
+		myObjectBufferIsDirty = true;
+		myTransform = aTransform;
+	}
+}
+const CommonUtilities::Matrix4x4f& Sprite::GetTransform() const noexcept
+{
+	return myTransform;
+}
+
+Sprite::Instance Sprite::GetInstance(graphics::Device* aDevice) const
+{
+	Clean(aDevice);
+	return myInstance;
+}
+
+void Sprite::Clean(graphics::Device* aDevice) const
+{
+	if (myObjectBufferIsDirty)
+	{
+		ObjectBuffer buffer = {
+			.Transform = myTransform,
+			.Tint = myTint,
+			.AtlasRect = myAtlasRect,
+			.Origin = myOrigin
+		};
+
+		const graphics::ConstantBufferDesc desc = {
+			.Name = "Sprite ObjectBuffer",
+			.InitialData = &buffer,
+			.Size = sizeof(buffer),
+			.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
+			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
+		};
+		graphics::result::Code result = aDevice->CreateConstantBuffer(&myInstance.ObjectBuffer, &desc);
+		result; // TODO: Log errors
+
+		myObjectBufferIsDirty = false;
+	}
+}
+
+
+
+SpriteRenderLayer::SpriteRenderLayer(assets::ShaderRegistry* aShaderRegistry) :
+	myShaderRegistry(aShaderRegistry)
+{
+}
 SpriteRenderLayer::~SpriteRenderLayer()
 {
-}
-
-void SpriteRenderLayer::SetTarget(graphics::RenderTarget* aRenderTarget) noexcept
-{
-	myRenderTarget = aRenderTarget;
-}
-
-void SpriteRenderLayer::SetAtlas(graphics::ShaderResource* aAtlas) noexcept
-{
-	myTextureAtlas = aAtlas;
 }
 
 void SpriteRenderLayer::SetView(const CommonUtilities::Matrix4x4f& aView) noexcept
 {
 	myView = aView;
 }
+const CommonUtilities::Matrix4x4f& SpriteRenderLayer::GetView() const noexcept
+{
+	return myView;
+}
 
-void SpriteRenderLayer::SetProjection(const CommonUtilities::Matrix4x4f& aProjection) noexcept
+void SpriteRenderLayer::SetProjection(const CommonUtilities::Matrix4x4f& aProjection)
 {
 	myProjection = aProjection;
+}
+const CommonUtilities::Matrix4x4f& SpriteRenderLayer::GetProjection() const noexcept
+{
+	return myProjection;
+}
+
+void SpriteRenderLayer::SetRenderTarget(graphics::RenderTarget* aRenderTarget) noexcept
+{
+	myRenderTarget = aRenderTarget;
+}
+graphics::RenderTarget* SpriteRenderLayer::GetRenderTarget() const noexcept
+{
+	return myRenderTarget.Get();
+}
+
+void SpriteRenderLayer::SetDepthStencil(graphics::DepthStencil* aDepthStencil) noexcept
+{
+	myDepthStencil = aDepthStencil;
+}
+graphics::DepthStencil* SpriteRenderLayer::GetDepthStencil() const noexcept
+{
+	return myDepthStencil.Get();
 }
 
 void SpriteRenderLayer::Draw(const Sprite& aSprite)
 {
-	mySprites.push_back(aSprite);
+	myInstances.push_back(aSprite.GetInstance(GetDevice()));
 }
 
 void SpriteRenderLayer::OnInit()
 {
+	const assets::ShaderAsset* shader = myShaderRegistry->Get("core:sprite_vs");
+	graphics::result::Code result = GetDevice()->CreateShader(&myVertexShader, "Sprite VertexShader", shader->ByteCode.get(), shader->ByteCodeSize);
+
+	//shader = myShaderRegistry->Get("core:sprite_gs");
+	//result = GetDevice()->CreateShader(&myGeometryShader, "Sprite GeometryShader", shader->ByteCode.get(), shader->ByteCodeSize);
+
+	shader = myShaderRegistry->Get("core:sprite_ps");
+	result = GetDevice()->CreateShader(&myPixelShader, "Sprite PixelShader", shader->ByteCode.get(), shader->ByteCodeSize);
 
 	{
-		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../../Assets/Shaders/Sprite_VS.cso", std::ios::binary);
-		if (not file.is_open()) __debugbreak();
-
-		size_t shaderSize = 0;
-
-		void* shaderBuffer = nullptr;
-		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
-
-		GetGraphicsEngine()->GetDevice()->CreateShader(
-			&myVertexShader,
-			"Sprite VertexShader",
-			shaderBuffer,
-			shaderSize
-		);
-
-		const graphics::InputLayoutDesc desc = {
-			.Name = "Sprite InputLayout",
-			.LayoutDefinition = {
-				graphics::LayoutElementDesc{
-					.SemanticName = "POSITION",
-					.Format = graphics::GRAPHICS_FORMAT_R32G32_FLOAT
-				},
-				graphics::LayoutElementDesc{
-					.SemanticName = "SIZE",
-					.Format = graphics::GRAPHICS_FORMAT_R32G32_FLOAT
-				},
-				graphics::LayoutElementDesc{
-					.SemanticName = "UVRECT",
-					.Format = graphics::GRAPHICS_FORMAT_R32G32B32A32_FLOAT
-				},
-				graphics::LayoutElementDesc{
-					.SemanticName = "PIVOT",
-					.Format = graphics::GRAPHICS_FORMAT_R32G32_FLOAT
-				},
-				graphics::LayoutElementDesc{
-					.SemanticName = "ROTATION",
-					.Format = graphics::GRAPHICS_FORMAT_R32_FLOAT
+		graphics::BlendStateDesc desc = {
+			.Name = "Sprite BlendState",
+			.EnableAlphaToCoverage = false,
+			.EnableIndependentBlend = false,
+			.RenderTargetBlendDescriptions = {
+				{
+					.EnableBlend = true,
+					.SourceBlend = graphics::GRAPHICS_BLEND_SRC_ALPHA,
+					.DestinationBlend = graphics::GRAPHICS_BLEND_INV_SRC_ALPHA,
+					.BlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
+					.AlphaSourceBlend = graphics::GRAPHICS_BLEND_ONE,
+					.AlphaDestinationBlend = graphics::GRAPHICS_BLEND_ZERO,
+					.AlphaBlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
+					.RenderTargetWriteMask = graphics::GRAPHICS_BLEND_COLOR_WRITE_ALL
 				}
-			},
-			.ShaderByteCode = shaderBuffer,
-			.NumBytes = shaderSize
+			}
 		};
-		GetGraphicsEngine()->GetDevice()->CreateInputLayout(&myInputLayout, &desc);
-
-		delete[] shaderBuffer;
-	}
-	{
-		//TODO: use asset system or something to get shader file.
-		std::ifstream file("../../../Assets/Shaders/Sprite_GS.cso", std::ios::binary);
-
-		size_t shaderSize = 0;
-
-		void* shaderBuffer = nullptr;
-		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
-
-		GetGraphicsEngine()->GetDevice()->CreateShader(
-			&myGeometryShader,
-			"Sprite GeometryShader",
-			shaderBuffer,
-			shaderSize
-		);
-		delete[] shaderBuffer;
-	}
-	{
-		std::ifstream file("../../../Assets/Shaders/Sprite_PS.cso", std::ios::binary);
-
-		size_t shaderSize = 0;
-
-		void* shaderBuffer = nullptr;
-		LoadStreamIntoMemory(&shaderBuffer, &shaderSize, file);
-
-		GetGraphicsEngine()->GetDevice()->CreateShader(
-			&myPixelShader,
-			"Sprite PixelShader",
-			shaderBuffer,
-			shaderSize
-		);
-		delete[] shaderBuffer;
+		result = GetDevice()->CreateBlendState(&myBlendState, &desc);
+		if (GRAPHICS_FAILED(result))
+		{
+			//TODO: LOG
+		}
 	}
 
 	{
-		const graphics::VertexBufferDesc desc = {
-			.Name = "Sprite VertexBuffer",
-			.Data = nullptr,
-			.Size = sizeof(SpriteVertex) * 4096,
-			.Usage = graphics::GRAPHICS_USAGE_DYNAMIC,
-			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE
-		};
-		GetGraphicsEngine()->GetDevice()->CreateVertexBuffer(&myVertexBuffer, &desc);
-	}
-
-	{
-		const graphics::ConstantBufferDesc desc = {
-			.Name = "Sprite FrameBuffer",
+		graphics::ConstantBufferDesc desc = {
+			.Name = "Frame Buffer",
 			.InitialData = nullptr,
 			.Size = sizeof(FrameBuffer),
 			.Usage = graphics::GRAPHICS_USAGE_DYNAMIC,
 			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE
 		};
-		GetGraphicsEngine()->GetDevice()->CreateConstantBuffer(&myFrameBuffer, &desc);
-	}
-	//{
-	//	const graphics::ConstantBufferDesc desc = {
-	//		.Name = "Sprite Object Buffer",
-	//		.InitialData = nullptr,
-	//		.Size = sizeof(ObjectBuffer),
-	//		.Usage = graphics::GRAPHICS_USAGE_DYNAMIC,
-	//		.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE
-	//	};
-	//	GetGraphicsEngine()->GetDevice()->CreateConstantBuffer(&myObjectBuffer, &desc);
-	//}
-	{
-		const graphics::ConstantBufferDesc desc = {
-			.Name = "Sprite Material Buffer",
-			.InitialData = nullptr,
-			.Size = sizeof(MaterialBuffer),
-			.Usage = graphics::GRAPHICS_USAGE_DYNAMIC,
-			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE
-		};
-		GetGraphicsEngine()->GetDevice()->CreateConstantBuffer(&myMaterialBuffer, &desc);
+		result = GetDevice()->CreateConstantBuffer(&myFrameBuffer, &desc);
+		if (GRAPHICS_FAILED(result))
+		{
+			//TODO: LOG
+		}
 	}
 
 	{
-		const graphics::BlendStateDesc desc = {
-			.Name = "Sprite Blend State",
-			.EnableAlphaToCoverage = false,
-			.EnableIndependentBlend = false,
-			.RenderTargetBlendDescriptions = {
-				graphics::RenderTargetBlendDesc{
-					.EnableBlend = true,
-					.SourceBlend = graphics::GRAPHICS_BLEND_SRC_ALPHA,
-					.DestinationBlend = graphics::GRAPHICS_BLEND_INV_SRC_ALPHA,
-					.BlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
-					.AlphaSourceBlend = graphics::GRAPHICS_BLEND_SRC_ALPHA,
-					.AlphaDestinationBlend = graphics::GRAPHICS_BLEND_INV_SRC_ALPHA,
-					.AlphaBlendOperation = graphics::GRAPHICS_BLEND_OPERATION_ADD,
-					.RenderTargetWriteMask = 0b1111
-				}
-			}
-		};
-		GetGraphicsEngine()->GetDevice()->CreateBlendState(&myBlendState, &desc);
-	}
-
-	{
-		const graphics::SamplerStateDesc desc = {
-			.Name = "Sprite Atlas Sampler",
-			.Filter = graphics::GRAPHICS_SAMPLER_FILTER_MIN_MAG_MIP_POINT,
-			.AddressU = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
-			.AddressV = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
-			.AddressW = graphics::GRAPHICS_TEXTURE_ADDRESS_CLAMP,
+		graphics::SamplerStateDesc desc = {
+			.Name = "Trilinear Sampler",
+			.Filter = graphics::GRAPHICS_SAMPLER_FILTER_MIN_MAG_MIP_LINEAR,
+			.AddressU = graphics::GRAPHICS_TEXTURE_ADDRESS_WRAP,
+			.AddressV = graphics::GRAPHICS_TEXTURE_ADDRESS_WRAP,
+			.AddressW = graphics::GRAPHICS_TEXTURE_ADDRESS_WRAP,
 			.MipLODBias = 0.f,
 			.MaxAnistropy = 0,
 			.Comparison = graphics::GRAPHICS_COMPARISON_NEVER,
 			.BorderColor = { 0.f, 0.f, 0.f, 0.f },
-			.MinLOD = 0,
+			.MinLOD = 0.f,
 			.MaxLOD = FLT_MAX
 		};
-		GetGraphicsEngine()->GetDevice()->CreateSamplerState(&mySamplerState, &desc);
+
+		result = GetDevice()->CreateSamplerState(&mySampler, &desc);
+		if (GRAPHICS_FAILED(result))
+		{
+			//TODO: LOG
+		}
 	}
-
-	//graphics::PImpl<graphics::RasterizerState> rasterizerState = nullptr;
-	//graphics::PImpl<graphics::DepthStencilState> depthStencilState = nullptr;
-	//graphics::PImpl<graphics::BlendState> blendState = nullptr;
-
-	//graphics::PImpl<graphics::InputLayout> inputLayout = nullptr;
-
-	//std::vector<PipelineStateConstantBuffer> constantBuffers = {};
-
-	//graphics::PImpl<graphics::VertexShader> vertexShader;
-	//graphics::PImpl<graphics::HullShader> hullShader;
-	//graphics::PImpl<graphics::DomainShader> domainShader;
-	//graphics::PImpl<graphics::GeometryShader> geometryShader;
-	//graphics::PImpl<graphics::PixelShader> pixelShader;
-	//graphics::PImpl<graphics::ComputeShader> computeShader;
-
-	//std::vector<PipelineStateShaderResource> shaderResources = {};
-	//std::vector<PipelineStateSamplerState> samplerStates = {};
-	//std::vector<PipelineStateRenderTarget> renderTargets = {};
-	//std::vector<graphics::Viewport> viewports = {};
-	//PipelineStateDepthStencil depthStencil = {};
-
-	//myPipelineState = PipelineStateDesc{
-	//	.Name = "Sprite Pipeline State",
-	//	.Topology = graphics::GRAPHICS_TOPOLOGY_TRIANGLELIST,
-	//	.RasterizerState = rasterizerState,
-	//	.DepthStencilState = depthStencilState,
-	//	.BlendState = blendState,
-
-	//	.InputLayout = inputLayout,
-
-	//	.ConstantBuffers = std::move(constantBuffers),
-
-	//	.VertexShader = vertexShader,
-	//	.HullShader = hullShader,
-	//	.DomainShader = domainShader,
-	//	.GeometryShader = geometryShader,
-	//	.PixelShader = pixelShader,
-	//	.ComputeShader = computeShader,
-
-	//	.ShaderResources = std::move(shaderResources),
-	//	.SamplerStates = std::move(samplerStates),
-	//	.RenderTargets = std::move(renderTargets),
-	//	.Viewports = std::move(viewports),
-	//	.DepthStencil = depthStencil
-	//};
 }
 
 void SpriteRenderLayer::OnRender()
 {
-	GetContext()->ResetState();
+	if (not myRenderTarget)
+	{
+		return;
+	}
+	if (myInstances.empty())
+	{
+		return;
+	}
+
+	graphics::result::Code result;
 
 	GetContext()->PushEvent("Sprite Rendering");
 
-	const float clearColor[4] = { 0.f, 0.f, 0.f, 0.f };
-	GetContext()->ClearRenderTarget(myRenderTarget.Get(), clearColor);
+	//float clearColor[4] = { 0.f, 0.f, 0.f, 1.f };
+	//result = GetContext()->ClearRenderTarget(myRenderTarget.Get(), clearColor);
 
-	GetContext()->SetTopology(graphics::GRAPHICS_TOPOLOGY_POINTLIST);
+	//if (myDepthStencil)
+	//{
+	//	result = GetContext()->ClearDepthStencil(myDepthStencil.Get());
+	//}
 
-	graphics::ConstantBuffer* buffers[] = {
-		myFrameBuffer.Get(),
-		nullptr,
-		myMaterialBuffer.Get()
-	};
-	GetContext()->BindConstantBuffers(buffers, 3, 0, graphics::GRAPHICS_SHADER_STAGE_VERTEX | graphics::GRAPHICS_SHADER_STAGE_PIXEL);
-
-	const CommonUtilities::Vector4f cameraPosition = myView.GetInverse().Row(4);
+	result = GetContext()->SetTopology(graphics::GRAPHICS_TOPOLOGY_TRIANGLELIST);
 
 	FrameBuffer frameBuffer = {
-		.View = {
-			{ myView(1, 1), myView(1, 2), myView(1, 3), myView(1, 4) },
-			{ myView(2, 1), myView(2, 2), myView(2, 3), myView(2, 4) },
-			{ myView(3, 1), myView(3, 2), myView(3, 3), myView(3, 4) },
-			{ myView(4, 1), myView(4, 2), myView(4, 3), myView(4, 4) }
-		},
-		.Projection = {
-			{ myProjection(1, 1), myProjection(1, 2), myProjection(1, 3), myProjection(1, 4) },
-			{ myProjection(2, 1), myProjection(2, 2), myProjection(2, 3), myProjection(2, 4) },
-			{ myProjection(3, 1), myProjection(3, 2), myProjection(3, 3), myProjection(3, 4) },
-			{ myProjection(4, 1), myProjection(4, 2), myProjection(4, 3), myProjection(4, 4) }
-		},
-		.CameraPosition = { cameraPosition.x, cameraPosition.y, cameraPosition.z, cameraPosition.w }
+		.View = myView,
+		.Projection = myProjection
 	};
+	result = GetContext()->UpdateConstantBuffer(myFrameBuffer.Get(), &frameBuffer, sizeof(frameBuffer));
+	result = GetContext()->BindConstantBuffers(&myFrameBuffer, 1, 0, graphics::GRAPHICS_SHADER_STAGE_VERTEX);
 
-	GetContext()->UpdateConstantBuffer(myFrameBuffer.Get(), &frameBuffer, sizeof(frameBuffer));
+	result = GetContext()->SetBlendState(myBlendState.Get());
 
-	GetContext()->SetBlendState(myBlendState.Get());
+	result = GetContext()->BindSamplerStates(&mySampler, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
 
-	GetContext()->SetInputLayout(myInputLayout.Get());
-	GetContext()->BindVertexShader(myVertexShader.Get());
-	GetContext()->BindGeometryShader(myGeometryShader.Get());
-	GetContext()->BindPixelShader(myPixelShader.Get());
+	result = GetContext()->BindVertexShader(myVertexShader.Get());
+	//result = GetContext()->BindGeometryShader(myGeometryShader.Get());
+	result = GetContext()->BindPixelShader(myPixelShader.Get());
 
-	GetContext()->BindTargets(&myRenderTarget, 1, nullptr);
-	GetContext()->BindShaderResources(&myTextureAtlas, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
-	GetContext()->BindSamplerStates(&mySamplerState, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
+	const graphics::Texture2DDesc& desc = myRenderTarget->GetDesc().Texture->GetDesc();
 
-	graphics::Viewport viewport = {
+	const graphics::Viewport viewport = {
 		.Left = 0.f,
-		.Right = static_cast<float>(myRenderTarget->GetTexture()->GetDesc().Width),
+		.Right = static_cast<float>(desc.Width),
 		.Top = 0.f,
-		.Bottom = static_cast<float>(myRenderTarget->GetTexture()->GetDesc().Height),
+		.Bottom = static_cast<float>(desc.Height),
 		.Front = 0.f,
 		.Back = 1.f
 	};
-	GetContext()->SetViewports(&viewport, 1);
 
-	std::vector<Sprite> sprites = std::move(mySprites);
-	mySprites = {};
+	result = GetContext()->SetViewports(&viewport, 1);
+	result = GetContext()->BindTargets(&myRenderTarget, 1, myDepthStencil.Get());
 
-	std::sort(
-		sprites.begin(),
-		sprites.end(),
-		[](const Sprite& s0, const Sprite& s1) {
-			return s0.Depth < s1.Depth;
-		}
-	);
-
-	std::vector<SpriteVertex> vertices;
-	vertices.resize(sprites.size());
-
-	for (size_t i = 0; i < sprites.size(); i++)
+	for (const Sprite::Instance& instance : myInstances)
 	{
-		const Sprite& sprite = sprites[i];
-		SpriteVertex& vertex = vertices[i];
+		result = GetContext()->BindShaderResources(&instance.Atlas, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
+		result = GetContext()->BindConstantBuffers(&instance.ObjectBuffer, 1, 1, graphics::GRAPHICS_SHADER_STAGE_VERTEX | graphics::GRAPHICS_SHADER_STAGE_PIXEL);
 
-		vertex.Position[0] = sprite.Position.x;
-		vertex.Position[1] = sprite.Position.y;
-
-		vertex.Size[0] = sprite.Size.x;
-		vertex.Size[1] = sprite.Size.y;
-
-		vertex.UVRect[0] = sprite.TextureRect.Min.x;
-		vertex.UVRect[1] = sprite.TextureRect.Min.y;
-		vertex.UVRect[2] = sprite.TextureRect.Max.x;
-		vertex.UVRect[3] = sprite.TextureRect.Max.y;
-
-		vertex.Pivot[0] = sprite.Pivot.x;
-		vertex.Pivot[1] = sprite.Pivot.y;
-
-		vertex.Rotation = sprite.Rotation;
+		GetContext()->Draw(6, 0);
 	}
 
-	GetContext()->UpdateVertexBuffer(myVertexBuffer.Get(), vertices.data(), vertices.size() * sizeof(vertices[0]));
-
-	const size_t stride = sizeof(SpriteVertex);
-	GetContext()->BindVertexBuffers(&myVertexBuffer, 1, 0, &stride, nullptr);
-
-	GetContext()->Draw(static_cast<unsigned int>(vertices.size()), 0u);
-
 	GetContext()->PopEvent();
+}
+
+void SpriteRenderLayer::OnPostRender()
+{
+	myInstances.clear();
 }

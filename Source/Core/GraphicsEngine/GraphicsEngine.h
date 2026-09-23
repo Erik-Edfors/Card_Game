@@ -28,6 +28,9 @@ public:
 	bool Initialize(graphics::Device* aDevice);
 	bool Shutdown();
 
+	void SetVSyncEnabled(bool aEnabled) noexcept;
+	bool IsVSyncEnabled() const noexcept;
+
 	void Render();
 
 	graphics::Device* GetDevice() const noexcept;
@@ -44,8 +47,8 @@ public:
 	//PipelineState* PushState(const PipelineStateDesc& aDesc);
 	//PipelineState* PopState();
 
-	template<class _RenderLayerTy>
-	_RenderLayerTy* AddRenderLayer();
+	template<class _RenderLayerTy, class ..._Args>
+	_RenderLayerTy* AddRenderLayer(_Args&&... aArgs);
 
 	template<class _RenderLayerTy>
 	_RenderLayerTy* GetRenderLayer() const noexcept;
@@ -63,12 +66,14 @@ private:
 	std::vector<std::unique_ptr<RenderLayer>> myRenderLayers;
 	LightEntryID myNextLightEntryID;
 	//std::vector<std::shared_ptr<PipelineState>> myPipelineStateStack;
+
+	bool myVSyncEnabled;
 };
 
-template<class _RenderLayerTy>
-inline _RenderLayerTy* GraphicsEngine::AddRenderLayer()
+template<class _RenderLayerTy, class ..._Args>
+inline _RenderLayerTy* GraphicsEngine::AddRenderLayer(_Args&&... aArgs)
 {
-	myRenderLayers.push_back(std::make_unique<_RenderLayerTy>());
+	myRenderLayers.push_back(std::make_unique<_RenderLayerTy>(std::forward<_Args>(aArgs)...));
 
 	myRenderLayers.back()->Initialize(this);
 

@@ -7,11 +7,11 @@ CommonUtilities::Matrix4x4<float> CreateOrthographicProjection(float aLeft, floa
 
 	projection(1, 1) = 2.f / (aRight - aLeft);
 	projection(2, 2) = 2.f / (aTop - aBottom);
-	projection(3, 3) = 2.f / (aFar - aNear);
+	projection(3, 3) = 1.f / (aFar - aNear);
 
-	projection(4, 1) = -(aRight + aLeft) / (aRight - aLeft);
-	projection(4, 2) = -(aTop + aBottom) / (aTop - aBottom);
-	projection(4, 3) = -(aFar + aNear) / (aFar - aNear);
+	projection(4, 1) = (aRight + aLeft) / (aLeft - aRight);
+	projection(4, 2) = (aTop + aBottom) / (aBottom - aTop);
+	projection(4, 3) = aNear / (aNear - aFar);
 	projection(4, 4) = 1.f;
 
 	//projection(4, 1) = -2.f * aLeft / (aRight - aLeft) - 1.f;

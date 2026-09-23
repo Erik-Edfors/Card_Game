@@ -26,6 +26,7 @@ protected:
 	virtual void OnPreRender() {};
 	virtual void OnPostRender() {};
 
+	graphics::Device* GetDevice() const noexcept;
 	graphics::DeferredDeviceContext* GetContext() const noexcept;
 
 private:
@@ -35,6 +36,7 @@ private:
 	void PostRender();
 	void Render();
 
+	graphics::PImpl<graphics::Device> myDevice;
 	graphics::PImpl<graphics::DeferredDeviceContext> myContext;
 	GraphicsEngine* myGraphicsEngine;
 };

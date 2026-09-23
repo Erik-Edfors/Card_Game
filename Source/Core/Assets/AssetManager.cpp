@@ -1,80 +1,92 @@
-#include <Core/Logger/Logger.h>
 #include "AssetManager.h"
-
-#define FILE_CATEGORY "AssetManager.cpp"
-#define CLASS_CATEGORY FILE_CATEGORY"->AssetManager"
+#include <fstream>
+#include <filesystem>
 
 namespace assets
 {
-	std::unordered_map<std::wstring, AssetManager::__AssetEntry> AssetManager::myAssets = {};
-	std::unordered_map<std::wstring, std::filesystem::path> AssetManager::myAssetPaths = {};
+	//std::unordered_map<std::filesystem::path, AssetManager::AssetRegistry> AssetManager::myAssets;
+	std::filesystem::path locAssetPath;
 
-	std::filesystem::path AssetManager::myDirectory = {};
+	//static constexpr size_t locBufferSize = 1'048'576;
+	//static char locBuffer[locBufferSize];
 
-	bool AssetManager::Initialize(const wchar_t* aDirectory)
+	bool AssetManager::Initialize(const std::filesystem::path& aAssetsPath)
 	{
-#define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
-		myDirectory = std::filesystem::path(aDirectory).lexically_normal();
-
-		std::error_code error;
-		for (const std::filesystem::directory_entry& it : std::filesystem::recursive_directory_iterator(myDirectory, error))
-		{
-			if (it.is_regular_file())
-			{
-				const std::filesystem::path path = it.path();
-				const std::wstring name = path.filename().wstring();
-
-				if (myAssetPaths.contains(name))
-				{
-					const std::filesystem::path previous = myAssetPaths[name];
-
-					LOG_WARNING(LOG_CATEGORY, "Duplicate asset name encountered! The latter will be unavailable. '%s' and '%s'.", previous.string(), path.string());
-					continue;
-				}
-
-				myAssetPaths[name] = path;
-			}
-		}
-
-		if (error)
-		{
-			LOG_ERROR(LOG_CATEGORY, "Failed to initialize AssetManager! Directory iteration flagged an error. Error: %s", error.message());
-			return false;
-		}
-
+		locAssetPath = NormalizeFilePath(aAssetsPath);
 		return true;
-#undef LOG_CATEGORY
 	}
 
 	bool AssetManager::Shutdown()
 	{
-		myAssetPaths.clear();
-		myAssets.clear();
-		myDirectory.clear();
 		return true;
 	}
 
-	size_t AssetManager::Clear(ASSET_RETENTION aRetention)
+	std::filesystem::path AssetManager::NormalizeFilePath(const std::filesystem::path& aPath)
 	{
-		size_t count = 0;
-		auto it = myAssets.begin();
-		while (it != myAssets.end())
-		{
-			const __AssetEntry& entry = it->second;
-
-			if (entry.Asset->GetReferenceCount() == 0 && entry.Asset->GetRetention() <= aRetention)
-			{
-				it = myAssets.erase(it);
-				++count;
-			}
-			else
-			{
-				it = std::next(it);
-			}
-		}
-		return count;
+		return aPath.lexically_normal().relative_path();
 	}
-}
 
-#undef FILE_CATEGORY
-#undef CLASS_CATEGORY
+	const std::filesystem::path& AssetManager::GetAssetsPath()
+	{
+		return locAssetPath;
+	}
+
+	assets::ResourceID AssetManager::GetID(const char* aNameSpace, const std::filesystem::path& aPath)
+	{
+		const std::filesystem::path path = NormalizeFilePath(aPath).replace_extension();
+
+		std::string id = path.string();
+		size_t toReplace = 0;
+		while ((toReplace = id.find('\\', toReplace)) != std::string::npos)
+		{
+			id.replace(toReplace, 1, "/");
+		}
+
+		id = std::format("{}:{}", aNameSpace, id);
+
+		auto toLower = [](char c) { return static_cast<char>(std::tolower(c)); };
+		std::transform(id.begin(), id.end(), id.begin(), toLower);
+
+		return assets::ResourceID(id);
+	}
+
+	//size_t AssetManager::OpenFileContents(const std::filesystem::path& aPath, const void** outContents)
+	//{
+	//	std::ifstream file(aPath, std::ifstream::binary);
+	//
+	//	if (not file.is_open())
+	//	{
+	//		//TODO: log
+	//		return nullptr;
+	//	}
+	//
+	//	constexpr size_t readSize = 4096;
+	//	size_t remainder = locBufferSize;
+	//	bool finished = false;
+	//	while (finished == false && remainder > 0)
+	//	{
+	//		file.read(locBuffer, std::min(readSize, remainder));
+	//		remainder -= file.gcount();
+	//		finished = file.eof();
+	//
+	//		if (file.fail())
+	//		{
+	//			return nullptr;
+	//		}
+	//	}
+	//	if (not finished)
+	//	{
+	//		return nullptr;
+	//	}
+	//
+	//	return locBuffer;
+	//}
+	//
+	//void AssetManager::FreeFileContents(void* aFileContents)
+	//{
+	//	if (aFileContents != nullptr)
+	//	{
+	//		delete[] aFileContents;
+	//	}
+	//}
+}

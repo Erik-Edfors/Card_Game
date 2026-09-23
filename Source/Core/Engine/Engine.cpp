@@ -7,6 +7,7 @@
 #include <Core/GraphicsEngine/GraphicsEngine.h>
 
 #include <Core/CommonUtilities/InputManager.h>
+#include <Core/CommonUtilities/TimeManager.h>
 #include <Core/Assets/AssetManager.h>
 
 #define FILE_CATEGORY "Engine.cpp"
@@ -27,6 +28,7 @@ bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 #define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
 	std::unique_ptr<GraphicsEngine> graphicsEngine = std::make_unique<GraphicsEngine>();
 	std::unique_ptr<CommonUtilities::InputManager> inputManager = std::make_unique<CommonUtilities::InputManager>();
+	std::unique_ptr<CommonUtilities::TimeManager> timeManager = std::make_unique<CommonUtilities::TimeManager>();
 
 	graphics::PImpl<graphics::Window_DX11Impl> window = new graphics::Window_DX11Impl(aWindow);
 
@@ -61,6 +63,7 @@ bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 
 	myGraphicsEngine = std::move(graphicsEngine);
 	myInputManager = std::move(inputManager);
+	myTimeManager = std::move(timeManager);
 
 	return true;
 
@@ -106,9 +109,11 @@ bool Engine::ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM w
 
 bool Engine::BeginFrame()
 {
+	myInputManager->UpdateInput();
+
 	if (not mySceneStack.empty())
 	{
-		mySceneStack.back()->Update();
+		mySceneStack.back()->Update(myTimeManager->GetDelta());
 	}
 
 	return true;
@@ -117,6 +122,7 @@ bool Engine::BeginFrame()
 void Engine::EndFrame()
 {
 	myGraphicsEngine->Render();
+	myTimeManager->Update();
 }
 
 const CommonUtilities::InputManager& Engine::GetInputManager() const noexcept
@@ -127,6 +133,11 @@ const CommonUtilities::InputManager& Engine::GetInputManager() const noexcept
 GraphicsEngine& Engine::GetGraphicsEngine() noexcept
 {
 	return *myGraphicsEngine;
+}
+
+const CommonUtilities::TimeManager& Engine::GetTimeManager() const noexcept
+{
+	return *myTimeManager;
 }
 
 Scene* Engine::GetScene() noexcept

@@ -11,6 +11,7 @@
 #include <Core/GraphicsEngine/Projection.h>
 #include <Core/GraphicsEngine/RenderLayers/SpriteRenderLayer.h>
 #include <Core/GraphicsEngine/RenderLayers/TextRenderLayer.h>
+
 #include <Core/RenderHardwareInterface/Graphics.h>
 #include <Core/RenderHardwareInterface/Device.h>
 #include <Core/RenderHardwareInterface/Objects/ImmediateDeviceContext.h>
@@ -19,10 +20,17 @@
 #include <Core/RenderHardwareInterface/Objects/DepthStencil.h>
 #include <Core/RenderHardwareInterface/DDSLoad.h>
 #include <Core/RenderHardwareInterface/DX11/Window_DX11Impl.h>
-#include <Core/Engine/ComponentSystem/ComponentSystem.h>
-#include <Core/Engine/ComponentSystem/Components/TransformComponent.h>
-#include <Core/Engine/ComponentSystem/Components/SpriteComponent.h>
-#include <Core/Engine/ComponentSystem/Components/TextComponent.h>
+
+#include <Core/ComponentSystem/ComponentSystem.h>
+
+#include <Core/Engine/Components/TransformComponent.h>
+#include <Core/Engine/Components/SpriteComponent.h>
+#include <Core/Engine/Components/TextComponent.h>
+
+#include <Core/Assets/FontRegistry.h>
+#include <Core/Assets/ShaderRegistry.h>
+#include <Core/Assets/TextureRegistry.h>
+
 #include <fstream>
 
 #define FILE_CATEGORY "Client.cpp"
@@ -55,84 +63,49 @@ namespace client
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
 
-		aWindow;
 		aArgs;
 		aNumArgs;
 
-		std::unique_ptr<Engine> engine = std::make_unique<Engine>();
-		if (not engine->Initialize(aWindow, L"../../../Assets/"))
+		myWindow = aWindow;
+		myEngine = std::make_unique<Engine>();
+
+
+		// Initializing Engine
+		if (not myEngine->Initialize(myWindow, L"../../../Assets/"))	//TODO: Use another way to get asset path.
 		{
-			LOG_ERROR(LOG_CATEGORY, "Failed to initialize Client! Failed to initialize Engine.");
+			LOG_ERROR(LOG_CATEGORY, "Failed to initialize Engine!");
 			return false;
 		}
 
-		myEngine = std::move(engine);
-		graphics::PImpl<graphics::Device> device = myEngine->GetGraphicsEngine().GetDevice();
-
-		device->GetBufferRenderTarget(&myRenderTarget);
-		device->GetBufferDepthStencil(&myDepthStencil);
+		myEngine->GetGraphicsEngine().SetVSyncEnabled(true);
 
 
-		//TEMPORARY:
-		//locSpriteRenderLayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>();
-		SpriteRenderLayer* spriteRenderlayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>();
+		// Loading Resources
+		myFontRegistry = std::make_unique<assets::FontRegistry>();
+		myShaderRegistry = std::make_unique<assets::ShaderRegistry>(myEngine->GetGraphicsEngine().GetDevice());
+		myTextureRegistry = std::make_unique<assets::TextureRegistry>(myEngine->GetGraphicsEngine().GetDevice());
 
-		std::ifstream file("../../Assets/Textures/Atlas.dds");
+		myFontRegistry->Load("core", assets::AssetManager::GetAssetsPath() / "Font");
+		myShaderRegistry->Load("core", assets::AssetManager::GetAssetsPath() / "Shader");
+		myTextureRegistry->Load("core", assets::AssetManager::GetAssetsPath() / "Texture");
 
-		graphics::PImpl<graphics::Texture2D> atlas;
-		graphics::CreateTexture2DFromFile(
-			device.Get(),
-			"Sprite Atlas",
-			L"../../../Assets/Textures/Atlas.dds",
-			&atlas,
-			graphics::GRAPHICS_BIND_SHADER_RESOURCE,
-			graphics::GRAPHICS_RESOURCE_NONE,
-			graphics::GRAPHICS_USAGE_DEFAULT,
-			graphics::GRAPHICS_CPU_ACCESS_NONE
-		);
+		// Setting up graphics layers
+		SpriteRenderLayer* spriteRenderLayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>(myShaderRegistry.get());
+		TextRenderLayer* renderLayer = myEngine->GetGraphicsEngine().AddRenderLayer<TextRenderLayer>(myShaderRegistry.get());
 
-		graphics::ShaderResourceDesc srDesc = {
-			.Name = "Sprite Atlas ShaderResource",
-			.Texture = atlas.Get(),
-			.Format = graphics::GRAPHICS_FORMAT_UNKNOWN,
-			.ViewDimension = graphics::GRAPHICS_SHADER_RESOURCE_VIEW_DIMENSION_TEXTURE2D,
-			.FirstSlice = 0,
-			.NumSlices = 1,
-			.MipLevels = 1,
-			.MostDetailedMip = 0
-		};
+		graphics::PImpl<graphics::RenderTarget> renderTarget;
+		myEngine->GetGraphicsEngine().GetDevice()->GetBufferRenderTarget(&renderTarget);
+		graphics::PImpl<graphics::DepthStencil> depthStencil;
+		myEngine->GetGraphicsEngine().GetDevice()->GetBufferDepthStencil(&depthStencil);
 
-		graphics::PImpl<graphics::ShaderResource> atlasResource;
-		device->CreateShaderResource(&atlasResource, &srDesc);
+		renderLayer->SetRenderTarget(renderTarget.Get());
+		spriteRenderLayer->SetRenderTarget(renderTarget.Get());
 
-		spriteRenderlayer->SetAtlas(atlasResource.Get());
-		spriteRenderlayer->SetTarget(myRenderTarget.Get());
-		spriteRenderlayer->SetView(CommonUtilities::Matrix4x4f());
-		spriteRenderlayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, -1.f, 1.f));
+		renderLayer->SetDepthStencil(depthStencil.Get());
+		spriteRenderLayer->SetDepthStencil(depthStencil.Get());
 
-
-		TextRenderLayer* textRenderlayer = myEngine->GetGraphicsEngine().AddRenderLayer<TextRenderLayer>();
-		textRenderlayer->SetTargets(myRenderTarget.Get(), nullptr);
-		textRenderlayer->SetView(CommonUtilities::Matrix4x4f());
-		textRenderlayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, -1.f, 1.f));
-
-
-
-		myEngine->PushScene<client::LobbyScene>();
-
-		ComponentSystem& compSys = myEngine->GetScene()->GetComponentSystem();
-		ActorRef actor = compSys.CreateActor();
-		ComponentRef<TransformComponent> transform = compSys.AddComponent<TransformComponent>(actor);
-		ComponentRef<SpriteComponent> sprite = compSys.AddComponent<SpriteComponent>(actor);
-		ComponentRef<TextComponent> text = compSys.AddComponent<TextComponent>(actor);
-
-		transform->SetScaleLocal({ 2.f * 1.f / 16.f, 4.f * 1.f / 9.f, 1.f });
-		transform->SetTranslationLocal({ 0.1f, 0.5f, 0.75f });
-
-		sprite->SetTextureRect({ { 0.f, 0.f }, { 32.f / 4096.f, 64.f / 4096.f }});
-
-		text->SetFont(L"../../../Assets/Fonts/arial.bf");
-		text->SetText(L"Hello World!\nThis is a test message!\nHello Again!\n# A list:\n|\t1\t=2\n|\t123\t=3\n|\t12\t=1");
+		renderLayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
+		spriteRenderLayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
 
 		return true;
 
@@ -150,8 +123,9 @@ namespace client
 			result = false;
 		}
 		myEngine.reset();
-		myRenderTarget.Reset();
-		myDepthStencil.Reset();
+		myFontRegistry.reset();
+		myShaderRegistry.reset();
+		myTextureRegistry.reset();
 		myExiting = false;
 
 		return result;
@@ -176,10 +150,6 @@ namespace client
 					break;
 				}
 			}
-
-			float clearColor[4] = { 0.f, 0.f, 0.f, 0.f };
-			myEngine->GetGraphicsEngine().GetDeviceContext()->ClearRenderTarget(myRenderTarget.Get(), clearColor);
-			myEngine->GetGraphicsEngine().GetDeviceContext()->ClearDepthStencil(myDepthStencil.Get());
 
 			if (myEngine->BeginFrame())
 			{

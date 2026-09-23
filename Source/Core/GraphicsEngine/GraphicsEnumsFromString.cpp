@@ -4,9 +4,6 @@
 
 #define _CRC32_HASHED_STRING_TO_ENUM_SWITCH_CASE(enumNamespace, arg) case CommonUtilities::CRC32(#arg): return enumNamespace::arg
 
-#define _STRINGIFY_INTERNAL(Value) #Value
-#define STRINGIFY(Value) _STRINGIFY_INTERNAL(Value)
-
 #undef FILE_CATEGORY
 #define FILE_CATEGORY "GraphicsEnumsFromString.cpp"
 

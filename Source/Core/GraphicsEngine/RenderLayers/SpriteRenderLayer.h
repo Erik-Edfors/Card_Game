@@ -1,82 +1,119 @@
 #pragma once
 #include "RenderLayer.h"
-#include "../Objects/PipelineState.h"
-#include <Core/CommonUtilities/Math/Matrix4x4.hpp>
-#include <Core/CommonUtilities/Math/Vector2.hpp>
+
 #include <Core/CommonUtilities/Math/AABB2D.hpp>
+#include <Core/CommonUtilities/Math/Matrix4x4.hpp>
+
+#include <Core/RenderHardwareInterface/PImpl.hpp>
+#include <Core/RenderHardwareInterface/Objects/ShaderResource.h>
+#include <Core/RenderHardwareInterface/Objects/Buffers/ConstantBuffer.h>
 
 namespace graphics
 {
 	class ShaderResource;
 	class RenderTarget;
-	class BlendState;
+	class DepthStencil;
+	class SamplerState;
 
-	class ConstantBuffer;
 	class VertexBuffer;
+	class ConstantBuffer;
+
+	class BlendState;
+	class InputLayout;
 
 	class VertexShader;
 	class GeometryShader;
 	class PixelShader;
-
-	class SamplerState;
 }
 
-struct Sprite
+namespace assets
 {
-	CommonUtilities::Vector2f Position;
-	CommonUtilities::Vector2f Size;
-	CommonUtilities::Vector2f Pivot;
-	float Rotation;
+	class ShaderRegistry;
+}
 
-	CommonUtilities::Vector4f Tint;
-	float Roughness;
-	float Metallicity;
+class Sprite
+{
+public:
+	struct Instance
+	{
+		graphics::PImpl<graphics::ConstantBuffer> ObjectBuffer;
+		graphics::PImpl<graphics::ShaderResource> Atlas;
+	};
 
-	CommonUtilities::AABB2Df TextureRect;
+	Sprite();
+	~Sprite();
 
-	float Depth;
+	void SetAtlas(graphics::ShaderResource* aAtlas) noexcept;
+	graphics::ShaderResource* GetAtlas() const noexcept;
+
+	void SetAtlasRect(CommonUtilities::AABB2Df aRect) noexcept;
+	CommonUtilities::AABB2Df GetAtlasRect() const noexcept;
+
+	void SetTint(CommonUtilities::Vector4f aTint) noexcept;
+	CommonUtilities::Vector4f GetTint() const noexcept;
+
+	void SetOrigin(CommonUtilities::Vector2f aOrigin) noexcept;
+	CommonUtilities::Vector2f GetOrigin() const noexcept;
+
+	void SetTransform(const CommonUtilities::Matrix4x4f& aTransform) noexcept;
+	const CommonUtilities::Matrix4x4f& GetTransform() const noexcept;
+
+	Instance GetInstance(graphics::Device* aDevice) const;
+
+private:
+	void Clean(graphics::Device* aDevice) const;
+
+	mutable bool myObjectBufferIsDirty;
+	mutable Instance myInstance;
+
+	CommonUtilities::Matrix4x4f myTransform;
+	CommonUtilities::Vector4f myTint;
+	CommonUtilities::AABB2Df myAtlasRect;
+	CommonUtilities::Vector2f myOrigin;
 };
 
 class SpriteRenderLayer : public RenderLayer
 {
 public:
-	SpriteRenderLayer();
+	SpriteRenderLayer(assets::ShaderRegistry* aShaderRegistry);
 	~SpriteRenderLayer();
 
-	void SetTarget(graphics::RenderTarget* aRenderTarget) noexcept;
-	void SetAtlas(graphics::ShaderResource* aAtlas) noexcept;
-
 	void SetView(const CommonUtilities::Matrix4x4f& aView) noexcept;
-	void SetProjection(const CommonUtilities::Matrix4x4f& aProjection) noexcept;
+	const CommonUtilities::Matrix4x4f& GetView() const noexcept;
+
+	void SetProjection(const CommonUtilities::Matrix4x4f& aProjection);
+	const CommonUtilities::Matrix4x4f& GetProjection() const noexcept;
+
+	void SetRenderTarget(graphics::RenderTarget* aRenderTarget) noexcept;
+	graphics::RenderTarget* GetRenderTarget() const noexcept;
+
+	void SetDepthStencil(graphics::DepthStencil* aDepthStencil) noexcept;
+	graphics::DepthStencil* GetDepthStencil() const noexcept;
 
 	void Draw(const Sprite& aSprite);
 
 protected:
-	void OnInit() override;
-	void OnRender() override;
+	virtual void OnInit() override;
+	virtual void OnRender() override;
+	virtual void OnPostRender() override;
 
 private:
-	PipelineStateDesc myPipelineState;
+	assets::ShaderRegistry* myShaderRegistry;
 
 	CommonUtilities::Matrix4x4f myView;
 	CommonUtilities::Matrix4x4f myProjection;
 
-	std::vector<Sprite> mySprites;
-
-	graphics::PImpl<graphics::VertexBuffer> myVertexBuffer;
-
-	graphics::PImpl<graphics::VertexShader> myVertexShader;
-	graphics::PImpl<graphics::GeometryShader> myGeometryShader;
-	graphics::PImpl<graphics::PixelShader> myPixelShader;
-
-	graphics::PImpl<graphics::InputLayout> myInputLayout;
-
-	graphics::PImpl<graphics::ConstantBuffer> myFrameBuffer;
-	graphics::PImpl<graphics::ConstantBuffer> myMaterialBuffer;
+	graphics::PImpl<graphics::RenderTarget> myRenderTarget;
+	graphics::PImpl<graphics::DepthStencil> myDepthStencil;
 
 	graphics::PImpl<graphics::BlendState> myBlendState;
 
-	graphics::PImpl<graphics::RenderTarget> myRenderTarget;
-	graphics::PImpl<graphics::ShaderResource> myTextureAtlas;
-	graphics::PImpl<graphics::SamplerState> mySamplerState;
+	graphics::PImpl<graphics::ConstantBuffer> myFrameBuffer;
+	graphics::PImpl<graphics::SamplerState> mySampler;
+
+	graphics::PImpl<graphics::VertexShader> myVertexShader;
+	//graphics::PImpl<graphics::GeometryShader> myGeometryShader;
+	graphics::PImpl<graphics::PixelShader> myPixelShader;
+
+	std::vector<Sprite::Instance> myInstances;
 };
