@@ -6,6 +6,8 @@ Settings = {
     ["TargetName"]          = "%{prj.name}",
     ["WorkspaceDir"]        = "../",
     ["SourceDir"]           = "../Source/",
-    ["OutputDir"]           = "../Bin/%{cfg.buildcfg}/",
+    ["LibDir"]              = "../Lib/%{cfg.buildcfg}/",
+    ["ExternalDir"]         = "../Source/External/",
+    ["OutputDir"]           = "../Bin/%{cfg.buildcfg}/%{prj.name}/",
     ["TempDir"]             = "../Temp/%{cfg.buildcfg}/%{prj.name}/",
 }

@@ -23,7 +23,12 @@ workspace(Settings.Name)
     symbols("Default")
 
     includedirs {
-        Settings.SourceDir
+        Settings.SourceDir,
+        Settings.ExternalDir
+    }
+
+    libdirs {
+        Settings.LibDir
     }
 
     filter("configurations:Debug")
