@@ -393,6 +393,31 @@ group("Core")
     		engineDir .. "**.cpp",
     	}
 
+    networkingDir = coreDir .. "Networking/"
+    project("Networking")
+        location(networkingDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+        
+        links {
+            "Logger"
+        }
+
+        includedirs {
+            networkingDir
+        }
+
+        pchheader("Networking.pch.h")
+    	pchsource(networkingDir .. "Networking.pch.cpp")
+
+        files {
+    		networkingDir .. "**.h",
+    		networkingDir .. "**.hpp",
+    		networkingDir .. "**.cpp",
+    	}
+
     imguiDir = coreDir .. "imgui/"
     project("imgui")
         location(imguiDir)

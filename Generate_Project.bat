@@ -12,6 +12,8 @@ XCOPY Dependencies\* Bin\ /dys
 ECHO Finished Copying Dependencies!
 ECHO:
 
+CALL Build_Assets.bat
+ECHO:
 
 ECHO Generating Project Files...
 
