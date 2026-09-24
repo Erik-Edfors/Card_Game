@@ -33,6 +33,8 @@ namespace graphics
 		IDXGISwapChain* GetSwapChain();
 		const IDXGISwapChain* GetSwapChain() const;
 
+		Window* GetWindow() const override;
+
 		//########
 		// Objects
 		//########

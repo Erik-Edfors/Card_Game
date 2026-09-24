@@ -1,8 +1,15 @@
 #include "RenderHardwareInterface.pch.h"
 #include "Window_DX11Impl.h"
 
-graphics::Window_DX11Impl::Window_DX11Impl(HWND aWindowHandle) : 
-	myWindowHandle(aWindowHandle)
+#include <Core/imgui/imgui_impl_win32.h>
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+graphics::Window_DX11Impl::Window_DX11Impl(HWND aWindowHandle) :
+	myWindowHandle(aWindowHandle),
+	myWidth(0),
+	myHeight(0),
+	myImGuiEnabled(false)
 {
 	RECT size = {};
 	GetWindowRect(aWindowHandle, &size);
@@ -108,6 +115,16 @@ float graphics::Window_DX11Impl::GetClientHeight()
 	return static_cast<float>(rect.bottom - rect.top);
 }
 
+void graphics::Window_DX11Impl::SetImGuiEnabled(bool aEnabled) noexcept
+{
+	myImGuiEnabled = aEnabled;
+}
+
+bool graphics::Window_DX11Impl::IsImGuiEnabled() const noexcept
+{
+	return myImGuiEnabled;
+}
+
 HWND graphics::Window_DX11Impl::GetWindowHandle() const
 {
 	return myWindowHandle;
@@ -124,6 +141,14 @@ bool graphics::Window_DX11Impl::ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wPar
 		myWidth = LOWORD(lParam);
 		myHeight = HIWORD(lParam);
 		break;
+	}
+
+	if (IsImGuiEnabled())
+	{
+		if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam) != FALSE)
+		{
+			return true;
+		}
 	}
 
 	return false;

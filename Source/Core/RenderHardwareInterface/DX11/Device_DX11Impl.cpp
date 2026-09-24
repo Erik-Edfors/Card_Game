@@ -95,6 +95,10 @@ namespace graphics
 	{
 		return mySwapChain.Get();
 	}
+	Window* Device_DX11Impl::GetWindow() const
+	{
+		return myWindow.Get();
+	}
 	result::Code Device_DX11Impl::CreateData(Data** outData, const DataDesc* aDesc)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::CreateData"

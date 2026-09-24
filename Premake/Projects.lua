@@ -168,6 +168,7 @@ group("Implementations")
             "Engine",
             "CommonUtilities",
             "Logger",
+            "imgui",
 
             "d3d11.lib",
             "dxguid.lib",
@@ -289,7 +290,8 @@ group("Core")
         
         links {
             "CommonUtilities",
-            "Logger"
+            "Logger",
+            "imgui"
         }
 
         includedirs {
@@ -389,6 +391,24 @@ group("Core")
     		engineDir .. "**.h",
     		engineDir .. "**.hpp",
     		engineDir .. "**.cpp",
+    	}
+
+    imguiDir = coreDir .. "imgui/"
+    project("imgui")
+        location(imguiDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+
+        includedirs {
+            imguiDir
+        }
+
+        files {
+    		imguiDir .. "**.h",
+    		imguiDir .. "**.hpp",
+    		imguiDir .. "**.cpp",
     	}
         
     shadersDir = coreDir .. "Shaders/"

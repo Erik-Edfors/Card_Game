@@ -26,6 +26,9 @@ namespace graphics
 		float GetClientWidth() override;
 		float GetClientHeight() override;
 
+		void SetImGuiEnabled(bool aEnabled) noexcept;
+		bool IsImGuiEnabled() const noexcept;
+
 		HWND GetWindowHandle() const;
 
 		bool ProcessMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -34,5 +37,6 @@ namespace graphics
 		HWND myWindowHandle;
 		UINT myWidth;
 		UINT myHeight;
+		bool myImGuiEnabled;
 	};
 }

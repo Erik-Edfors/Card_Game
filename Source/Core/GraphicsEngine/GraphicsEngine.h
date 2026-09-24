@@ -31,7 +31,8 @@ public:
 	void SetVSyncEnabled(bool aEnabled) noexcept;
 	bool IsVSyncEnabled() const noexcept;
 
-	void Render();
+	void BeginFrame();
+	void EndFrame();
 
 	graphics::Device* GetDevice() const noexcept;
 	graphics::ImmediateDeviceContext* GetDeviceContext() const noexcept;

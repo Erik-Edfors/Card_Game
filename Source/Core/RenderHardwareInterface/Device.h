@@ -7,6 +7,8 @@ namespace graphics
 {
 	class GraphicsObject;
 
+	class Window;
+
 	class ImmediateDeviceContext;
 	class DeferredDeviceContext;
 
@@ -67,6 +69,8 @@ namespace graphics
 		DeviceID GetID() const noexcept;
 		bool IsDeviceObject(GraphicsObject* aGraphicsObject) const noexcept;
 		GraphicsID CreateGraphicsID() noexcept;
+
+		virtual Window* GetWindow() const = 0;
 
 		//########
 		// Objects

@@ -31,6 +31,7 @@ bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 	std::unique_ptr<CommonUtilities::TimeManager> timeManager = std::make_unique<CommonUtilities::TimeManager>();
 
 	graphics::PImpl<graphics::Window_DX11Impl> window = new graphics::Window_DX11Impl(aWindow);
+	myWindow = window.Get();
 
 	graphics::GRAPHICS_DEVICE_FLAGS deviceFlags = graphics::GRAPHICS_DEVICE_ALLOW_TEARING
 		| graphics::GRAPHICS_DEVICE_BGRA_SUPPORT
@@ -99,6 +100,16 @@ bool Engine::ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM w
 	UNREFERENCED_PARAMETER(wParam);
 	UNREFERENCED_PARAMETER(lParam);
 
+	graphics::Window_DX11Impl* window = static_cast<graphics::Window_DX11Impl*>(myWindow.Get());
+
+	if (window->GetWindowHandle() == hWnd)
+	{
+		if (window->ProcessMessage(hWnd, uMsg, wParam, lParam))
+		{
+			return true;
+		}
+	}
+
 	if (myInputManager->UpdateEvents(uMsg, wParam, lParam))
 	{
 		return true;
@@ -109,6 +120,8 @@ bool Engine::ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM w
 
 bool Engine::BeginFrame()
 {
+	myGraphicsEngine->BeginFrame();
+
 	myInputManager->UpdateInput();
 
 	if (not mySceneStack.empty())
@@ -121,7 +134,7 @@ bool Engine::BeginFrame()
 
 void Engine::EndFrame()
 {
-	myGraphicsEngine->Render();
+	myGraphicsEngine->EndFrame();
 	myTimeManager->Update();
 }
 

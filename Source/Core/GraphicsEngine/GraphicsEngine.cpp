@@ -3,8 +3,10 @@
 #include "GraphicsRegistry.h"
 
 #include <Core/RenderHardwareInterface/Device.h>
+#include <Core/RenderHardwareInterface/imgui.h>
 #include <Core/RenderHardwareInterface/Objects/ImmediateDeviceContext.h>
 #include <Core/RenderHardwareInterface/Objects/Buffers/ConstantBuffer.h>
+#include <Core/RenderHardwareInterface/Objects/Texture2D.h>
 
 #include "Objects/LightEntry.h"
 #include "Objects/PipelineState.h"
@@ -49,6 +51,8 @@ bool GraphicsEngine::Initialize(graphics::Device* aDevice)
 	}
 
 	GetDevice()->CreateImmediateDeviceContext(&myDeviceContext);
+
+	graphics::ImGuiInitialize(myDevice.Get());
 
 	//////////////////
 	//// Constant Buffers
@@ -165,6 +169,8 @@ bool GraphicsEngine::Initialize(graphics::Device* aDevice)
 
 bool GraphicsEngine::Shutdown()
 {
+	graphics::ImGuiShutdown();
+
 	myRenderLayers.clear();
 	myConstantBuffers.clear();
 	myGraphicsRegistries.clear();
@@ -185,7 +191,12 @@ bool GraphicsEngine::IsVSyncEnabled() const noexcept
 	return myVSyncEnabled;
 }
 
-void GraphicsEngine::Render()
+void GraphicsEngine::BeginFrame()
+{
+	graphics::ImGuiNewFrame();
+}
+
+void GraphicsEngine::EndFrame()
 {
 	const float clearColor[4] = { 0.f, 0.f, 0.f, 1.f };
 	graphics::PImpl<graphics::RenderTarget> backbufferRenderTarget;
@@ -195,6 +206,8 @@ void GraphicsEngine::Render()
 	graphics::PImpl<graphics::DepthStencil> backbufferDepthStencil;
 	GetDevice()->GetBufferDepthStencil(&backbufferDepthStencil);
 	GetDevice()->ClearDepthStencil(backbufferDepthStencil.Get());
+
+	const graphics::Texture2DDesc& backbufferTextureDesc = backbufferRenderTarget->GetDesc().Texture->GetDesc();
 
 	for (std::unique_ptr<RenderLayer>& layer : myRenderLayers)
 	{
@@ -223,6 +236,21 @@ void GraphicsEngine::Render()
 	{
 		flags |= graphics::GRAPHICS_PRESENT_ALLOW_TEARING;
 	}
+
+	GetDeviceContext()->ClearState();
+
+	GetDeviceContext()->BindTargets(&backbufferRenderTarget, 1, backbufferDepthStencil.Get());
+	graphics::Viewport viewport = {
+		.Left = 0.f,
+		.Right = static_cast<float>(backbufferTextureDesc.Width),
+		.Top = 0.f,
+		.Bottom = static_cast<float>(backbufferTextureDesc.Height),
+		.Front = 0.f,
+		.Back = 1.f
+	};
+	GetDeviceContext()->SetViewports(&viewport, 1);
+
+	graphics::ImGuiRender();
 
 	myDevice->Present(flags);
 }

@@ -44,6 +44,8 @@
 #include <memory>
 #include <vector>
 
+#include <Core/RenderHardwareInterface/PImpl.hpp>
+
 namespace CommonUtilities
 {
 	class InputManager;
@@ -52,6 +54,11 @@ namespace CommonUtilities
 
 class GraphicsEngine;
 class Scene;
+
+namespace graphics
+{
+	class Window;
+}
 
 class Engine
 {
@@ -82,6 +89,8 @@ public:
 	void PopScene();
 
 private:
+	graphics::PImpl<graphics::Window> myWindow;
+
 	std::unique_ptr<CommonUtilities::InputManager> myInputManager;
 
 	std::unique_ptr<GraphicsEngine> myGraphicsEngine;
