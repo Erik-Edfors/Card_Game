@@ -5,6 +5,10 @@
 #include <Implementations/Client/Client.h>
 #include <Core/Logger/Logger.h>
 
+#include <Core/Logger/Logger.h>
+
+#define FILE_CATEGORY "main.cpp"
+
 static LRESULT CALLBACK locWinProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
 	client::Client* client = reinterpret_cast<client::Client*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -12,15 +16,14 @@ static LRESULT CALLBACK locWinProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM w
 	{
 		return TRUE;
 	}
-	else
-	{
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
-	}
 
+	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
 static int GuardedMain(const wchar_t* const* aArgs, size_t aNumArgs)
 {
+#define LOG_CATEGORY FILE_CATEGORY"->GuardedMain"
+
 	constexpr LPCWSTR windowClassName = L"Card_Game_Client_Window";
 
 	client::Client client;
@@ -36,7 +39,7 @@ static int GuardedMain(const wchar_t* const* aArgs, size_t aNumArgs)
 	wndClass.hInstance = executableModule;
 	if (RegisterClassW(&wndClass) == NULL)
 	{
-		//TODO: Log failure.
+		LOG_ERROR(LOG_CATEGORY, "Failed to register window class!");
 		return -1;
 	}
 
@@ -55,7 +58,7 @@ static int GuardedMain(const wchar_t* const* aArgs, size_t aNumArgs)
 	);
 	if (window == NULL)
 	{
-		//TODO: Log failure.
+		LOG_ERROR(LOG_CATEGORY, "Failed to create window!");
 		return -1;
 	}
 
@@ -65,7 +68,7 @@ static int GuardedMain(const wchar_t* const* aArgs, size_t aNumArgs)
 		DWORD error = GetLastError();
 		if (error != NOERROR)
 		{
-			//TODO: Log failure.
+			LOG_ERROR(LOG_CATEGORY, "Failed to set window user data!");
 			return -1;
 		}
 	}
@@ -74,25 +77,38 @@ static int GuardedMain(const wchar_t* const* aArgs, size_t aNumArgs)
 
 	if (not client.Initialize(window, aArgs, aNumArgs))
 	{
-		//TODO: Log failed initialize.
+		LOG_ERROR(LOG_CATEGORY, "Failed to initialize Client!");
 		return -1;
 	}
 
 	client.Run();
 
-	client.Shutdown();
-
-	if (DestroyWindow(window) == FALSE)
+	if (not client.Shutdown())
 	{
-		//TODO: Log failure.
+		LOG_WARNING(LOG_CATEGORY, "Failed to shutdown Client!");
+	}
+
+	if (IsWindow(window))
+	{
+		SetLastError(S_OK);
+		if (DestroyWindow(window) == FALSE)
+		{
+			DWORD error = GetLastError();
+			if (error != S_OK)
+			{
+				LOG_WARNING(LOG_CATEGORY, "Failed to destroy window!");
+			}
+		}
 	}
 
 	if (UnregisterClassW(windowClassName, executableModule) == FALSE)
 	{
-		//TODO: Log failure.
+		LOG_WARNING(LOG_CATEGORY, "Failed to unregister window class!");
 	}
 
 	return 0;
+
+#undef LOG_CATEGORY
 }
 
 extern int WINAPI wWinMain(
@@ -102,6 +118,8 @@ extern int WINAPI wWinMain(
 	_In_ int       nCmdShow
 )
 {
+#define LOG_CATEGORY FILE_CATEGORY"->wWinMain"
+
 	UNREFERENCED_PARAMETER(hInstance);
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
@@ -115,6 +133,7 @@ extern int WINAPI wWinMain(
 	LPWSTR* args = CommandLineToArgvW(commandLine, &numArgs);
 
 #ifdef _RELEASE
+	
 	try
 	{
 		result = GuardedMain(args, static_cast<size_t>(numArgs));
@@ -122,8 +141,11 @@ extern int WINAPI wWinMain(
 	catch (std::exception e)
 	{
 		result = -1;
+		LOG_FATAL(LOG_CATEGORY, "GuardedMain threw exception -> {}", e.what());
 	}
+
 #else
+
 	if (AllocConsole())
 	{
 		FILE* consoleOut = nullptr;
@@ -145,11 +167,17 @@ extern int WINAPI wWinMain(
 	{
 		//TODO: Log console allocation failed.
 	}
+
 	result = GuardedMain(args, static_cast<size_t>(numArgs));
 	system("Pause");
+
 #endif
 
 	LocalFree(args);
 
 	return result;
+
+#undef LOG_CATEGORY
 }
+
+#undef FILE_CATEGORY

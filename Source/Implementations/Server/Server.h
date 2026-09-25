@@ -41,6 +41,10 @@
 #define NOMCX             // Modem Configuration Extensions
 #include <Windows.h>
 
+#include <memory>
+
+class Engine;
+
 namespace server
 {
 	class Server
@@ -49,9 +53,10 @@ namespace server
 		Server();
 		~Server();
 
-		LRESULT CALLBACK ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
+		bool ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
 		bool Initialize(HWND aWindow, const wchar_t* const* aArgs, size_t aNumArgs);
+		bool Shutdown();
 
 		void Run();
 
@@ -59,5 +64,6 @@ namespace server
 
 	private:
 		bool myExiting;
+		std::unique_ptr<Engine> myEngine;
 	};
 }

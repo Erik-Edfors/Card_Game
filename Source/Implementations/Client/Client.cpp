@@ -134,7 +134,7 @@ namespace client
 		bool result = true;
 		if (not myEngine->Shutdown())
 		{
-			LOG_ERROR(LOG_CATEGORY, "Failed to shutdown Client! Failed to shutdown Engine.");
+			LOG_ERROR(LOG_CATEGORY, "Failed to shutdown Engine.");
 			result = false;
 		}
 		myEngine.reset();
@@ -168,6 +168,8 @@ namespace client
 
 			if (myEngine->BeginFrame())
 			{
+				myEngine->Update();
+
 				myEngine->EndFrame();
 			}
 			else

@@ -122,14 +122,17 @@ bool Engine::BeginFrame()
 {
 	myGraphicsEngine->BeginFrame();
 
+	return true;
+}
+
+void Engine::Update()
+{
 	myInputManager->UpdateInput();
 
 	if (not mySceneStack.empty())
 	{
 		mySceneStack.back()->Update(myTimeManager->GetDelta());
 	}
-
-	return true;
 }
 
 void Engine::EndFrame()
