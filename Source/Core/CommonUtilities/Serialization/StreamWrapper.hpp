@@ -15,7 +15,7 @@ namespace CommonUtilities
 		~StreamReader();
 
 		size_t Read(void* outData, size_t aSize) override;
-		bool Readable() const override { return not myStream.eof() && Reader::Readable(); }
+		bool Readable() const override { return not myStream.eof(); }
 
 	private:
 		std::istream& myStream;
@@ -28,7 +28,7 @@ namespace CommonUtilities
 		~StreamWriter();
 
 		size_t Write(const void* aData, size_t aSize) override;
-		bool Writable() const override { return not myStream.fail() && Writer::Writable(); }
+		bool Writable() const override { return not myStream.fail(); }
 
 	private:
 		std::ostream& myStream;
@@ -49,10 +49,10 @@ namespace CommonUtilities
 			throw ReadException(std::format("Could not read! Reader was not readable.").c_str());
 		}
 
-		if (GetCount() + aSize > GetConstraints().MaxSize)
-		{
-			throw Exception(std::format("Read exceeded constraint MaxSize! Read '{} -> {}' would exceed constraint '{}'.", GetCount(), GetCount() + aSize, GetConstraints().MaxSize).c_str());
-		}
+		//if (GetCount() + aSize > GetConstraints().MaxSize)
+		//{
+		//	throw Exception(std::format("Read exceeded constraint MaxSize! Read '{} -> {}' would exceed constraint '{}'.", GetCount(), GetCount() + aSize, GetConstraints().MaxSize).c_str());
+		//}
 
 		size_t readCount = 0;
 		while (myStream && readCount != aSize)
@@ -61,7 +61,7 @@ namespace CommonUtilities
 			readCount += myStream.gcount();
 		}
 
-		ReportRead(readCount);
+		//ReportRead(readCount);
 
 		return readCount;
 	}
@@ -81,14 +81,14 @@ namespace CommonUtilities
 			throw WriteException(std::format("Could not write! Writer was not writable.").c_str());
 		}
 
-		if (GetCount() + aSize > GetConstraints().MaxSize)
-		{
-			throw Exception(std::format("Write exceeded constraint MaxSize! Write '{} -> {}' would exceed constraint '{}'.", GetCount(), GetCount() + aSize, GetConstraints().MaxSize).c_str());
-		}
+		//if (GetCount() + aSize > GetConstraints().MaxSize)
+		//{
+		//	throw Exception(std::format("Write exceeded constraint MaxSize! Write '{} -> {}' would exceed constraint '{}'.", GetCount(), GetCount() + aSize, GetConstraints().MaxSize).c_str());
+		//}
 
 		size_t count = myStream.rdbuf()->sputn(reinterpret_cast<const char*>(aData), aSize);
 
-		ReportWrite(count);
+		//ReportWrite(count);
 
 		return count;
 	}

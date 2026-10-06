@@ -1,124 +1,226 @@
 #include "Server.pch.h"
 #include "Server.h"
-#include "Scenes/MainScene.h"
 
-#include <Core/Engine/Engine.h>
-
-#include <Core/GraphicsEngine/GraphicsEngine.h>
-
-#include <Core/RenderHardwareInterface/Device.h>
-
-#include <Core/imgui/imgui.h>
-
-#define FILE_CATEGORY "Server.cpp"
-#define CLASS_CATEGORY FILE_CATEGORY"->Server"
+#include <Implementations/Shared/Network/Messages.h>
+#include <ranges>
+#include <set>
 
 namespace server
 {
-	Server::Server() : 
-		myExiting(false)
+	void Server::OnConnectionRequest(const shared::NetworkManager::MessageCallbackData<shared::NM_ConnectionRequest>& aData)
+	{
+		Server& server = *reinterpret_cast<Server*>(aData.UserData);
+
+		if (server.IsAllowingConnections())
+		{
+			server.AddClient(aData.Address);
+
+			shared::NM_ConnectionResult connectionResult = {
+				.Accepted = true
+			};
+			shared::NetworkManager::NetworkMessage message;
+			server.CreateMessage(&message, connectionResult);
+			server.SendTo(message, aData.Address);
+		}
+		else
+		{
+			shared::NM_ConnectionResult connectionResult = {
+				.Accepted = false
+			};
+			shared::NetworkManager::NetworkMessage message;
+			server.CreateMessage(&message, connectionResult);
+			server.SendTo(message, aData.Address);
+		}
+	}
+
+	void Server::OnDisconnect(const shared::NetworkManager::MessageCallbackData<shared::NM_Disconnect>& aData)
+	{
+		Server& server = *reinterpret_cast<Server*>(aData.UserData);
+
+		const networking::SocketAddress& client = aData.Address;
+
+		if (server.IsClient(client))
+		{
+			server.RemoveClient(client);
+		}
+	}
+
+	Server::Server() :
+		myAllowingConnections(false)
 	{
 	}
+
 	Server::~Server()
 	{
 	}
 
-	bool Server::ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
+	bool Server::Initialize(networking::Port aPort)
 	{
-		if (myEngine && myEngine->ProcessWindowsMessage(hWnd, uMsg, wParam, lParam))
+		if (not myNetworkManager.Initialize(4096, aPort))
 		{
-			return true;
-		}
-
-		switch (uMsg)
-		{
-		case WM_CLOSE: case WM_DESTROY:
-		{
-			PostQuitMessage(0);
-		}
-		break;
-		case WM_SIZE:
-		{
-			myEngine->GetGraphicsEngine().GetDevice()->UpdateBackbufferSize(LOWORD(lParam), HIWORD(lParam));
-		}
-		break;
-		}
-
-		return false;
-	}
-
-	bool Server::Initialize(HWND aWindow, const wchar_t* const* aArgs, size_t aNumArgs)
-	{
-#define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
-
-		aArgs;
-		aNumArgs;
-
-		myEngine = std::make_unique<Engine>();
-
-		if (not myEngine->Initialize(aWindow, L"../../../Assets/"))
-		{
-			LOG_ERROR(LOG_CATEGORY, "Failed to initialize Engine!");
 			return false;
 		}
 
-		myEngine->PushScene<MainScene>(this);
+		myNetworkManager.SetCallback<shared::NM_ConnectionRequest>(&OnConnectionRequest, this);
+		myNetworkManager.SetCallback<shared::NM_Disconnect>(&OnDisconnect, this);
 
 		return true;
-#undef LOG_CATEGORY
 	}
-
 	bool Server::Shutdown()
 	{
-#define LOG_CATEGORY CLASS_CATEGORY"::Shutdown"
-
 		bool result = true;
-		if (not myEngine->Shutdown())
-		{
-			LOG_ERROR(LOG_CATEGORY, "Failed to shutdown Engine.");
-			result = false;
-		}
-		myEngine.reset();
-		myExiting = false;
+
+		DisconnectClients(shared::NETWORK_DISCONNECT_END_OF_SESSION);
+
+		myCallbacks.clear();
+
+		SetAllowingConnections(false);
+
+		result &= myNetworkManager.Shutdown();
 
 		return result;
-
-#undef LOG_CATEGORY
 	}
-
-	void Server::Run()
+	void Server::Update()
 	{
-		while (myExiting == false)
+		myNetworkManager.Update(64);
+
+		const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+
+		std::vector<networking::SocketAddress> timedOutClients;
+		for (const auto& entry : myClients)
 		{
-			MSG msg = {};
-			while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+			const _ClientEntry& client = entry.second;
+			const bool timedOut = std::chrono::duration<float>(now - client.LastHeardFrom).count() > 30.f; // TODO: Allow setting timeout.
+
+			if (timedOut)
 			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-
-				switch (msg.message)
-				{
-				case WM_QUIT:
-					myExiting = true;
-					break;
-				}
-			}
-
-			if (myEngine->BeginFrame())
-			{
-				ImGui::DockSpaceOverViewport(0, NULL, ImGuiDockNodeFlags_PassthruCentralNode, NULL);
-
-				myEngine->Update();
-
-				myEngine->EndFrame();
+				timedOutClients.push_back(client.Address);
 			}
 		}
+
+		for (const networking::SocketAddress& client : timedOutClients)
+		{
+			DisconnectClient(client, shared::NETWORK_DISCONNECT_TIMED_OUT);
+		}
 	}
-	void Server::Exit()
+
+	void Server::SetAllowingConnections(bool aAllow) noexcept
 	{
-		myExiting = true;
+		myAllowingConnections = aAllow;
+	}
+
+	bool Server::IsAllowingConnections() const noexcept
+	{
+		return myAllowingConnections;
+	}
+
+	void Server::AddClient(const networking::SocketAddress& aAddress)
+	{
+		myClients[aAddress] = _ClientEntry{
+			.Address = aAddress,
+			.LastHeardFrom = std::chrono::steady_clock::now()
+		};
+	}
+
+	bool Server::RemoveClient(const networking::SocketAddress& aAddress)
+	{
+		return myClients.erase(aAddress) != 0;
+	}
+
+	bool Server::RemoveClients()
+	{
+		myClients.clear();
+		return true;
+	}
+
+	bool Server::DisconnectClient(const networking::SocketAddress& aAddress, shared::NETWORK_DISCONNECT_REASON aReason)
+	{
+		if (not RemoveClient(aAddress))
+		{
+			// Is not a client, therefore does not need to be disconnected.
+			return false;
+		}
+
+		shared::NM_Disconnect disconnect = {
+			.Reason = aReason
+		};
+		shared::NetworkManager::NetworkMessage message;
+		if (not myNetworkManager.CreateMessage(&message, disconnect))
+		{
+			// TODO: Log failed to create message.
+			// This causes a dirty disconnect.
+			// Meaning the server will no longer treat 
+			// the remot as a client, but the remote will not know that.
+		}
+		else
+		{
+			if (not myNetworkManager.SendTo(message, aAddress))
+			{
+				//TODO: Log failed to send disconnect.
+				// This causes a dirty disconnect.
+				// Meaning the server will no longer treat 
+				// the remot as a client, but the remote will not know that.
+			}
+		}
+
+		return true;
+	}
+
+	bool Server::DisconnectClients(shared::NETWORK_DISCONNECT_REASON aReason)
+	{
+		shared::NM_Disconnect disconnect = {
+			.Reason = aReason
+		};
+		shared::NetworkManager::NetworkMessage message;
+		if (not myNetworkManager.CreateMessage(&message, disconnect))
+		{
+			// TODO: Log failed to create message.
+			// This causes a dirty disconnect.
+			// Meaning the server will no longer treat 
+			// the remot as a client, but the remote will not know that.
+		}
+		else
+		{
+			if (not SendToClients(message))
+			{
+				//TODO: Log failed to send disconnect.
+				// This causes a dirty disconnect.
+				// Meaning the server will no longer treat 
+				// the remot as a client, but the remote will not know that.
+			}
+		}
+
+		if (not RemoveClients())
+		{
+			// Failed to remove clients.
+			return false;
+		}
+
+		return true;
+	}
+
+	bool Server::IsClient(const networking::SocketAddress& aAddress) const noexcept
+	{
+		return myClients.contains(aAddress);
+	}
+
+	size_t Server::GetNumClients() const noexcept
+	{
+		return myClients.size();
+	}
+
+	bool Server::SendTo(const shared::NetworkManager::NetworkMessage& aMessage, const networking::SocketAddress& aAddress)
+	{
+		return myNetworkManager.SendTo(aMessage, aAddress);
+	}
+
+	bool Server::SendToClients(const shared::NetworkManager::NetworkMessage& aMessage)
+	{
+		bool result = true;
+		for (auto& entry : myClients)
+		{
+			result &= SendTo(aMessage, entry.second.Address);
+		}
+		return result;
 	}
 }
-
-#undef FILE_CATEGORY
-#undef CLASS_CATEGORY

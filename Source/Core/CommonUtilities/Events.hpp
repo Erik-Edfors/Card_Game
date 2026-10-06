@@ -16,6 +16,9 @@ namespace CommonUtilities
 	class TEventListener;
 
 	template<typename _IDTy, typename _DataTy, class _IDHasher>
+	class TEventPusher;
+
+	template<typename _IDTy, typename _DataTy, class _IDHasher>
 	class TEventManager;
 
 	template<typename _IDTy, typename _DataTy>
@@ -26,16 +29,35 @@ namespace CommonUtilities
 	};
 
 	template<typename _IDTy, typename _DataTy, class _IDHasher = std::hash<_IDTy>>
-	class TEventManager : public Referable
+	class TEventPusher : public Referable
 	{
 		friend class TEventListener<_IDTy, _DataTy, _IDHasher>;
 	public:
-		typedef _IDTy ID;
-		typedef _DataTy Data;
-		typedef _IDHasher Hasher;
+		using ID = _IDTy;
+		using Data = _DataTy;
+		using Hasher = _IDHasher;
 
-		typedef TEventListener<_IDTy, _DataTy, _IDHasher> EventListener;
-		typedef TEvent<_IDTy, _DataTy> Event;
+		using EventListener = TEventListener<_IDTy, _DataTy, _IDHasher>;
+		using Event = TEvent<_IDTy, _DataTy>;
+
+	protected:
+		virtual void AddListener(EventListener* aListener, ID aID) = 0;
+		virtual void RemoveListener(EventListener* aListener, ID aID) = 0;
+	};
+
+	template<typename _IDTy, typename _DataTy, class _IDHasher = std::hash<_IDTy>>
+	class TEventManager : public TEventPusher<_IDTy, _DataTy, _IDHasher>
+	{
+		friend class TEventListener<_IDTy, _DataTy, _IDHasher>;
+	public:
+		using EventPusher = TEventPusher<_IDTy, _DataTy, _IDHasher>;
+
+		using ID = typename EventPusher::ID;
+		using Data = typename EventPusher::Data;
+		using Hasher = typename EventPusher::Hasher;
+
+		using EventListener = typename EventPusher::EventListener;
+		using Event = typename EventPusher::Event;
 
 	public:
 		TEventManager();
@@ -52,8 +74,8 @@ namespace CommonUtilities
 		TEventManager& operator=(TEventManager&& aEventManager) noexcept;
 
 	protected:
-		void AddListener(EventListener* aListener, ID aID);
-		void RemoveListener(EventListener* aListener, ID aID);
+		virtual void AddListener(EventListener* aListener, ID aID) override;
+		virtual void RemoveListener(EventListener* aListener, ID aID) override;
 
 	private:
 		typedef void(EventListener::* OnListenFunc)(const Event&);
@@ -84,12 +106,12 @@ namespace CommonUtilities
 		typedef _DataTy Data;
 		typedef _IDHasher Hasher;
 
-		typedef TEventManager<_IDTy, _DataTy, _IDHasher> EventManager;
+		typedef TEventPusher<_IDTy, _DataTy, _IDHasher> EventPusher;
 		typedef TGlobalEventManager<_IDTy, _DataTy, _IDHasher> GlobalEventManager;
 		typedef TEvent<_IDTy, _DataTy> Event;
 
 	private:
-		friend class EventManager;
+		friend class EventPusher;
 
 	public:
 		TEventListener() noexcept;
@@ -97,7 +119,7 @@ namespace CommonUtilities
 		TEventListener(TEventListener&& aEventListener) noexcept;
 		TEventListener(const TEventListener& aEventListener) noexcept;
 
-		void SetManager(const Reference<EventManager>& aEventManager) noexcept;
+		void SetPusher(const Reference<EventPusher>& aEventPusher) noexcept;
 
 		bool BeginListen(ID aEventID) noexcept;
 		bool StopListen(ID aEventID) noexcept;
@@ -111,7 +133,7 @@ namespace CommonUtilities
 	private:
 		void OnListen(const Event& aEvent);
 
-		Reference<EventManager> myEventManager;
+		Reference<EventPusher> myEventPusher;
 		std::set<ID> myListeningEventIDs;
 		std::queue<Event> myEvents;
 		std::mutex myMutex;
@@ -119,6 +141,7 @@ namespace CommonUtilities
 
 	typedef TEvent<StringHash, std::any> Event;
 	typedef TEventListener<StringHash, std::any> EventListener;
+	typedef TEventPusher<StringHash, std::any> EventPusher;
 	typedef TEventManager<StringHash, std::any> EventManager;
 	typedef TGlobalEventManager<StringHash, std::any> GlobalEventManager;
 
@@ -265,7 +288,7 @@ namespace CommonUtilities
 	}
 
 	template<typename _IDTy, typename _DataTy, class _IDHasher>
-	inline void TEventListener<_IDTy, _DataTy, _IDHasher>::SetManager(const Reference<EventManager>& aEventManager) noexcept
+	inline void TEventListener<_IDTy, _DataTy, _IDHasher>::SetPusher(const Reference<EventPusher>& aEventPusher) noexcept
 	{
 		std::scoped_lock lk(myMutex);
 
@@ -273,19 +296,19 @@ namespace CommonUtilities
 		{
 			myEvents.pop();
 		}
-		if (not myEventManager.Expired())
+		if (not myEventPusher.Expired())
 		{
 			for (const ID& id : myListeningEventIDs)
 			{
-				myEventManager->RemoveListener(this, id);
+				myEventPusher->RemoveListener(this, id);
 			}
 		}
-		myEventManager = aEventManager;
-		if (not myEventManager.Expired())
+		myEventPusher = aEventPusher;
+		if (not myEventPusher.Expired())
 		{
 			for (const ID& id : myListeningEventIDs)
 			{
-				myEventManager->AddListener(this, id);
+				myEventPusher->AddListener(this, id);
 			}
 		}
 	}
@@ -295,17 +318,12 @@ namespace CommonUtilities
 	{
 		std::scoped_lock lk(myMutex);
 
-		if (myEventManager.Expired())
-		{
-			myListeningEventIDs.clear();
-			while (not myEvents.empty())
-			{
-				myEvents.pop();
-			}
-			myEventManager = GlobalEventManager::Get();
-		}
-		myEventManager->AddListener(this, aEventID);
 		myListeningEventIDs.insert(aEventID);
+		if (not myEventPusher.Expired())
+		{
+			myEventPusher->AddListener(this, aEventID);
+		}
+
 		return true;
 	}
 
@@ -314,12 +332,11 @@ namespace CommonUtilities
 	{
 		std::scoped_lock lk(myMutex);
 
-		if (myEventManager.Expired())
-		{
-			return false;
-		}
-		myEventManager->RemoveListener(this, aEventID);
 		myListeningEventIDs.erase(aEventID);
+		if (not myEventPusher.Expired())
+		{
+			myEventPusher->RemoveListener(this, aEventID);
+		}
 		return true;
 	}
 
@@ -328,13 +345,12 @@ namespace CommonUtilities
 	{
 		std::scoped_lock lk(myMutex);
 
-		if (myEventManager.Expired())
+		if (not myEventPusher.Expired())
 		{
-			return false;
-		}
-		for (const ID& id : myListeningEventIDs)
-		{
-			myEventManager->RemoveListener(this, id);
+			for (const ID& id : myListeningEventIDs)
+			{
+				myEventPusher->RemoveListener(this, id);
+			}
 		}
 		myListeningEventIDs.clear();
 		return true;
@@ -361,8 +377,10 @@ namespace CommonUtilities
 	inline TEventListener<_IDTy, _DataTy, _IDHasher>& TEventListener<_IDTy, _DataTy, _IDHasher>::operator=(TEventListener&& aEventListener) noexcept
 	{
 		Referable::operator=(std::move(aEventListener));
+		
+		StopListen();
 
-		myEventManager = std::move(aEventListener.myEventManager);
+		myEventPusher = std::move(aEventListener.myEventPusher);
 
 		myListeningEventIDs = std::move(aEventListener.myListeningEventIDs);
 		aEventListener.myListeningEventIDs = {};
@@ -377,6 +395,10 @@ namespace CommonUtilities
 	inline TEventListener<_IDTy, _DataTy, _IDHasher>& TEventListener<_IDTy, _DataTy, _IDHasher>::operator=(const TEventListener& aEventListener) noexcept
 	{
 		Referable::operator=(aEventListener);
+
+		StopListen();
+
+		SetPusher(aEventListener.myEventPusher);
 		for (ID id : aEventListener.myListeningEventIDs)
 		{
 			BeginListen(id);

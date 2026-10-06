@@ -18,7 +18,7 @@ namespace CommonUtilities
 		bool Write(const _Ty& aValue, Writer& aWriter, size_t* outSize = nullptr);
 
 		template<class _Ty>
-		bool Read(_Ty& aValue, Reader& aReader, size_t* outSize = nullptr);
+		bool Read(_Ty& aValue, Reader& aReader, size_t aAllocationLimit, size_t* outSize = nullptr);
 
 		const Exception& GetLastException() const noexcept { return *myLastException; }
 
@@ -45,20 +45,22 @@ namespace CommonUtilities
 			myLastException = std::make_unique<Exception>(e);
 			return false;
 		}
+
 		if (outSize != nullptr)
 		{
 			*outSize = size;
 		}
+
 		return true;
 	}
 	template<class _Ty>
-	inline bool Serializer::Read(_Ty& aValue, Reader& aReader, size_t* outSize)
+	inline bool Serializer::Read(_Ty& aValue, Reader& aReader, size_t aAllocationLimit, size_t* outSize)
 	{
 		size_t size = 0;
 
 		try
 		{
-			size = Deserialize(aValue, aReader, __NBS_GlobalNamespaceType{});
+			size = Deserialize(aValue, aReader, aAllocationLimit, __NBS_GlobalNamespaceType{});
 		}
 		catch (Exception e)
 		{

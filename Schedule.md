@@ -1,4 +1,31 @@
 # Schedule
+
+## Project
+
+### Tasks
+
+|Project Tasks | Estimated Time | Comments | Requirements |
+|---|---|---|---|
+| ~~Finish Client/Server basic connection~~ | 3h | One or more clients can connect to a server. A client can disconnect from a server. A server can disconnect clients. Connection/Disconnects are managed. | |
+| Card Game Command Queue | 6h | Can push commands to change the state of the local game in a deterministic way. | |
+| Server Select | 4h | A scene in which a user can select a local server or enter the address of a known public server to join a game. | [Finish Client/Server basic connection] |
+| Client command requests to server | 2h | Client can send command requests to the server, which will then send a command to its local game state and all clients to replicate. | [Card Game Command Queue], [Finish Client/Server basic connection] |
+| Plan card game mechanics | 4h | Take time to plan a simple card game. | |
+| Implement card game | ?h | Implement a card game state object. | [Plan card game mechanics], [Card Game Command Queue] |
+| Command Varification | 4h | Game can varify if a command is allowed to be pushed given the current state of the game. | [Card Game Command Queue], [Implement card game] |
+| Client command verification | 2h | Server additionally varifies that a client is allowed a given command. f.ex a client cannot request that another client plays a card. | [Card Game Command Queue], [Plan card game mechanics] |
+| Card Game Visuals | 12h | Game is represented for the player using rendered text/cards. Task needs to be broken down into more entries. | [Implement card game] |
+| Player Controller / Client Integration | 4h | Player inputs are converted into client command requests and sent to the server. | [Client command requests to server], [Card Game Visuals] |
+| | | | |
+| | | | |
+| | | | |
+
+Total Time: 41h + ?h
+
+## Website
+
+<!-- [[The old schedule]]
+# Schedule
 | Week - Date       | Mon/Tue/Wen/Thu/Fri? [8h]         | Sat [4h]                                                  |
 |---                |---                                |---                                                        |
 | 16 - 13/04/26     | Schedule (Finished)               | Website/CV (Get domain and register WordPress)            |
@@ -49,3 +76,4 @@ These are tasks for after MVP is finished if there is extra time.
 | Sounds                                            | 8h                | Add sounds to the game.                                                                                               |
 | Options                                           | 4h                | Add an options menu.                                                                                                  |
 |                                                   |                   |                                                                                                                       |
+-->

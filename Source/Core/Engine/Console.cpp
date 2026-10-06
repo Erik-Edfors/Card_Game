@@ -1,4 +1,4 @@
-#include "Shared.pch.h"
+#include "Engine.pch.h"
 #include "Console.h"
 
 #include <Core/imgui/imgui.h>
@@ -7,57 +7,68 @@
 #define FILE_CATEGORY "Console.cpp"
 #define CLASS_CATEGORY FILE_CATEGORY"->Console"
 
-namespace shared
+Console::Console() :
+	myOpen(false),
+	myShouldScrollToBottom(true),
+	myLastScroll(0.f),
+	myScrollToBottom(2),
+	myInputCallback(nullptr),
+	myInputCallbackUserData(nullptr)
 {
-	Console::Console() :
-		myShouldScrollToBottom(true),
-		myLastScroll(0.f),
-		myScrollToBottom(2),
-		myInputCallback(nullptr),
-		myInputCallbackUserData(nullptr)
+	NewLine();
+}
+Console::~Console()
+{
+}
+
+void Console::SetOpen(bool aOpen) noexcept
+{
+	myOpen = aOpen;
+}
+
+bool Console::IsOpen() const noexcept
+{
+	return myOpen;
+}
+
+void Console::Print(std::string_view aString)
+{
+	using size = typename std::string::size_type;
+	size begin = 0;
+	size end = aString.find('\n', begin);
+	myContents.back() += aString.substr(begin, end);
+	if (end != std::string::npos)
 	{
 		NewLine();
+		Print(aString.substr(end + 1));
 	}
-	Console::~Console()
-	{
-	}
+}
 
-	void Console::Print(std::string_view aString)
-	{
-		using size = typename std::string::size_type;
-		size begin = 0;
-		size end = aString.find('\n', begin);
-		myContents.back() += aString.substr(begin, end);
-		if (end != std::string::npos)
-		{
-			NewLine();
-			Print(aString.substr(end + 1));
-		}
-	}
+void Console::PrintLine(std::string_view aString)
+{
+	Print(aString);
+	NewLine();
+}
 
-	void Console::PrintLine(std::string_view aString)
-	{
-		Print(aString);
-		NewLine();
-	}
+void Console::NewLine()
+{
+	myContents.push_back("");
+	myScrollToBottom = 2;
+}
 
-	void Console::NewLine()
-	{
-		myContents.push_back("");
-		myScrollToBottom = 2;
-	}
+void Console::SetInputCallback(InputCallback aCallback, void* aUserData)
+{
+	myInputCallback = aCallback;
+	myInputCallbackUserData = aUserData;
+}
 
-	void Console::SetInputCallback(InputCallback aCallback, void* aUserData)
-	{
-		myInputCallback = aCallback;
-		myInputCallbackUserData = aUserData;
-	}
-
-	void Console::Update()
-	{
+void Console::Update()
+{
 #define LOG_CATEGORY CLASS_CATEGORY"::Update"
 
-		if (ImGui::Begin("Console", nullptr, ImGuiWindowFlags_NoScrollbar))
+	if (myOpen)
+	{
+		if (ImGui::Begin("Console", &myOpen, ImGuiWindowFlags_NoScrollbar))
 		{
 			const ImGuiStyle& style = ImGui::GetStyle();
 
@@ -106,9 +117,9 @@ namespace shared
 			}
 		}
 		ImGui::End();
+	}
 
 #undef LOG_CATEGORY
-	}
 }
 
 #undef FILE_CATEGORY

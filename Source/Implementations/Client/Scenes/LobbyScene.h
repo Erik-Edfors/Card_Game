@@ -6,19 +6,19 @@ class CameraComponent;
 
 namespace client
 {
-	class Client;
+	class ClientApp;
 
 	class LobbyScene : public Scene
 	{
 	public:
-		LobbyScene(Client* aClient);
+		LobbyScene(ClientApp* aClient);
 
 	protected:
 		virtual void OnInit() override;
 		virtual void OnUpdate(float aDeltaTime) override;
 
 	private:
-		Client* myClient;
+		ClientApp* myClient;
 		cs::ComponentRef<CameraComponent> myCamera;
 	};
 }

@@ -2,7 +2,7 @@
 #include <exception>
 #include <iostream>
 
-#include <Implementations/Client/Client.h>
+#include <Implementations/Client/ClientApp.h>
 #include <Core/Logger/Logger.h>
 
 #include <Core/Logger/Logger.h>
@@ -11,7 +11,7 @@
 
 static LRESULT CALLBACK locWinProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
-	client::Client* client = reinterpret_cast<client::Client*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	client::ClientApp* client = reinterpret_cast<client::ClientApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	if (client != nullptr && client->ProcessWindowsMessage(hWnd, uMsg, wParam, lParam))
 	{
 		return TRUE;
@@ -26,7 +26,7 @@ static int GuardedMain(const wchar_t* const* aArgs, size_t aNumArgs)
 
 	constexpr LPCWSTR windowClassName = L"Card_Game_Client_Window";
 
-	client::Client client;
+	client::ClientApp client;
 
 	const HMODULE executableModule = GetModuleHandle(NULL);
 

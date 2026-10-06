@@ -13,6 +13,13 @@ namespace CommonUtilities
 	//	StreamException(const char* aMessage);
 	//};
 
+	class AllocationException : public Exception
+	{
+	public:
+		AllocationException();
+		AllocationException(const char* aMessage);
+	};
+
 	class ReadException : public Exception
 	{
 	public: 
@@ -36,12 +43,23 @@ namespace CommonUtilities
 
 
 
+	inline AllocationException::AllocationException() :
+		Exception("Data was malformed!")
+	{
+	}
+	inline AllocationException::AllocationException(const char* aMessage) :
+		Exception(std::format("Allocation Failed! {}", aMessage).c_str())
+	{
+	}
+
+
+
 	inline MalformedDataException::MalformedDataException() : 
 		Exception("Data was malformed!")
 	{
 	}
 	inline MalformedDataException::MalformedDataException(const char* aMessage) : 
-		Exception(std::format("Data was malformed!, {}", aMessage).c_str())
+		Exception(std::format("Data was malformed! {}", aMessage).c_str())
 	{
 	}
 

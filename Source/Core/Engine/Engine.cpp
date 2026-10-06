@@ -1,6 +1,8 @@
 #include "Engine.pch.h"
 #include "Engine.h"
 #include "Scene.h"
+#include "Console.h"
+#include "CommandParser.h"
 
 #include <Core/RenderHardwareInterface/Graphics.h>
 #include <Core/RenderHardwareInterface/DX11/Window_DX11Impl.h>
@@ -13,7 +15,20 @@
 #define FILE_CATEGORY "Engine.cpp"
 #define CLASS_CATEGORY FILE_CATEGORY"->Engine"
 
-Engine::Engine()
+static void locConsoleInputCallback(Console& aConsole, std::string_view aInput, void* aUserData)
+{
+	Engine* engine = reinterpret_cast<Engine*>(aUserData);
+
+	aConsole.PrintLine(std::format(">>{}", aInput));
+
+	if (not engine->GetCommandParser().Call(aInput.data()))
+	{
+		aConsole.PrintLine("Unknown Command!");
+	}
+}
+
+Engine::Engine() : 
+	myConsoleEnabled(false)
 {
 }
 
@@ -26,9 +41,13 @@ Engine::~Engine()
 bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 {
 #define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
+	std::unique_ptr<Console> console = std::make_unique<Console>();
+	std::unique_ptr<CommandParser> commandParser = std::make_unique<CommandParser>();
 	std::unique_ptr<GraphicsEngine> graphicsEngine = std::make_unique<GraphicsEngine>();
 	std::unique_ptr<CommonUtilities::InputManager> inputManager = std::make_unique<CommonUtilities::InputManager>();
 	std::unique_ptr<CommonUtilities::TimeManager> timeManager = std::make_unique<CommonUtilities::TimeManager>();
+
+	console->SetInputCallback(&locConsoleInputCallback, this);
 
 	graphics::PImpl<graphics::Window_DX11Impl> window = new graphics::Window_DX11Impl(aWindow);
 	myWindow = window.Get();
@@ -62,6 +81,8 @@ bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 		return false;
 	}
 
+	myConsole = std::move(console);
+	myCommandParser = std::move(commandParser);
 	myGraphicsEngine = std::move(graphicsEngine);
 	myInputManager = std::move(inputManager);
 	myTimeManager = std::move(timeManager);
@@ -118,6 +139,20 @@ bool Engine::ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM w
 	return false;
 }
 
+void Engine::SetConsoleEnabled(bool aEnabled) noexcept
+{
+	myConsoleEnabled = aEnabled;
+	if (not myConsoleEnabled)
+	{
+		myConsole->SetOpen(false);
+	}
+}
+
+bool Engine::IsConsoleEnabled() const noexcept
+{
+	return myConsoleEnabled;
+}
+
 bool Engine::BeginFrame()
 {
 	myGraphicsEngine->BeginFrame();
@@ -129,6 +164,11 @@ void Engine::Update()
 {
 	myInputManager->UpdateInput();
 
+	if (IsConsoleEnabled() && myInputManager->GetKeyDown(CommonUtilities::Keys::F1))
+	{
+		myConsole->SetOpen(not myConsole->IsOpen());
+	}
+
 	if (not mySceneStack.empty())
 	{
 		mySceneStack.back()->Update(myTimeManager->GetDelta());
@@ -137,20 +177,37 @@ void Engine::Update()
 
 void Engine::EndFrame()
 {
+	myConsole->Update();
+
 	myGraphicsEngine->EndFrame();
 	myTimeManager->Update();
 }
 
-const CommonUtilities::InputManager& Engine::GetInputManager() const noexcept
+Console& Engine::GetConsole() noexcept
 {
-	return *myInputManager;
+	return *myConsole;
 }
-
+CommandParser& Engine::GetCommandParser() noexcept
+{
+	return *myCommandParser;
+}
 GraphicsEngine& Engine::GetGraphicsEngine() noexcept
 {
 	return *myGraphicsEngine;
 }
 
+const Console& Engine::GetConsole() const noexcept
+{
+	return *myConsole;
+}
+const CommandParser& Engine::GetCommandParser() const noexcept
+{
+	return *myCommandParser;
+}
+const CommonUtilities::InputManager& Engine::GetInputManager() const noexcept
+{
+	return *myInputManager;
+}
 const CommonUtilities::TimeManager& Engine::GetTimeManager() const noexcept
 {
 	return *myTimeManager;

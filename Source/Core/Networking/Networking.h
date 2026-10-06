@@ -3,7 +3,7 @@
 
 namespace networking
 {
-	bool Startup();
+	bool Initialize();
 	bool Shutdown();
 
 	constexpr size_t GetNetworkOverhead(NETWORKING_ADDRESS_FAMILY aAddressFamily, NETWORKING_INTERNET_PROTOCOL aProtocol) noexcept;

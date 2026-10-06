@@ -46,27 +46,27 @@ namespace CommonUtilities
 	template <class _Elem, class _Traits, class _Alloc>
 	inline size_t Serialize(const std::basic_string<_Elem, _Traits, _Alloc>& aString, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template <class _Elem, class _Traits, class _Alloc>
-	inline size_t Deserialize(std::basic_string<_Elem, _Traits, _Alloc>& aString, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::basic_string<_Elem, _Traits, _Alloc>& aString, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template <class _Ty1, class _Ty2>
 	inline size_t Serialize(const std::pair<_Ty1, _Ty2>& aPair, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template <class _Ty1, class _Ty2>
-	inline size_t Deserialize(std::pair<_Ty1, _Ty2>& aPair, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::pair<_Ty1, _Ty2>& aPair, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template<class _ElemTy, size_t _Size>
 	inline size_t Serialize(const std::array<_ElemTy, _Size>& aArray, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template<class _ElemTy, size_t _Size>
-	inline size_t Deserialize(std::array<_ElemTy, _Size>& aArray, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::array<_ElemTy, _Size>& aArray, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template <class _Ty, class _Container>
 	inline size_t Serialize(const std::queue<_Ty, _Container>& aQueue, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template <class _Ty, class _Container>
-	inline size_t Deserialize(std::queue<_Ty, _Container>& aQueue, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::queue<_Ty, _Container>& aQueue, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template<class _ElemTy, typename _Alloc>
 	inline size_t Serialize(const std::vector<_ElemTy, _Alloc>& aVector, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template<class _ElemTy, typename _Alloc>
-	inline size_t Deserialize(std::vector<_ElemTy, _Alloc>& aVector, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::vector<_ElemTy, _Alloc>& aVector, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 
 	////////////////////////
@@ -76,17 +76,17 @@ namespace CommonUtilities
 	template <class _Kty, class _Ty, class _Pr, class _Alloc>
 	inline size_t Serialize(const std::map<_Kty, _Ty, _Pr, _Alloc>& aMap, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template <class _Kty, class _Ty, class _Pr, class _Alloc>
-	inline size_t Deserialize(std::map<_Kty, _Ty, _Pr, _Alloc>& aMap, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::map<_Kty, _Ty, _Pr, _Alloc>& aMap, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template <class _Kty, class _Ty, class _Hasher, class _Keyeq, class _Alloc>
 	inline size_t Serialize(const std::unordered_map<_Kty, _Ty, _Hasher, _Keyeq, _Alloc>& aMap, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template <class _Kty, class _Ty, class _Hasher, class _Keyeq, class _Alloc>
-	inline size_t Deserialize(std::unordered_map<_Kty, _Ty, _Hasher, _Keyeq, _Alloc>& aMap, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::unordered_map<_Kty, _Ty, _Hasher, _Keyeq, _Alloc>& aMap, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template <class _Kty, class _Ty, class _Pr, class _Alloc>
 	inline size_t Serialize(const std::multimap<_Kty, _Ty, _Pr, _Alloc>& aMap, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template <class _Kty, class _Ty, class _Pr, class _Alloc>
-	inline size_t Deserialize(std::multimap<_Kty, _Ty, _Pr, _Alloc>& aMap, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::multimap<_Kty, _Ty, _Pr, _Alloc>& aMap, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 
 	////////////////////////
@@ -96,17 +96,17 @@ namespace CommonUtilities
 	template <class _Kty, class _Pr, class _Alloc>
 	inline size_t Serialize(const std::set<_Kty, _Pr, _Alloc>& aSet, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template <class _Kty, class _Pr, class _Alloc>
-	inline size_t Deserialize(std::set<_Kty, _Pr, _Alloc>& aSet, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::set<_Kty, _Pr, _Alloc>& aSet, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template <class _Kty, class _Hasher, class _Keyeq, class _Alloc>
 	inline size_t Serialize(const std::unordered_set<_Kty, _Hasher, _Keyeq, _Alloc>& aSet, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template <class _Kty, class _Hasher, class _Keyeq, class _Alloc>
-	inline size_t Deserialize(std::unordered_set<_Kty, _Hasher, _Keyeq, _Alloc>& aSet, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::unordered_set<_Kty, _Hasher, _Keyeq, _Alloc>& aSet, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template <class _Kty, class _Pr, class _Alloc>
 	inline size_t Serialize(const std::multiset<_Kty, _Pr, _Alloc>& aSet, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template <class _Kty, class _Pr, class _Alloc>
-	inline size_t Deserialize(std::multiset<_Kty, _Pr, _Alloc>& aSet, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	inline size_t Deserialize(std::multiset<_Kty, _Pr, _Alloc>& aSet, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 
 
@@ -141,7 +141,7 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _Elem, class _Traits, class _Alloc>
-	size_t Deserialize(std::basic_string<_Elem, _Traits, _Alloc>& outString, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::basic_string<_Elem, _Traits, _Alloc>& outString, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		using value_type = typename std::basic_string<_Elem, _Traits, _Alloc>::value_type;
 		using size_type = typename std::basic_string<_Elem, _Traits, _Alloc>::size_type;
@@ -149,7 +149,7 @@ namespace CommonUtilities
 		size_t size = 0;
 
 		size_type containerSize = 0;
-		size += Deserialize(containerSize, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(containerSize, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 
 		const size_t dataSize = containerSize * sizeof(value_type);
 
@@ -158,9 +158,9 @@ namespace CommonUtilities
 			return size;
 		}
 
-		if (aReader.GetCount() + dataSize > aReader.GetConstraints().MaxSize)
+		if (dataSize + size > aAllocationLimit)
 		{
-			throw ReadException("Failed to read string! Size of string whould exceed constraints!");
+			throw AllocationException("Allocation limit reached.");
 		}
 
 		if (not aReader.Readable())
@@ -191,11 +191,11 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _Ty1, class _Ty2>
-	size_t Deserialize(std::pair<_Ty1, _Ty2>& outPair, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::pair<_Ty1, _Ty2>& outPair, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		size_t size = 0;
-		size += Deserialize(outPair.first, aReader, __NBS_GlobalNamespaceType{});
-		size += Deserialize(outPair.second, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(outPair.first, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
+		size += Deserialize(outPair.second, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 
 		return size;
 	}
@@ -214,12 +214,12 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _ElemTy, size_t _Size>
-	size_t Deserialize(std::array<_ElemTy, _Size>& outArray, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::array<_ElemTy, _Size>& outArray, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		size_t size = 0;
 		for (size_t i = 0; i < outArray.size(); i++)
 		{
-			size += Deserialize(outArray[i], aReader, __NBS_GlobalNamespaceType{});
+			size += Deserialize(outArray[i], aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 		}
 
 		return size;
@@ -244,7 +244,7 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _Ty, class _Container>
-	size_t Deserialize(std::queue<_Ty, _Container>& outQueue, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::queue<_Ty, _Container>& outQueue, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		using value_type = typename std::queue<_Ty, _Container>::value_type;
 		using size_type = typename std::queue<_Ty, _Container>::size_type;
@@ -252,12 +252,12 @@ namespace CommonUtilities
 		size_t size = 0;
 
 		size_type size = 0;
-		size += Deserialize(size, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(size, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 
 		for (size_type i = 0; i < size; i++)
 		{
 			value_type value = {};
-			size += Deserialize(value, aReader, __NBS_GlobalNamespaceType{});
+			size += Deserialize(value, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 			outQueue.push(std::move(value));
 		}
 		return size;
@@ -279,7 +279,7 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _ElemTy, typename _Alloc>
-	size_t Deserialize(std::vector<_ElemTy, _Alloc>& outVector, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::vector<_ElemTy, _Alloc>& outVector, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		using value_type = typename std::vector<_ElemTy, _Alloc>::value_type;
 		using size_type = typename std::vector<_ElemTy, _Alloc>::size_type;
@@ -287,13 +287,13 @@ namespace CommonUtilities
 		size_t size = 0;
 
 		size_type containerSize = 0;
-		size += Deserialize(containerSize, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(containerSize, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 		//DO NOT reserve vector. size can be ANY value, and it is not guarenteed that Reader will be able to read up to the size given.
 
 		for (size_type i = 0; i < containerSize; i++)
 		{
 			value_type value = {};
-			size += Deserialize(value, aReader, __NBS_GlobalNamespaceType{});
+			size += Deserialize(value, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 			outVector.push_back(std::move(value));
 		}
 		return size;
@@ -316,7 +316,7 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _Kty, class _Ty, class _Pr, class _Alloc>
-	size_t Deserialize(std::map<_Kty, _Ty, _Pr, _Alloc>& outMap, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::map<_Kty, _Ty, _Pr, _Alloc>& outMap, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		using value_type = std::pair<_Kty, _Ty>;
 		using size_type = typename std::map<_Kty, _Ty, _Pr, _Alloc>::size_type;
@@ -324,11 +324,11 @@ namespace CommonUtilities
 		size_t size = 0;
 
 		size_type containerSize = 0;
-		size += Deserialize(containerSize, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(containerSize, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 		for (size_type i = 0; i < containerSize; i++)
 		{
 			value_type entry = {};
-			size += Deserialize(entry, aReader, __NBS_GlobalNamespaceType{});
+			size += Deserialize(entry, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 			outMap.insert({ std::move(entry.first), std::move(entry.second) });
 		}
 		return size;
@@ -351,7 +351,7 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _Kty, class _Ty, class _Hasher, class _Keyeq, class _Alloc>
-	size_t Deserialize(std::unordered_map<_Kty, _Ty, _Hasher, _Keyeq, _Alloc>& outMap, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::unordered_map<_Kty, _Ty, _Hasher, _Keyeq, _Alloc>& outMap, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		using value_type = std::pair<_Kty, _Ty>;
 		using size_type = typename std::unordered_map<_Kty, _Ty, _Hasher, _Keyeq, _Alloc>::size_type;
@@ -359,11 +359,11 @@ namespace CommonUtilities
 		size_t size = 0;
 
 		size_type containerSize = 0;
-		size += Deserialize(containerSize, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(containerSize, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 		for (size_type i = 0; i < containerSize; i++)
 		{
 			value_type entry = {};
-			size += Deserialize(entry, aReader, __NBS_GlobalNamespaceType{});
+			size += Deserialize(entry, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 			outMap.insert({ std::move(entry.first), std::move(entry.second) });
 		}
 		return size;
@@ -386,7 +386,7 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _Kty, class _Ty, class _Pr, class _Alloc>
-	size_t Deserialize(std::multimap<_Kty, _Ty, _Pr, _Alloc>& outMap, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::multimap<_Kty, _Ty, _Pr, _Alloc>& outMap, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		using value_type = std::pair<_Kty, _Ty>;
 		using size_type = typename std::multimap<_Kty, _Ty, _Pr, _Alloc>::size_type;
@@ -394,11 +394,11 @@ namespace CommonUtilities
 		size_t size = 0;
 
 		size_type containerSize = 0;
-		size += Deserialize(containerSize, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(containerSize, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 		for (size_type i = 0; i < containerSize; i++)
 		{
 			value_type entry = {};
-			size += Deserialize(entry, aReader, __NBS_GlobalNamespaceType{});
+			size += Deserialize(entry, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 			outMap.insert({ std::move(entry.first), std::move(entry.second) });
 		}
 		return size;
@@ -421,7 +421,7 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _Kty, class _Pr, class _Alloc>
-	size_t Deserialize(std::set<_Kty, _Pr, _Alloc>& outSet, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::set<_Kty, _Pr, _Alloc>& outSet, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		using value_type = typename std::set<_Kty, _Pr, _Alloc>::value_type;
 		using size_type = typename std::set<_Kty, _Pr, _Alloc>::size_type;
@@ -429,11 +429,11 @@ namespace CommonUtilities
 		size_t size = 0;
 
 		size_type containerSize = 0;
-		size += Deserialize(containerSize, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(containerSize, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 		for (size_type i = 0; i < containerSize; i++)
 		{
 			value_type entry = {};
-			size += Deserialize(entry, aReader, __NBS_GlobalNamespaceType{});
+			size += Deserialize(entry, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 			outSet.insert(std::move(entry));
 		}
 		return size;
@@ -456,7 +456,7 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _Kty, class _Hasher, class _Keyeq, class _Alloc>
-	size_t Deserialize(std::unordered_set<_Kty, _Hasher, _Keyeq, _Alloc>& outSet, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::unordered_set<_Kty, _Hasher, _Keyeq, _Alloc>& outSet, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		using value_type = typename std::unordered_set<_Kty, _Hasher, _Keyeq, _Alloc>::value_type;
 		using size_type = typename std::unordered_set<_Kty, _Hasher, _Keyeq, _Alloc>::size_type;
@@ -464,11 +464,11 @@ namespace CommonUtilities
 		size_t size = 0;
 
 		size_type containerSize = 0;
-		size += Deserialize(containerSize, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(containerSize, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 		for (size_type i = 0; i < containerSize; i++)
 		{
 			value_type entry = {};
-			size += Deserialize(entry, aReader, __NBS_GlobalNamespaceType{});
+			size += Deserialize(entry, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 			outSet.insert(std::move(entry));
 		}
 		return size;
@@ -491,7 +491,7 @@ namespace CommonUtilities
 		return size;
 	}
 	template<class _Kty, class _Pr, class _Alloc>
-	size_t Deserialize(std::multiset<_Kty, _Pr, _Alloc>& outSet, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(std::multiset<_Kty, _Pr, _Alloc>& outSet, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		using value_type = typename std::multiset<_Kty, _Pr, _Alloc>::value_type;
 		using size_type = typename std::multiset<_Kty, _Pr, _Alloc>::size_type;
@@ -499,11 +499,11 @@ namespace CommonUtilities
 		size_t size = 0;
 
 		size_type containerSize = 0;
-		size += Deserialize(containerSize, aReader, __NBS_GlobalNamespaceType{});
+		size += Deserialize(containerSize, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 		for (size_type i = 0; i < containerSize; i++)
 		{
 			value_type entry = {};
-			size += Deserialize(entry, aReader, __NBS_GlobalNamespaceType{});
+			size += Deserialize(entry, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{});
 			outSet.insert(std::move(entry));
 		}
 		return size;

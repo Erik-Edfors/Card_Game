@@ -1,28 +1,28 @@
 #pragma once
 #include <Core/Engine/Scene.h>
-#include <Implementations/Shared/Console.h>
-#include <Implementations/Shared/CommandParser.h>
+//#include <Implementations/Shared/Console.h>
+//#include <Implementations/Shared/CommandParser.h>
 
 namespace server
 {
-	class Server;
+	class ServerApp;
 
 	class MainScene : public Scene
 	{
 	public:
-		MainScene(server::Server* aServer);
+		MainScene(server::ServerApp* aServer);
 		~MainScene();
 
-		shared::Console& GetConsole() noexcept;
-		shared::CommandParser& GetCommandParser() noexcept;
+		//shared::Console& GetConsole() noexcept;
+		//shared::CommandParser& GetCommandParser() noexcept;
 
 	protected:
 		virtual void OnInit() override;
 		virtual void OnUpdate(float aDeltaTime) override;
 
 	private:
-		Server* myServer;
-		shared::Console myConsole;
-		shared::CommandParser myCommandParser;
+		ServerApp* myServer;
+		//shared::Console myConsole;
+		//shared::CommandParser myCommandParser;
 	};
 }

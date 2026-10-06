@@ -31,6 +31,10 @@ workspace(Settings.Name)
         Settings.LibDir
     }
 
+    defines {
+        "_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING"
+    }
+
     filter("configurations:Debug")
         defines {
             "_DEBUG"

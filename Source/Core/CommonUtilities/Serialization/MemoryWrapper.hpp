@@ -15,7 +15,7 @@ namespace CommonUtilities
 		~MemoryReader();
 
 		size_t Read(void* outData, size_t aSize) override;
-		bool Readable() const override { return myCursor < mySize && Reader::Readable(); }
+		bool Readable() const override { return myCursor < mySize; }
 
 		void SetCursor(size_t aCursor) noexcept { myCursor = aCursor; }
 		size_t GetCursor() const noexcept { return myCursor; }
@@ -33,7 +33,7 @@ namespace CommonUtilities
 		~MemoryWriter();
 
 		size_t Write(const void* aData, size_t aSize) override;
-		bool Writable() const override { return myCursor < mySize && Writer::Writable(); }
+		bool Writable() const override { return myCursor < mySize; }
 
 		void SetCursor(size_t aCursor) noexcept { myCursor = aCursor; }
 		size_t GetCursor() const noexcept { return myCursor; }
@@ -61,20 +61,22 @@ namespace CommonUtilities
 			throw ReadException(std::format("Could not read! Reader was not readable.").c_str());
 		}
 
-		if (GetCount() + aSize > GetConstraints().MaxSize)
-		{
-			throw Exception(std::format("Read exceeded constraint MaxSize! Read '{} -> {}' would exceed constraint '{}'.", GetCount(), GetCount() + aSize, GetConstraints().MaxSize).c_str());
-		}
+		//if (GetCount() + aSize > GetConstraints().MaxSize)
+		//{
+		//	throw Exception(std::format("Read exceeded constraint MaxSize! Read '{} -> {}' would exceed constraint '{}'.", GetCount(), GetCount() + aSize, GetConstraints().MaxSize).c_str());
+		//}
 
 		size_t readCount = aSize;
 		if (myCursor + aSize >= mySize)
 		{
 			readCount = mySize - myCursor;
 		}
+
+		// readCount is never 0, as Readable() whould return false if it could be.
 		memcpy_s(outData, aSize, reinterpret_cast<const char*>(myMemory) + myCursor, readCount);
 		myCursor += readCount;
 
-		ReportRead(readCount);
+		//ReportRead(readCount);
 
 		return readCount;
 	}
@@ -96,20 +98,22 @@ namespace CommonUtilities
 			throw WriteException(std::format("Could not write! Writer was not writable.").c_str());
 		}
 
-		if (GetCount() + aSize > GetConstraints().MaxSize)
-		{
-			throw Exception(std::format("Write exceeded constraint MaxSize! Write '{} -> {}' would exceed constraint '{}'.", GetCount(), GetCount() + aSize, GetConstraints().MaxSize).c_str());
-		}
+		//if (GetCount() + aSize > GetConstraints().MaxSize)
+		//{
+		//	throw Exception(std::format("Write exceeded constraint MaxSize! Write '{} -> {}' would exceed constraint '{}'.", GetCount(), GetCount() + aSize, GetConstraints().MaxSize).c_str());
+		//}
 
 		size_t writeCount = aSize;
 		if (myCursor + aSize >= mySize)
 		{
 			writeCount = mySize - myCursor;
 		}
+
+		// writeCount is never 0, as Writeable() whould return false if it could be.
 		memcpy_s(reinterpret_cast<char*>(myMemory) + myCursor, mySize - myCursor, aData, writeCount);
 		myCursor += writeCount;
 
-		ReportWrite(writeCount);
+		//ReportWrite(writeCount);
 
 		return writeCount;
 	}

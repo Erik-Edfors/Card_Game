@@ -137,7 +137,7 @@
 #define DESERIALIZE_FUNC_NAME Deserialize
 
 #define _NBS_SERIALIZE_WITH_LOCAL_SIZE(Member) size += SERIALIZE_FUNC_NAME(aValue. ## Member, aWriter, __NBS_GlobalNamespaceType{})
-#define _NBS_DESERIALIZE_WITH_LOCAL_SIZE(Member) size += DESERIALIZE_FUNC_NAME(outValue. ## Member, aReader, __NBS_GlobalNamespaceType{})
+#define _NBS_DESERIALIZE_WITH_LOCAL_SIZE(Member) size += DESERIALIZE_FUNC_NAME(outValue. ## Member, aReader, aAllocationLimit - size, __NBS_GlobalNamespaceType{})
 
 #define NBS_TO(Member) _NBS_SERIALIZE_WITH_LOCAL_SIZE(Member);
 #define NBS_FROM(Member) _NBS_DESERIALIZE_WITH_LOCAL_SIZE(Member);
@@ -149,7 +149,7 @@ inline size_t Serialize(const type& aValue, ::CommonUtilities::Writer& aWriter, 
     NBS_EXPAND(NBS_PASTE(NBS_TO, __VA_ARGS__)) \
     return size; \
 } \
-inline size_t Deserialize(type& outValue, ::CommonUtilities::Reader& aReader, __NBS_GlobalNamespaceType = {}) \
+inline size_t Deserialize(type& outValue, ::CommonUtilities::Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {}) \
 { \
     size_t size = 0; \
     NBS_EXPAND(NBS_PASTE(NBS_FROM, __VA_ARGS__)) \

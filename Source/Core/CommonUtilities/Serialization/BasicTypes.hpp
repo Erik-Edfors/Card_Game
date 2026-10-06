@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <format>
 
-// Type used to assure the global namespace is associated when evaluating templated functions.
+// Type used to assure the global namespace is associated when evaluating templated signatures.
 struct __NBS_GlobalNamespaceType {};
 
 namespace CommonUtilities
@@ -19,21 +19,21 @@ namespace CommonUtilities
 	template<class _Ty, size_t _Size> requires std::is_trivially_copyable_v<_Ty>
 	size_t Serialize(const CStyleArray<_Ty, _Size>& aArray, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template<class _Ty, size_t _Size> requires std::is_trivially_copyable_v<_Ty>
-	size_t Deserialize(CStyleArray<_Ty, _Size>& outArray, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	size_t Deserialize(CStyleArray<_Ty, _Size>& outArray, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template<class _Ty>
 		requires std::is_trivially_copyable_v<_Ty>
 	size_t Serialize(const _Ty& aValue, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template<class _Ty>
 		requires std::is_trivially_copyable_v<_Ty>
-	size_t Deserialize(_Ty& outValue, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	size_t Deserialize(_Ty& outValue, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 	template<class _Ty, size_t _Size>
 		requires(not std::is_trivially_copyable_v<_Ty>)
 	size_t Serialize(const CStyleArray<_Ty, _Size>& aArray, Writer& aWriter, __NBS_GlobalNamespaceType = {});
 	template<class _Ty, size_t _Size>
 		requires(not std::is_trivially_copyable_v<_Ty>)
-	size_t Deserialize(CStyleArray<_Ty, _Size>& outArray, Reader& aReader, __NBS_GlobalNamespaceType = {});
+	size_t Deserialize(CStyleArray<_Ty, _Size>& outArray, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType = {});
 
 
 
@@ -61,9 +61,14 @@ namespace CommonUtilities
 	}
 	template<class _Ty>
 		requires std::is_trivially_copyable_v<_Ty>
-	size_t Deserialize(_Ty& outValue, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(_Ty& outValue, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		constexpr size_t dataSize = sizeof(outValue);
+
+		if (dataSize > aAllocationLimit)
+		{
+			throw AllocationException("Allocation limit reached.");
+		}
 
 		size_t size = 0;
 
@@ -107,9 +112,14 @@ namespace CommonUtilities
 	}
 	template<class _Ty, size_t _Size>
 		requires std::is_trivially_copyable_v<_Ty>
-	size_t Deserialize(CStyleArray<_Ty, _Size>& outArray, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(CStyleArray<_Ty, _Size>& outArray, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		constexpr size_t dataSize = sizeof(outArray);
+
+		if (dataSize > aAllocationLimit)
+		{
+			throw AllocationException("Allocation limit reached.");
+		}
 
 		size_t size = 0;
 		if (not aReader.Readable())
@@ -149,7 +159,7 @@ namespace CommonUtilities
 	}
 	template<class _Ty, size_t _Size>
 		requires(not std::is_trivially_copyable_v<_Ty>)
-	size_t Deserialize(CStyleArray<_Ty, _Size>& outArray, Reader& aReader, __NBS_GlobalNamespaceType)
+	size_t Deserialize(CStyleArray<_Ty, _Size>& outArray, Reader& aReader, size_t aAllocationLimit, __NBS_GlobalNamespaceType)
 	{
 		size_t size = 0;
 
@@ -160,7 +170,7 @@ namespace CommonUtilities
 
 		for (size_t i = 0; i < _Size; i++)
 		{
-			size += Deserialize(outArray[i], aReader);
+			size += Deserialize(outArray[i], aReader, aAllocationLimit - size);
 		}
 
 		return size;

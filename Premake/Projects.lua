@@ -153,6 +153,29 @@ group("Implementations")
     		SharedDir .. "**.hpp",
     		SharedDir .. "**.cpp",
     	}
+
+    cardGameDir = implementationsDir .. "CardGame/"
+    project("CardGame")
+        location(cardGameDir)
+
+        kind("StaticLib")
+        language("C++")
+        cppdialect("C++20")
+
+        links {
+            "Logger",
+            "CommonUtilities"
+        }
+
+        includedirs {
+            cardGameDir
+        }
+
+        files {
+    		cardGameDir .. "**.h",
+    		cardGameDir .. "**.hpp",
+    		cardGameDir .. "**.cpp",
+    	}
     
     ClientDir = implementationsDir .. "Client/"
     project("Client")
@@ -169,6 +192,8 @@ group("Implementations")
             "CommonUtilities",
             "Logger",
             "imgui",
+            "CardGame",
+            "Networking",
 
             "d3d11.lib",
             "dxguid.lib",
@@ -203,6 +228,8 @@ group("Implementations")
             "Engine",
             "CommonUtilities",
             "Logger",
+            "CardGame",
+            "Networking",
 
             "d3d11.lib",
             "dxguid.lib",

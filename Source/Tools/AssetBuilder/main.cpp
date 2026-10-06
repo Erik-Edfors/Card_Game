@@ -38,7 +38,7 @@ L"| | /r                                    -> Flags that input should iterate o
 L"| | /p                                    -> Flags that result should be printed. Format '<input file> -> <output file>'. Equivelant to '--print=true'."
 ;
 
-bool BuildAsset(const wchar_t* aType, const std::filesystem::path& aInput, const std::filesystem::path& aOutput, const CommonUtilities::Option<wchar_t>* aOptions, size_t aNumOptions)
+bool BuildAsset(const wchar_t* aType, const std::filesystem::path& aInput, const std::filesystem::path& aOutput, const CommonUtilities::TOption<wchar_t>* aOptions, size_t aNumOptions)
 {
 	const std::filesystem::path outputDirectory = std::filesystem::path(aOutput).remove_filename();
 
@@ -111,16 +111,16 @@ int wmain(const int argc, const wchar_t* const* argv)
 		return 0;
 	}
 
-	CommonUtilities::ArgsParser<wchar_t> parser;
+	CommonUtilities::TArgsParser<wchar_t> parser;
 	if (not parser.Parse(argv, argc))
 	{
 		std::wcout << L"Failed to parse arguments! An error occurred." << std::endl;
 		return -1;
 	}
 
-	const CommonUtilities::Argument<wchar_t>* arguments = nullptr;
-	const CommonUtilities::Option<wchar_t>* options = nullptr;
-	const CommonUtilities::Flag<wchar_t>* flags = nullptr;
+	const CommonUtilities::TArgument<wchar_t>* arguments = nullptr;
+	const CommonUtilities::TOption<wchar_t>* options = nullptr;
+	const CommonUtilities::TFlag<wchar_t>* flags = nullptr;
 
 	size_t numArguments = 0;
 	size_t numOptions = 0;
@@ -153,7 +153,7 @@ int wmain(const int argc, const wchar_t* const* argv)
 
 	for (size_t i = 0; i < numOptions; i++)
 	{
-		const CommonUtilities::Option<wchar_t>& option = options[i];
+		const CommonUtilities::TOption<wchar_t>& option = options[i];
 
 		switch (CommonUtilities::WStringHash(option.GetIdentity()))
 		{

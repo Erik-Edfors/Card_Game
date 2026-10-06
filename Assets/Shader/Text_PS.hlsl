@@ -19,7 +19,7 @@ Text_PS_Out main(Text_PS_In input)
 
     const float distanceToGlyph = OB_SDLength * (0.5f - sd);
     const float distanceToBorder = distanceToGlyph - atlasBorderThickness;
-    const float blurDistance = 8.f * OB_SDLength / OB_AtlasEmSize;     //TODO: fix Render Target size dependant.
+    const float blurDistance = 2.f * OB_SDLength / OB_AtlasEmSize;     //TODO: fix Render Target size dependant.
 
     clip(-distanceToBorder);
 

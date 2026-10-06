@@ -57,6 +57,11 @@ namespace networking
 			LOG_ERROR_L(LOG_CATEGORY, "Failed to create socket! Call to socket failed! Error: %s", GetWinsockErrorMessage(WSAGetLastError()));
 			return false;
 		}
+
+		if (*outSocket != nullptr)
+		{
+			(*outSocket)->Release();
+		}
 		(*outSocket) = new Socket_Win32(sock, aAddressFamily, aSocketType, aInternetProtocol, aBufferSize);
 		(*outSocket)->AddRef();
 

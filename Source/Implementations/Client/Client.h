@@ -1,91 +1,126 @@
 #pragma once
-#define WIN32_LEAN_AND_MEAN
-#define NOGDICAPMASKS     // CC_*, LC_*, PC_*, CP_*, TC_*, RC_
-#define NOVIRTUALKEYCODES // VK_*
-#define NOWINMESSAGES     // WM_*, EM_*, LB_*, CB_*
-#define NOWINSTYLES       // WS_*, CS_*, ES_*, LBS_*, SBS_*, CBS_*
-#define NOSYSMETRICS      // SM_*
-#define NOMENUS           // MF_*
-#define NOICONS           // IDI_*
-#define NOKEYSTATES       // MK_*
-#define NOSYSCOMMANDS     // SC_*
-#define NORASTEROPS       // Binary and Tertiary raster ops
-#define NOSHOWWINDOW      // SW_*
-#define OEMRESOURCE       // OEM Resource values
-#define NOATOM            // Atom Manager routines
-#define NOCLIPBOARD       // Clipboard routines
-#define NOCOLOR           // Screen colors
-#define NOCTLMGR          // Control and Dialog routines
-#define NODRAWTEXT        // DrawText() and DT_*
-#define NOGDI             // All GDI defines and routines
-#define NOKERNEL          // All KERNEL defines and routines
-#define NOUSER            // All USER defines and routines
-#define NONLS             // All NLS defines and routines
-#define NOMB              // MB_* and MessageBox()
-#define NOMEMMGR          // GMEM_*, LMEM_*, GHND, LHND, associated routines
-#define NOMETAFILE        // typedef METAFILEPICT
-#define NOMINMAX          // Macros min(a,b) and max(a,b)
-#define NOMSG             // typedef MSG and associated routines
-#define NOOPENFILE        // OpenFile(), OemToAnsi, AnsiToOem, and OF_*
-#define NOSCROLL          // SB_* and scrolling routines
-#define NOSERVICE         // All Service Controller routines, SERVICE_ equates, etc.
-#define NOSOUND           // Sound driver routines
-#define NOTEXTMETRIC      // typedef TEXTMETRIC and associated routines
-#define NOWH              // SetWindowsHook and WH_*
-#define NOWINOFFSETS      // GWL_*, GCL_*, associated routines
-#define NOCOMM            // COMM driver routines
-#define NOKANJI           // Kanji support stuff.
-#define NOHELP            // Help engine interface.
-#define NOPROFILER        // Profiler interface.
-#define NODEFERWINDOWPOS  // DeferWindowPos routines
-#define NOMCX             // Modem Configuration Extensions
-#include <Windows.h>
-#include <memory>
-
-#include <Core/RenderHardwareInterface/PImpl.hpp>
-
-namespace graphics
-{
-	class RenderTarget;
-	class DepthStencil;
-}
-
-namespace assets
-{
-	class FontRegistry;
-	class ShaderRegistry;
-	class TextureRegistry;
-}
-
-class Engine;
+#include <Implementations/Shared/Network/NetworkManager.h>
+#include <Implementations/Shared/Network/Messages.h>
+//#include <Core/Networking/Defines.h>
 
 namespace client
 {
+	enum
+	{
+		CLIENT_CONNECTION_DISCONNECTED,
+		CLIENT_CONNECTION_PENDING,
+		CLIENT_CONNECTION_CONNECTED
+	};
+	using CLIENT_CONNECTION_STATUS = unsigned char;
+
 	class Client
 	{
 	public:
+		template<class _MessageTy>
+		struct MessageCallbackData
+		{
+			_MessageTy Message;
+			networking::SocketAddress Address;
+			void* UserData;
+		};
+
+		template<class _MessageTy>
+		using MessageCallback = void(*)(const MessageCallbackData<_MessageTy>& aData);
+
 		Client();
 		~Client();
 
-		bool ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
-
-		bool Initialize(HWND aWindow, const wchar_t* const* aArgs, size_t aNumArgs);
+		bool Initialize(networking::Port aPort);
 		bool Shutdown();
+		void Update();
 
-		void Run();
+		bool RequestConnection(const networking::SocketAddress& aServer);
+		bool Disconnect(shared::NETWORK_DISCONNECT_REASON aReason);
+		const networking::SocketAddress& GetRemote() const noexcept;
 
-		void Exit();
+		CLIENT_CONNECTION_STATUS GetConnectionStatus() const noexcept;
 
-		assets::FontRegistry& GetFontRegistry() const noexcept;
-		assets::ShaderRegistry& GetShaderRegistry() const noexcept;
-		assets::TextureRegistry& GetTextureRegistry() const noexcept;
+		bool IsConnectedTo(const networking::SocketAddress& aServer) const noexcept;
+
+		bool SendTo(const shared::NetworkManager::NetworkMessage& aMessage, const networking::SocketAddress& aAddress);
+		bool Send(const shared::NetworkManager::NetworkMessage& aMessage);
+
+		template<class _MessageTy>
+		void SetMessageCallback(MessageCallback<_MessageTy> aCallback, void* aUserData);
+
+		template<class _MessageTy>
+		bool CreateMessage(shared::NetworkManager::NetworkMessage* outMessage, const _MessageTy& aMessage);
 
 	private:
-		std::unique_ptr<assets::FontRegistry> myFontRegistry;
-		std::unique_ptr<assets::ShaderRegistry> myShaderRegistry;
-		std::unique_ptr<assets::TextureRegistry> myTextureRegistry;
-		std::unique_ptr<Engine> myEngine;
-		HWND myWindow;
-		bool myExiting;
+		static void OnConnectionResult(const shared::NetworkManager::MessageCallbackData<shared::NM_ConnectionResult>& aData);
+		static void OnDisconnect(const shared::NetworkManager::MessageCallbackData<shared::NM_Disconnect>& aData);
+
+		bool SendConnectionRequest(const networking::SocketAddress& aRemote);
+
+		template<class _MessageTy>
+		static void MessageCallbackDecorator(const shared::NetworkManager::MessageCallbackData<_MessageTy>& aData);
+
+		shared::NetworkManager myNetworkManager;
+		size_t myConnectionAttempts;
+		std::chrono::steady_clock::time_point myConnectionStart;
+		std::chrono::steady_clock::time_point myLastHeardFromRemote;
+		networking::SocketAddress myServer;
+
+		CLIENT_CONNECTION_STATUS myConnectionStatus;
+
+		struct _CallbackEntry
+		{
+			void* Callback;
+			void* UserData;
+		};
+
+		std::unordered_map<MessageID, _CallbackEntry> myCallbacks;
 	};
+
+	template<class _MessageTy>
+	inline bool Client::CreateMessage(shared::NetworkManager::NetworkMessage* outMessage, const _MessageTy& aMessage)
+	{
+		return myNetworkManager.CreateMessage<_MessageTy>(outMessage, aMessage);
+	}
+
+	template<class _MessageTy>
+	inline void Client::SetMessageCallback(MessageCallback<_MessageTy> aCallback, void* aUserData)
+	{
+		myNetworkManager.SetCallback<_MessageTy>(&MessageCallbackDecorator<_MessageTy>, this);
+		myCallbacks[_MessageTy::ID] = _CallbackEntry{
+			.Callback = aCallback,
+			.UserData = aUserData
+		};
+	}
+
+	template<class _MessageTy>
+	inline void Client::MessageCallbackDecorator(const shared::NetworkManager::MessageCallbackData<_MessageTy>& aData)
+	{
+		Client& client = *reinterpret_cast<Client*>(aData.UserData);
+
+		if (not client.IsConnectedTo(aData.Address))
+		{
+			return;
+		}
+
+		client.myLastHeardFromRemote = std::chrono::steady_clock::now();
+
+		auto it = client.myCallbacks.find(_MessageTy::ID);
+		if (it == client.myCallbacks.end())
+		{
+			return;
+		}
+
+		const _CallbackEntry& entry = it->second;
+
+		MessageCallback<_MessageTy> callback = reinterpret_cast<MessageCallback<_MessageTy>>(entry.Callback);
+
+		Client::MessageCallbackData<_MessageTy> data = {
+			.Message = aData.Message,
+			.Address = aData.Address,
+			.UserData = entry.UserData
+		};
+
+		callback(data);
+	}
 }

@@ -1,5 +1,6 @@
 #include <Networking.pch.h>
 #include "SocketAddress.h"
+#include "Internal/Common.h"
 #include <sstream>
 
 namespace networking
@@ -10,10 +11,70 @@ namespace networking
 		ss << aAddress;
 		return ss.str();
 	}
+
+	bool GetSocketAddress(SocketAddress* outAddress, std::string_view aHostName, std::string_view aServiceName, NETWORKING_ADDRESS_FAMILY aAddressFamily, NETWORKING_SOCKET_TYPE aSocketType, NETWORKING_INTERNET_PROTOCOL aProtocol)
+	{
+		const ADDRINFOA hints = {
+			.ai_flags = NULL,
+			.ai_family = GetWs2AddressFamily(aAddressFamily),
+			.ai_socktype = GetWs2SocketType(aSocketType),
+			.ai_protocol = GetWs2InternetProtocol(aProtocol),
+			.ai_addrlen = NULL,
+			.ai_canonname = NULL,
+			.ai_addr = NULL,
+			.ai_next = NULL
+		};
+
+		ADDRINFOA* results = NULL;
+
+		if (GetAddrInfoA(aHostName.data(), aServiceName.data(), &hints, &results) != 0)
+		{
+			return false;
+		}
+
+		bool succeeded = GetAddress(outAddress, results->ai_addr);
+
+		FreeAddrInfoA(results);
+
+		return succeeded;
+	}
+
+	bool GetSocketAddress(SocketAddress* outAddress, std::wstring_view aHostName, std::wstring_view aServiceName, NETWORKING_ADDRESS_FAMILY aAddressFamily, NETWORKING_SOCKET_TYPE aSocketType, NETWORKING_INTERNET_PROTOCOL aProtocol)
+	{
+		const ADDRINFOW hints = {
+			.ai_flags = NULL,
+			.ai_family = GetWs2AddressFamily(aAddressFamily),
+			.ai_socktype = GetWs2SocketType(aSocketType),
+			.ai_protocol = GetWs2InternetProtocol(aProtocol),
+			.ai_addrlen = NULL,
+			.ai_canonname = NULL,
+			.ai_addr = NULL,
+			.ai_next = NULL
+		};
+
+		ADDRINFOW* results = NULL;
+
+		if (GetAddrInfoW(aHostName.data(), aServiceName.data(), &hints, &results) != 0)
+		{
+			return false;
+		}
+
+		bool succeeded = GetAddress(outAddress, results->ai_addr);
+
+		FreeAddrInfoW(results);
+
+		return succeeded;
+	}
 }
 
 std::ostream& operator<<(std::ostream& aStream, const networking::SocketAddress& aAddress)
 {
+	if (aAddress == networking::SocketAddress{})
+	{
+		aStream << "N/A";
+		return aStream;
+	}
+
 	switch (aAddress.IPAddress.Family)
 	{
 	case networking::NETWORKING_ADDRESS_FAMILY_INTERNET_PROTOCOL_4:

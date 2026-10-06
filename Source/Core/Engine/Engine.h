@@ -54,6 +54,8 @@ namespace CommonUtilities
 
 class GraphicsEngine;
 class Scene;
+class Console;
+class CommandParser;
 
 namespace graphics
 {
@@ -71,12 +73,21 @@ public:
 
 	bool ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
+	void SetConsoleEnabled(bool aEnabled) noexcept;
+	bool IsConsoleEnabled() const noexcept;
+
 	bool BeginFrame();
 	void Update();
 	void EndFrame();
 
-	const CommonUtilities::InputManager& GetInputManager() const noexcept;
+	Console& GetConsole() noexcept;
+	CommandParser& GetCommandParser() noexcept;
 	GraphicsEngine& GetGraphicsEngine() noexcept;
+
+	const Console& GetConsole() const noexcept;
+	const CommandParser& GetCommandParser() const noexcept;
+	const GraphicsEngine& GetGraphicsEngine() const noexcept;
+	const CommonUtilities::InputManager& GetInputManager() const noexcept;
 	const CommonUtilities::TimeManager& GetTimeManager() const noexcept;
 
 	Scene* GetScene() noexcept;
@@ -90,7 +101,12 @@ public:
 	void PopScene();
 
 private:
+	bool myConsoleEnabled;
+
 	graphics::PImpl<graphics::Window> myWindow;
+
+	std::unique_ptr<Console> myConsole;
+	std::unique_ptr<CommandParser> myCommandParser;
 
 	std::unique_ptr<CommonUtilities::InputManager> myInputManager;
 

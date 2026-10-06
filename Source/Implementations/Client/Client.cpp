@@ -1,46 +1,14 @@
 #include "Client.pch.h"
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
 #include "Client.h"
-#include "Scenes/LobbyScene.h"
-
-#include <Core/Engine/Engine.h>
-
-//TEMPORARY:
-#include <Core/GraphicsEngine/GraphicsEngine.h>
-#include <Core/GraphicsEngine/Projection.h>
-#include <Core/GraphicsEngine/RenderLayers/SpriteRenderLayer.h>
-#include <Core/GraphicsEngine/RenderLayers/TextRenderLayer.h>
-
-#include <Core/RenderHardwareInterface/Graphics.h>
-#include <Core/RenderHardwareInterface/Device.h>
-#include <Core/RenderHardwareInterface/Objects/ImmediateDeviceContext.h>
-#include <Core/RenderHardwareInterface/Objects/Texture2D.h>
-#include <Core/RenderHardwareInterface/Objects/RenderTarget.h>
-#include <Core/RenderHardwareInterface/Objects/DepthStencil.h>
-#include <Core/RenderHardwareInterface/DDSLoad.h>
-#include <Core/RenderHardwareInterface/DX11/Window_DX11Impl.h>
-
-#include <Core/ComponentSystem/ComponentSystem.h>
-
-#include <Core/Engine/Components/TransformComponent.h>
-#include <Core/Engine/Components/SpriteComponent.h>
-#include <Core/Engine/Components/TextComponent.h>
-
-#include <Core/Assets/FontRegistry.h>
-#include <Core/Assets/ShaderRegistry.h>
-#include <Core/Assets/TextureRegistry.h>
-
-#include <fstream>
-
-#define FILE_CATEGORY "Client.cpp"
-#define CLASS_CATEGORY FILE_CATEGORY"->Client"
 
 namespace client
 {
 	Client::Client() :
-		myExiting(false),
-		myWindow(NULL)
+		myConnectionStatus(CLIENT_CONNECTION_DISCONNECTED),
+		myConnectionAttempts(0),
+		myServer({ }),
+		myConnectionStart({}),
+		myLastHeardFromRemote({})
 	{
 	}
 
@@ -48,155 +16,218 @@ namespace client
 	{
 	}
 
-	bool Client::ProcessWindowsMessage(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
+	bool Client::Initialize(networking::Port aPort)
 	{
-		if (myEngine && myEngine->ProcessWindowsMessage(hWnd, uMsg, wParam, lParam))
+		if (not myNetworkManager.Initialize(4096, aPort))
 		{
-			return true;
-		}
-
-		switch (uMsg)
-		{
-		case WM_CLOSE: case WM_DESTROY:
-		{
-			PostQuitMessage(0);
-		}
-		break;
-		case WM_SIZE:
-		{
-			myEngine->GetGraphicsEngine().GetDevice()->UpdateBackbufferSize(LOWORD(lParam), HIWORD(lParam));
-		}
-		break;
-		}
-
-		return false;
-	}
-
-	bool Client::Initialize(HWND aWindow, const wchar_t* const* aArgs, size_t aNumArgs)
-	{
-#define LOG_CATEGORY CLASS_CATEGORY"::Initialize"
-
-		aArgs;
-		aNumArgs;
-
-		myWindow = aWindow;
-		myEngine = std::make_unique<Engine>();
-
-
-		// Initializing Engine
-		if (not myEngine->Initialize(myWindow, L"../../../Assets/"))	//TODO: Use another way to get asset path.
-		{
-			LOG_ERROR(LOG_CATEGORY, "Failed to initialize Engine!");
 			return false;
 		}
 
-		myEngine->GetGraphicsEngine().SetVSyncEnabled(true);
-
-
-		// Loading Resources
-		myFontRegistry = std::make_unique<assets::FontRegistry>();
-		myShaderRegistry = std::make_unique<assets::ShaderRegistry>(myEngine->GetGraphicsEngine().GetDevice());
-		myTextureRegistry = std::make_unique<assets::TextureRegistry>(myEngine->GetGraphicsEngine().GetDevice());
-
-		myFontRegistry->Load("core", assets::AssetManager::GetAssetsPath() / "Font");
-		myShaderRegistry->Load("core", assets::AssetManager::GetAssetsPath() / "Shader");
-		myTextureRegistry->Load("core", assets::AssetManager::GetAssetsPath() / "Texture");
-
-		// Setting up graphics layers
-		SpriteRenderLayer* spriteRenderLayer = myEngine->GetGraphicsEngine().AddRenderLayer<SpriteRenderLayer>(myShaderRegistry.get());
-		TextRenderLayer* renderLayer = myEngine->GetGraphicsEngine().AddRenderLayer<TextRenderLayer>(myShaderRegistry.get());
-
-		graphics::PImpl<graphics::RenderTarget> renderTarget;
-		myEngine->GetGraphicsEngine().GetDevice()->GetBufferRenderTarget(&renderTarget);
-		graphics::PImpl<graphics::DepthStencil> depthStencil;
-		myEngine->GetGraphicsEngine().GetDevice()->GetBufferDepthStencil(&depthStencil);
-
-		renderLayer->SetRenderTarget(renderTarget.Get());
-		spriteRenderLayer->SetRenderTarget(renderTarget.Get());
-
-		renderLayer->SetDepthStencil(depthStencil.Get());
-		spriteRenderLayer->SetDepthStencil(depthStencil.Get());
-
-		renderLayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
-		spriteRenderLayer->SetProjection(CreateOrthographicProjection(0.f, 1.f, 0.f, 1.f, 0.f, 1.f));
-
-		myEngine->PushScene<LobbyScene>(this);
+		myNetworkManager.SetCallback<shared::NM_ConnectionResult>(&OnConnectionResult, this);
+		myNetworkManager.SetCallback<shared::NM_Disconnect>(&OnDisconnect, this);
 
 		return true;
-
-#undef LOG_CATEGORY
 	}
-
 	bool Client::Shutdown()
 	{
-#define LOG_CATEGORY CLASS_CATEGORY"::Shutdown"
-
 		bool result = true;
-		if (not myEngine->Shutdown())
-		{
-			LOG_ERROR(LOG_CATEGORY, "Failed to shutdown Engine.");
-			result = false;
-		}
-		myEngine.reset();
-		myFontRegistry.reset();
-		myShaderRegistry.reset();
-		myTextureRegistry.reset();
-		myExiting = false;
+
+		Disconnect(shared::NETWORK_DISCONNECT_END_OF_SESSION);
+
+		myCallbacks.clear();
+
+		result &= myNetworkManager.Shutdown();
 
 		return result;
-
-#undef LOG_CATEGORY
 	}
-
-	void Client::Run()
+	void Client::Update()
 	{
-		while (myExiting == false)
+		myNetworkManager.Update(64);
+
+		switch (GetConnectionStatus())
 		{
-			MSG msg = {};
-			while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
+		case CLIENT_CONNECTION_PENDING:
+		{
+			const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+			const float timeSinceConnectionRequest = std::chrono::duration<float>(now - myConnectionStart).count();
 
-				switch (msg.message)
-				{
-				case WM_QUIT:
-					myExiting = true;
-					break;
-				}
-			}
-
-			if (myEngine->BeginFrame())
+			if (timeSinceConnectionRequest > 30.f)
 			{
-				myEngine->Update();
-
-				myEngine->EndFrame();
+				Disconnect(shared::NETWORK_DISCONNECT_TIMED_OUT);
 			}
-			else
+			else if (static_cast<float>(myConnectionAttempts) * 0.5f < timeSinceConnectionRequest) // TODO: Allow setting time between connection attempts.
 			{
-				Exit();
+				SendConnectionRequest(myServer);
+				++myConnectionAttempts;
 			}
+		}
+		break;
+		case CLIENT_CONNECTION_CONNECTED:
+		{
+			const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+			const float timeSinceLastHeardFromRemote = std::chrono::duration<float>(now - myLastHeardFromRemote).count();
+
+			if (timeSinceLastHeardFromRemote > 30.f) // TODO: Allow setting timeout.
+			{
+				Disconnect(shared::NETWORK_DISCONNECT_TIMED_OUT);
+			}
+		}
+		break;
 		}
 	}
 
-	void Client::Exit()
+	bool Client::RequestConnection(const networking::SocketAddress& aServer)
 	{
-		myExiting = true;
+		if (GetConnectionStatus() != CLIENT_CONNECTION_DISCONNECTED)
+		{
+			Disconnect(shared::NETWORK_DISCONNECT_END_OF_SESSION);
+		}
+
+		if (not SendConnectionRequest(aServer))
+		{
+			return false;
+		}
+
+		++myConnectionAttempts;
+		myConnectionStart = std::chrono::steady_clock::now();
+		myConnectionStatus = CLIENT_CONNECTION_PENDING;
+		myServer = aServer;
+
+		return true;
 	}
 
-	assets::FontRegistry& Client::GetFontRegistry() const noexcept
+	bool Client::Disconnect(shared::NETWORK_DISCONNECT_REASON aReason)
 	{
-		return *myFontRegistry;
+		if (GetConnectionStatus() == CLIENT_CONNECTION_DISCONNECTED)
+		{
+			// Not connected to a remote.
+			return false;
+		}
+
+		shared::NM_Disconnect disconnect = {
+			.Reason = aReason
+		};
+		shared::NetworkManager::NetworkMessage message;
+		if (not myNetworkManager.CreateMessage(&message, disconnect))
+		{
+			// TODO: Log failed to create message.
+			// This causes a dirty disconnect.
+			// Meaning the server will no longer treat 
+			// the remot as a client, but the remote will not know that.
+		}
+		else
+		{
+			if (not myNetworkManager.SendTo(message, myServer))
+			{
+				//TODO: Log failed to send disconnect.
+				// This causes a dirty disconnect.
+				// Meaning the server will no longer treat 
+				// the remot as a client, but the remote will not know that.
+			}
+		}
+
+		myConnectionAttempts = 0;
+		myConnectionStart = {};
+		myServer = {};
+		myConnectionStatus = CLIENT_CONNECTION_DISCONNECTED;
+
+		return true;
 	}
-	assets::ShaderRegistry& Client::GetShaderRegistry() const noexcept
+
+	const networking::SocketAddress& Client::GetRemote() const noexcept
 	{
-		return *myShaderRegistry;
+		return myServer;
 	}
-	assets::TextureRegistry& Client::GetTextureRegistry() const noexcept
+
+	CLIENT_CONNECTION_STATUS Client::GetConnectionStatus() const noexcept
 	{
-		return *myTextureRegistry;
+		return myConnectionStatus;
+	}
+
+	bool Client::IsConnectedTo(const networking::SocketAddress& aServer) const noexcept
+	{
+		return GetConnectionStatus() == CLIENT_CONNECTION_CONNECTED && myServer == aServer;
+	}
+
+	bool Client::SendTo(const shared::NetworkManager::NetworkMessage& aMessage, const networking::SocketAddress& aAddress)
+	{
+		return myNetworkManager.SendTo(aMessage, aAddress);
+	}
+
+	bool Client::Send(const shared::NetworkManager::NetworkMessage& aMessage)
+	{
+		if (GetConnectionStatus() != CLIENT_CONNECTION_CONNECTED)
+		{
+			return false;
+		}
+		return myNetworkManager.SendTo(aMessage, myServer);
+	}
+
+	void Client::OnConnectionResult(const shared::NetworkManager::MessageCallbackData<shared::NM_ConnectionResult>& aData)
+	{
+		Client& client = *reinterpret_cast<Client*>(aData.UserData);
+
+		if (client.myServer != aData.Address)
+		{
+			// Wrong remote sent a connection result.
+			return;
+		}
+
+		if (client.GetConnectionStatus() != CLIENT_CONNECTION_PENDING)
+		{
+			// The client is not trying to connect to a remote at this time.
+			return;
+		}
+
+		if (not aData.Message.Accepted)
+		{
+			// Connection declined.
+			return;
+		}
+
+		// Connection accepted.
+		client.myConnectionStatus = CLIENT_CONNECTION_CONNECTED;
+		client.myLastHeardFromRemote = std::chrono::steady_clock::now();
+	}
+
+	void Client::OnDisconnect(const shared::NetworkManager::MessageCallbackData<shared::NM_Disconnect>& aData)
+	{
+		Client& client = *reinterpret_cast<Client*>(aData.UserData);
+
+		if (client.myServer != aData.Address)
+		{
+			// Wrong remote sent disconnect.
+			return;
+		}
+
+		if (client.GetConnectionStatus() != CLIENT_CONNECTION_CONNECTED)
+		{
+			// The client is not connected to a remote that can be disconnected.
+			return;
+		}
+
+		// Connection accepted.
+		client.myConnectionStatus = CLIENT_CONNECTION_DISCONNECTED;
+		client.myServer = {};
+	}
+	bool Client::SendConnectionRequest(const networking::SocketAddress& aRemote)
+	{
+		shared::NM_ConnectionRequest connectionRequest = {
+
+		};
+		shared::NetworkManager::NetworkMessage message;
+		if (not myNetworkManager.CreateMessage(&message, connectionRequest))
+		{
+			// TODO: Log failed to create message.
+			return false;
+		}
+
+		if (not myNetworkManager.SendTo(message, aRemote))
+		{
+			//TODO: Log failed to send disconnect.
+			return false;
+		}
+
+		return true;
 	}
 }
-
-#undef FILE_CATEGORY 
-#undef CLASS_CATEGORY

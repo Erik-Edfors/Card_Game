@@ -19,13 +19,16 @@ namespace networking
 
 	std::string to_string(const SocketAddress& aAddress);
 
+	bool GetSocketAddress(SocketAddress* outAddress, std::string_view aHostName, std::string_view aServiceName, NETWORKING_ADDRESS_FAMILY aAddressFamily, NETWORKING_SOCKET_TYPE aSocketType, NETWORKING_INTERNET_PROTOCOL aProtocol);
+	bool GetSocketAddress(SocketAddress* outAddress, std::wstring_view aHostName, std::wstring_view aServiceName, NETWORKING_ADDRESS_FAMILY aAddressFamily, NETWORKING_SOCKET_TYPE aSocketType, NETWORKING_INTERNET_PROTOCOL aProtocol);
+
 	inline constexpr IPAddress NETWORKING_IPV4_ADDRESS_ANY = IPAddress{ .Family = NETWORKING_ADDRESS_FAMILY_INTERNET_PROTOCOL_4, .Data = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
 	inline constexpr IPAddress NETWORKING_IPV6_ADDRESS_ANY = IPAddress{ .Family = NETWORKING_ADDRESS_FAMILY_INTERNET_PROTOCOL_6, .Data = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
 
 	inline constexpr IPAddress NETWORKING_IPV4_ADDRESS_BROADCAST = IPAddress{ .Family = NETWORKING_ADDRESS_FAMILY_INTERNET_PROTOCOL_4, .Data = { 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
 
-	inline constexpr IPAddress NETWORKING_IPV4_LOCALHOST = IPAddress{ .Family = NETWORKING_ADDRESS_FAMILY_INTERNET_PROTOCOL_4, .Data = { 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
-	inline constexpr IPAddress NETWORKING_IPV6_LOCALHOST = IPAddress{ .Family = NETWORKING_ADDRESS_FAMILY_INTERNET_PROTOCOL_6, .Data = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 } };
+	inline constexpr IPAddress NETWORKING_IPV4_LOOPBACK = IPAddress{ .Family = NETWORKING_ADDRESS_FAMILY_INTERNET_PROTOCOL_4, .Data = { 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
+	inline constexpr IPAddress NETWORKING_IPV6_LOOPBACK = IPAddress{ .Family = NETWORKING_ADDRESS_FAMILY_INTERNET_PROTOCOL_6, .Data = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 } };
 
 	inline constexpr bool operator==(const IPAddress& aLHS, const IPAddress& aRHS) noexcept
 	{

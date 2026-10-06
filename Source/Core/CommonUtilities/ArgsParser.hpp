@@ -23,99 +23,118 @@ namespace CommonUtilities
 	}
 
 	template<typename _CharTy, typename _SizeTy = size_t>
-	class ArgsParser;
+	class TArgsParser;
 
 	template<typename _CharTy>
-	class Option
+	class TArgument;
+
+	template<typename _CharTy>
+	class TOption;
+
+	template<typename _CharTy>
+	class TFlag;
+
+	using ArgsParser = TArgsParser<char>;
+	using Argument = TArgument<char>;
+	using Option = TOption<char>;
+	using Flag = TFlag<char>;
+
+	using WArgsParser = TArgsParser<wchar_t>;
+	using WArgument = TArgument<wchar_t>;
+	using WOption = TOption<wchar_t>;
+	using WFlag = TFlag<wchar_t>;
+
+	template<typename _CharTy>
+	class TOption
 	{
 		template<typename _1, typename _2>
-		friend class ArgsParser;
+		friend class TArgsParser;
 	public:
 		typedef _CharTy Char;
 
-		~Option() noexcept;
-		Option(const Option& aOption) noexcept;
-		Option(Option&& aOption) noexcept;
+		~TOption() noexcept;
+		TOption(const TOption& aOption) noexcept;
+		TOption(TOption&& aOption) noexcept;
 
 		const Char* GetIdentity() const noexcept;
 		const Char* GetValue() const noexcept;
 		void Clean() noexcept;
 
-		Option& operator=(Option&& aOption) noexcept;
-		Option& operator=(const Option& aOption) noexcept;
+		TOption& operator=(TOption&& aOption) noexcept;
+		TOption& operator=(const TOption& aOption) noexcept;
 
 	private:
-		Option() noexcept;
-		Option(const Char* aIdentity, const Char* aValue) noexcept;
+		TOption() noexcept;
+		TOption(const Char* aIdentity, const Char* aValue) noexcept;
 
 		Char* myIdentity;
 		Char* myValue;
 	};
 
 	template<typename _CharTy>
-	class Argument
+	class TArgument
 	{
 		template<typename _1, typename _2>
-		friend class ArgsParser;
+		friend class TArgsParser;
 	public:
 		typedef _CharTy Char;
 
-		~Argument() noexcept;
-		Argument(const Argument& aArgument) noexcept;
-		Argument(Argument&& aArgument) noexcept;
+		~TArgument() noexcept;
+		TArgument(const TArgument& aArgument) noexcept;
+		TArgument(TArgument&& aArgument) noexcept;
 
 		const Char* GetValue() const noexcept;
 		void Clean() noexcept;
 
-		Argument& operator=(Argument&& aArgument) noexcept;
-		Argument& operator=(const Argument& aArgument) noexcept;
+		TArgument& operator=(TArgument&& aArgument) noexcept;
+		TArgument& operator=(const TArgument& aArgument) noexcept;
 
 	private:
-		Argument() noexcept;
-		Argument(const Char* aValue) noexcept;
+		TArgument() noexcept;
+		TArgument(const Char* aValue) noexcept;
 
 		Char* myValue;
 	};
 
 	template<typename _CharTy>
-	class Flag
+	class TFlag
 	{
 		template<typename _1, typename _2>
-		friend class ArgsParser;
+		friend class TArgsParser;
 	public:
 		typedef _CharTy Char;
 
-		~Flag() noexcept;
-		Flag(const Flag& aFlag) noexcept;
-		Flag(Flag&& aFlag) noexcept;
+		~TFlag() noexcept;
+		TFlag(const TFlag& aFlag) noexcept;
+		TFlag(TFlag&& aFlag) noexcept;
 
 		const Char* GetValue() const noexcept;
 		void Clean() noexcept;
 
-		Flag& operator=(Flag&& aFlag) noexcept;
-		Flag& operator=(const Flag& aFlag) noexcept;
+		TFlag& operator=(TFlag&& aFlag) noexcept;
+		TFlag& operator=(const TFlag& aFlag) noexcept;
 
 	private:
-		Flag() noexcept;
-		Flag(const Char* aFlag) noexcept;
+		TFlag() noexcept;
+		TFlag(const Char* aFlag) noexcept;
 
 		Char* myFlag;
 	};
 
 	template<typename _CharTy, typename _SizeTy>
-	class ArgsParser
+	class TArgsParser
 	{
 	public:
 		typedef _CharTy Char;
 		typedef _SizeTy Size;
-		typedef Argument<_CharTy> Argument;
-		typedef Option<_CharTy> Option;
-		typedef Flag<_CharTy> Flag;
+		typedef TArgument<_CharTy> Argument;
+		typedef TOption<_CharTy> Option;
+		typedef TFlag<_CharTy> Flag;
 
-		ArgsParser();
-		~ArgsParser();
-		ArgsParser(const ArgsParser& aArgsParser) noexcept;
-		ArgsParser(ArgsParser&& aArgsParser) noexcept;
+		TArgsParser();
+		~TArgsParser();
+		TArgsParser(const TArgsParser& aArgsParser) noexcept;
+		TArgsParser(TArgsParser&& aArgsParser) noexcept;
 
 		bool Parse(const Char* const* aArgs, Size aNumArgs);
 
@@ -124,8 +143,8 @@ namespace CommonUtilities
 		void GetFlags(const Flag** outFlags, Size* outNumFlags) noexcept;
 		void Clean() noexcept;
 
-		ArgsParser& operator=(const ArgsParser& aArgsParser) noexcept;
-		ArgsParser& operator=(ArgsParser&& aArgsParser) noexcept;
+		TArgsParser& operator=(const TArgsParser& aArgsParser) noexcept;
+		TArgsParser& operator=(TArgsParser&& aArgsParser) noexcept;
 
 	private:
 		template<typename _ElementTy>
@@ -214,7 +233,7 @@ namespace CommonUtilities
 #pragma region ArgsParser
 
 	template<typename _CharTy, typename _SizeTy>
-	inline ArgsParser<_CharTy, _SizeTy>::ArgsParser() :
+	inline TArgsParser<_CharTy, _SizeTy>::TArgsParser() :
 		myArguments(nullptr),
 		myNumArguments(0),
 		myOptions(nullptr),
@@ -225,27 +244,27 @@ namespace CommonUtilities
 	}
 
 	template<typename _CharTy, typename _SizeTy>
-	inline ArgsParser<_CharTy, _SizeTy>::~ArgsParser()
+	inline TArgsParser<_CharTy, _SizeTy>::~TArgsParser()
 	{
 		Clean();
 	}
 
 	template<typename _CharTy, typename _SizeTy>
-	inline ArgsParser<_CharTy, _SizeTy>::ArgsParser(const ArgsParser& aArgsParser) noexcept :
-		ArgsParser()
+	inline TArgsParser<_CharTy, _SizeTy>::TArgsParser(const TArgsParser& aArgsParser) noexcept :
+		TArgsParser()
 	{
 		*this = aArgsParser;
 	}
 
 	template<typename _CharTy, typename _SizeTy>
-	inline ArgsParser<_CharTy, _SizeTy>::ArgsParser(ArgsParser&& aArgsParser) noexcept :
-		ArgsParser()
+	inline TArgsParser<_CharTy, _SizeTy>::TArgsParser(TArgsParser&& aArgsParser) noexcept :
+		TArgsParser()
 	{
-		*this = static_cast<ArgsParser&&>(aArgsParser);
+		*this = static_cast<TArgsParser&&>(aArgsParser);
 	}
 
 	template<typename _CharTy, typename _SizeTy>
-	inline bool ArgsParser<_CharTy, _SizeTy>::Parse(const Char* const* aArgs, Size aNumArgs)
+	inline bool TArgsParser<_CharTy, _SizeTy>::Parse(const Char* const* aArgs, Size aNumArgs)
 	{
 		constexpr Size charBufferSize = 4096;
 		const Char seperator = detail::ParserValues<Char>::SeperatorChar;
@@ -330,25 +349,25 @@ namespace CommonUtilities
 		return true;
 	}
 	template<typename _CharTy, typename _SizeTy>
-	inline void ArgsParser<_CharTy, _SizeTy>::GetOptions(const Option** outOptions, Size* outNumOptions) noexcept
+	inline void TArgsParser<_CharTy, _SizeTy>::GetOptions(const Option** outOptions, Size* outNumOptions) noexcept
 	{
 		*outOptions = myOptions;
 		*outNumOptions = myNumOptions;
 	}
 	template<typename _CharTy, typename _SizeTy>
-	inline void ArgsParser<_CharTy, _SizeTy>::GetArguments(const Argument** outArguments, Size* outNumArguments) noexcept
+	inline void TArgsParser<_CharTy, _SizeTy>::GetArguments(const Argument** outArguments, Size* outNumArguments) noexcept
 	{
 		*outArguments = myArguments;
 		*outNumArguments = myNumArguments;
 	}
 	template<typename _CharTy, typename _SizeTy>
-	inline void ArgsParser<_CharTy, _SizeTy>::GetFlags(const Flag** outFlags, Size* outNumFlags) noexcept
+	inline void TArgsParser<_CharTy, _SizeTy>::GetFlags(const Flag** outFlags, Size* outNumFlags) noexcept
 	{
 		*outFlags = myFlags;
 		*outNumFlags = myNumFlags;
 	}
 	template<typename _CharTy, typename _SizeTy>
-	inline void ArgsParser<_CharTy, _SizeTy>::Clean() noexcept
+	inline void TArgsParser<_CharTy, _SizeTy>::Clean() noexcept
 	{
 		if (myArguments != nullptr)
 		{
@@ -371,7 +390,7 @@ namespace CommonUtilities
 		myNumFlags = 0;
 	}
 	template<typename _CharTy, typename _SizeTy>
-	inline ArgsParser<_CharTy, _SizeTy>& ArgsParser<_CharTy, _SizeTy>::operator=(const ArgsParser& aArgsParser) noexcept
+	inline TArgsParser<_CharTy, _SizeTy>& TArgsParser<_CharTy, _SizeTy>::operator=(const TArgsParser& aArgsParser) noexcept
 	{
 		Clean();
 
@@ -390,7 +409,7 @@ namespace CommonUtilities
 		return *this;
 	}
 	template<typename _CharTy, typename _SizeTy>
-	inline ArgsParser<_CharTy, _SizeTy>& ArgsParser<_CharTy, _SizeTy>::operator=(ArgsParser&& aArgsParser) noexcept
+	inline TArgsParser<_CharTy, _SizeTy>& TArgsParser<_CharTy, _SizeTy>::operator=(TArgsParser&& aArgsParser) noexcept
 	{
 		Clean();
 
@@ -413,7 +432,7 @@ namespace CommonUtilities
 	}
 	template<typename _CharTy, typename _SizeTy>
 	template<typename _ElementTy>
-	inline void ArgsParser<_CharTy, _SizeTy>::_assureArraySize(_ElementTy** outArray, Size aOldSize, Size aNewSize) noexcept
+	inline void TArgsParser<_CharTy, _SizeTy>::_assureArraySize(_ElementTy** outArray, Size aOldSize, Size aNewSize) noexcept
 	{
 		if (*outArray == nullptr)
 		{
@@ -428,7 +447,7 @@ namespace CommonUtilities
 	}
 	template<typename _CharTy, typename _SizeTy>
 	template<typename _ElementTy>
-	inline void ArgsParser<_CharTy, _SizeTy>::_copyArray(_ElementTy* aSource, Size aSourceSize, _ElementTy* aDestination)
+	inline void TArgsParser<_CharTy, _SizeTy>::_copyArray(_ElementTy* aSource, Size aSourceSize, _ElementTy* aDestination)
 	{
 		for (Size i = 0; i < aSourceSize; i++)
 		{
@@ -437,7 +456,7 @@ namespace CommonUtilities
 	}
 	template<typename _CharTy, typename _SizeTy>
 	template<typename _ElementTy>
-	inline void ArgsParser<_CharTy, _SizeTy>::_moveArray(_ElementTy* aSource, Size aSourceSize, _ElementTy* aDestination)
+	inline void TArgsParser<_CharTy, _SizeTy>::_moveArray(_ElementTy* aSource, Size aSourceSize, _ElementTy* aDestination)
 	{
 		for (Size i = 0; i < aSourceSize; i++)
 		{
@@ -446,7 +465,7 @@ namespace CommonUtilities
 	}
 	template<typename _CharTy, typename _SizeTy>
 	template<typename _ElementTy>
-	inline void ArgsParser<_CharTy, _SizeTy>::_pushBackElement(_ElementTy** outArray, Size* outSize, _ElementTy&& aElement) noexcept
+	inline void TArgsParser<_CharTy, _SizeTy>::_pushBackElement(_ElementTy** outArray, Size* outSize, _ElementTy&& aElement) noexcept
 	{
 		_assureArraySize<_ElementTy>(outArray, *outSize, *outSize + 1);
 		(*outArray)[*outSize] = aElement;
@@ -458,48 +477,48 @@ namespace CommonUtilities
 #pragma region Flag
 
 	template<typename _CharTy>
-	inline Flag<_CharTy>::Flag() noexcept :
+	inline TFlag<_CharTy>::TFlag() noexcept :
 		myFlag(nullptr)
 	{
 	}
 	template<typename _CharTy>
-	inline Flag<_CharTy>::Flag(const Char* aFlag) noexcept :
-		Flag()
+	inline TFlag<_CharTy>::TFlag(const Char* aFlag) noexcept :
+		TFlag()
 	{
 		detail::SafeCopyString<Char>(aFlag, &myFlag);
 	}
 	template<typename _CharTy>
-	inline Flag<_CharTy>::~Flag() noexcept
+	inline TFlag<_CharTy>::~TFlag() noexcept
 	{
 		Clean();
 	}
 	template<typename _CharTy>
-	inline Flag<_CharTy>::Flag(const Flag& aFlag) noexcept :
-		Flag()
+	inline TFlag<_CharTy>::TFlag(const TFlag& aFlag) noexcept :
+		TFlag()
 	{
 		*this = aFlag;
 	}
 	template<typename _CharTy>
-	inline Flag<_CharTy>::Flag(Flag&& aFlag) noexcept :
-		Flag()
+	inline TFlag<_CharTy>::TFlag(TFlag&& aFlag) noexcept :
+		TFlag()
 	{
-		*this = static_cast<Flag&&>(aFlag);
+		*this = static_cast<TFlag&&>(aFlag);
 	}
 
 	template<typename _CharTy>
-	inline const typename Flag<_CharTy>::Char* Flag<_CharTy>::GetValue() const noexcept
+	inline const typename TFlag<_CharTy>::Char* TFlag<_CharTy>::GetValue() const noexcept
 	{
 		return myFlag;
 	}
 
 	template<typename _CharTy>
-	inline void Flag<_CharTy>::Clean() noexcept
+	inline void TFlag<_CharTy>::Clean() noexcept
 	{
 		detail::SafeReleaseString<Char>(&myFlag);
 	}
 
 	template<typename _CharTy>
-	inline Flag<_CharTy>& Flag<_CharTy>::operator=(Flag&& aFlag) noexcept
+	inline TFlag<_CharTy>& TFlag<_CharTy>::operator=(TFlag&& aFlag) noexcept
 	{
 		Clean();
 
@@ -507,7 +526,7 @@ namespace CommonUtilities
 		aFlag.myFlag = nullptr;
 	}
 	template<typename _CharTy>
-	inline Flag<_CharTy>& Flag<_CharTy>::operator=(const Flag& aFlag) noexcept
+	inline TFlag<_CharTy>& TFlag<_CharTy>::operator=(const TFlag& aFlag) noexcept
 	{
 		detail::SafeCopyString<Char>(aFlag.myFlag, &myFlag);
 		return *this;
@@ -518,47 +537,47 @@ namespace CommonUtilities
 #pragma region Argument
 
 	template<typename _CharTy>
-	inline Argument<_CharTy>::Argument() noexcept :
+	inline TArgument<_CharTy>::TArgument() noexcept :
 		myValue(nullptr)
 	{
 	}
 	template<typename _CharTy>
-	inline Argument<_CharTy>::Argument(const Char* aValue) noexcept :
-		Argument()
+	inline TArgument<_CharTy>::TArgument(const Char* aValue) noexcept :
+		TArgument()
 	{
 		detail::SafeCopyString<Char>(aValue, &myValue);
 	}
 	template<typename _CharTy>
-	inline Argument<_CharTy>::~Argument() noexcept
+	inline TArgument<_CharTy>::~TArgument() noexcept
 	{
 		Clean();
 	}
 	template<typename _CharTy>
-	inline Argument<_CharTy>::Argument(const Argument& aArgument) noexcept :
-		Argument()
+	inline TArgument<_CharTy>::TArgument(const TArgument& aArgument) noexcept :
+		TArgument()
 	{
 		*this = aArgument;
 	}
 	template<typename _CharTy>
-	inline Argument<_CharTy>::Argument(Argument&& aArgument) noexcept :
-		Argument()
+	inline TArgument<_CharTy>::TArgument(TArgument&& aArgument) noexcept :
+		TArgument()
 	{
-		*this = static_cast<Argument&&>(aArgument);
+		*this = static_cast<TArgument&&>(aArgument);
 	}
 
 	template<typename _CharTy>
-	inline const typename Argument<_CharTy>::Char* Argument<_CharTy>::GetValue() const noexcept
+	inline const typename TArgument<_CharTy>::Char* TArgument<_CharTy>::GetValue() const noexcept
 	{
 		return myValue;
 	}
 	template<typename _CharTy>
-	inline void Argument<_CharTy>::Clean() noexcept
+	inline void TArgument<_CharTy>::Clean() noexcept
 	{
 		detail::SafeReleaseString<Char>(&myValue);
 	}
 
 	template<typename _CharTy>
-	inline Argument<_CharTy>& Argument<_CharTy>::operator=(Argument&& aArgument) noexcept
+	inline TArgument<_CharTy>& TArgument<_CharTy>::operator=(TArgument&& aArgument) noexcept
 	{
 		Clean();
 
@@ -568,7 +587,7 @@ namespace CommonUtilities
 	}
 
 	template<typename _CharTy>
-	inline Argument<_CharTy>& Argument<_CharTy>::operator=(const Argument& aArgument) noexcept
+	inline TArgument<_CharTy>& TArgument<_CharTy>::operator=(const TArgument& aArgument) noexcept
 	{
 		detail::SafeCopyString<Char>(aArgument.myValue, &myValue);
 		return *this;
@@ -579,55 +598,55 @@ namespace CommonUtilities
 #pragma region Option
 
 	template<typename _CharTy>
-	inline Option<_CharTy>::Option() noexcept :
+	inline TOption<_CharTy>::TOption() noexcept :
 		myIdentity(nullptr),
 		myValue(nullptr)
 	{
 	}
 	template<typename _CharTy>
-	inline Option<_CharTy>::Option(const Char* aIdentity, const Char* aValue) noexcept :
-		Option()
+	inline TOption<_CharTy>::TOption(const Char* aIdentity, const Char* aValue) noexcept :
+		TOption()
 	{
 		detail::SafeCopyString<Char>(aIdentity, &myIdentity);
 		detail::SafeCopyString<Char>(aValue, &myValue);
 	}
 	template<typename _CharTy>
-	inline Option<_CharTy>::~Option() noexcept
+	inline TOption<_CharTy>::~TOption() noexcept
 	{
 		Clean();
 	}
 	template<typename _CharTy>
-	inline Option<_CharTy>::Option(const Option& aOption) noexcept :
-		Option()
+	inline TOption<_CharTy>::TOption(const TOption& aOption) noexcept :
+		TOption()
 	{
 		*this = aOption;
 	}
 	template<typename _CharTy>
-	inline Option<_CharTy>::Option(Option&& aOption) noexcept :
-		Option()
+	inline TOption<_CharTy>::TOption(TOption&& aOption) noexcept :
+		TOption()
 	{
-		*this = static_cast<Option&&>(aOption);
+		*this = static_cast<TOption&&>(aOption);
 	}
 
 	template<typename _CharTy>
-	inline const typename Option<_CharTy>::Char* Option<_CharTy>::GetIdentity() const noexcept
+	inline const typename TOption<_CharTy>::Char* TOption<_CharTy>::GetIdentity() const noexcept
 	{
 		return myIdentity;
 	}
 	template<typename _CharTy>
-	inline const typename Option<_CharTy>::Char* Option<_CharTy>::GetValue() const noexcept
+	inline const typename TOption<_CharTy>::Char* TOption<_CharTy>::GetValue() const noexcept
 	{
 		return myValue;
 	}
 	template<typename _CharTy>
-	inline void Option<_CharTy>::Clean() noexcept
+	inline void TOption<_CharTy>::Clean() noexcept
 	{
 		detail::SafeReleaseString<Char>(&myIdentity);
 		detail::SafeReleaseString<Char>(&myValue);
 	}
 
 	template<typename _CharTy>
-	inline Option<_CharTy>& Option<_CharTy>::operator=(Option&& aOption) noexcept
+	inline TOption<_CharTy>& TOption<_CharTy>::operator=(TOption&& aOption) noexcept
 	{
 		myIdentity = aOption.myIdentity;
 		myValue = aOption.myValue;
@@ -637,7 +656,7 @@ namespace CommonUtilities
 		return *this;
 	}
 	template<typename _CharTy>
-	inline Option<_CharTy>& Option<_CharTy>::operator=(const Option& aOption) noexcept
+	inline TOption<_CharTy>& TOption<_CharTy>::operator=(const TOption& aOption) noexcept
 	{
 		detail::SafeCopyString(aOption.myIdentity, &myIdentity);
 		detail::SafeCopyString(aOption.myValue, &myValue);
