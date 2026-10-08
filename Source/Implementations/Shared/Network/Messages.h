@@ -1,5 +1,6 @@
 #pragma once
 #include "MessageID.h"
+#include <Core/CommonUtilities/Serialization/TypeMacros.h>
 
 namespace shared
 {
@@ -8,9 +9,27 @@ namespace shared
 		NETWORK_DEFINE_MESSAGE_ID("PING");
 	};
 
+	struct NM_ServerInfoRequest
+	{
+		NETWORK_DEFINE_MESSAGE_ID("REQ_SERVER_INFO");
+	};
+
+	struct NM_ServerInfo
+	{
+		NETWORK_DEFINE_MESSAGE_ID("SERVER_INFO");
+
+		std::string Name;
+		std::string Description;
+	};
+	NBS_DEFINE_TYPE(
+		NM_ServerInfo,
+		Name,
+		Description
+	);
+
 	struct NM_ConnectionRequest
 	{
-		NETWORK_DEFINE_MESSAGE_ID("CONNECT");
+		NETWORK_DEFINE_MESSAGE_ID("REQ_CONNECTION");
 	};
 
 	enum : unsigned char

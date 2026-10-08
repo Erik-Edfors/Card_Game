@@ -20,10 +20,12 @@ public:
 protected:
 	Scene();
 	virtual void OnInit() {};
+	virtual void OnShutdown() {};
 	virtual void OnUpdate(float aDeltaTime) { aDeltaTime; };
 
 private:
 	void Initialize(Engine* aEngine);
+	void Shutdown();
 
 	Engine* myEngine;
 	cs::ComponentSystem myComponentSystem;

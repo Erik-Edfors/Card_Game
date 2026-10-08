@@ -19,7 +19,7 @@ graphics::result::Code graphics::detail::ReadFile(const wchar_t* aPath, char** o
 
 	std::ifstream file(aPath, std::ios::binary);
 
-	GRAPHICS_ASSERT(file.is_open(), LOG_CATEGORY, result::UNABLE_TO_OPEN_FILE, "File: '%s'!", CommonUtilities::ANSI(aPath));
+	GRAPHICS_ASSERT(file.is_open(), LOG_CATEGORY, result::UNABLE_TO_OPEN_FILE, "File: '%s'!", CommonUtilities::ToNarrow(aPath, CommonUtilities::STRING_ENCODING_ANSI));
 
 	size_t bufferSize = 1048576;	//1 MB
 	size_t cursor = 0;
@@ -60,7 +60,7 @@ graphics::result::Code graphics::CreateTexture2DFromFile(Device* aDevice, const 
 	char* fileData;
 	size_t fileSize;
 	result::Code result = detail::ReadFile(aFilePath, &fileData, &fileSize);
-	GRAPHICS_ASSERT_RESULT(result, LOG_CATEGORY, "Failed to read file: '%s'!", CommonUtilities::ANSI(aFilePath));
+	GRAPHICS_ASSERT_RESULT(result, LOG_CATEGORY, "Failed to read file: '%s'!", CommonUtilities::ToNarrow(aFilePath, CommonUtilities::STRING_ENCODING_ANSI));
 
 	result = CreateTexture2DFromDDS(
 		aDevice,

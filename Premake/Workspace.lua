@@ -32,7 +32,8 @@ workspace(Settings.Name)
     }
 
     defines {
-        "_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING"
+        "_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING",
+        "RAPIDJSON_HAS_CXX11_NOEXCEPT"
     }
 
     filter("configurations:Debug")

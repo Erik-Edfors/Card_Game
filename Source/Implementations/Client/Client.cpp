@@ -23,6 +23,7 @@ namespace client
 			return false;
 		}
 
+		myNetworkManager.SetCallback<shared::NM_ServerInfo>(&OnServerInfo, this);
 		myNetworkManager.SetCallback<shared::NM_ConnectionResult>(&OnConnectionResult, this);
 		myNetworkManager.SetCallback<shared::NM_Disconnect>(&OnDisconnect, this);
 
@@ -44,11 +45,31 @@ namespace client
 	{
 		myNetworkManager.Update(64);
 
+		const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+
+		// Cancelling timed out contracts.
+		{
+			auto it = myServerInfoContracts.begin();
+			while (it != myServerInfoContracts.end())
+			{
+				ServerInfoContract& infoContract = *it;
+
+				if (std::chrono::duration<float>(now - infoContract.TimeOfIssue).count() > infoContract.Timeout)
+				{
+					infoContract.Task.Cancel();
+					it = myServerInfoContracts.erase(it);
+				}
+				else
+				{
+					it = std::next(it);
+				}
+			}
+		}
+
 		switch (GetConnectionStatus())
 		{
 		case CLIENT_CONNECTION_PENDING:
 		{
-			const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 			const float timeSinceConnectionRequest = std::chrono::duration<float>(now - myConnectionStart).count();
 
 			if (timeSinceConnectionRequest > 30.f)
@@ -64,7 +85,6 @@ namespace client
 		break;
 		case CLIENT_CONNECTION_CONNECTED:
 		{
-			const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 			const float timeSinceLastHeardFromRemote = std::chrono::duration<float>(now - myLastHeardFromRemote).count();
 
 			if (timeSinceLastHeardFromRemote > 30.f) // TODO: Allow setting timeout.
@@ -74,6 +94,40 @@ namespace client
 		}
 		break;
 		}
+	}
+
+	CommonUtilities::Contract<Client::ServerInfo> Client::RequestServerInfo(const networking::SocketAddress& aServer, float aTimeout)
+	{
+		CommonUtilities::Contract<Client::ServerInfo> contract;
+		CommonUtilities::Task<Client::ServerInfo> task = contract.GetTask();
+
+		shared::NM_ServerInfoRequest request = {
+
+		};
+
+		shared::NetworkManager::NetworkMessage message;
+		if (not CreateMessage(&message, request))
+		{
+			task.Cancel();
+			return contract;
+		}
+
+		if (not SendTo(message, aServer))
+		{
+			task.Cancel();
+			return contract;
+		}
+
+		myServerInfoContracts.push_back(
+			ServerInfoContract{
+				.Remote = aServer,
+				.Task = std::move(task),
+				.TimeOfIssue = std::chrono::steady_clock::now(),
+				.Timeout = aTimeout
+			}
+		);
+
+		return contract;
 	}
 
 	bool Client::RequestConnection(const networking::SocketAddress& aServer)
@@ -161,6 +215,33 @@ namespace client
 			return false;
 		}
 		return myNetworkManager.SendTo(aMessage, myServer);
+	}
+
+	void Client::OnServerInfo(const shared::NetworkManager::MessageCallbackData<shared::NM_ServerInfo>& aData)
+	{
+		Client& client = *reinterpret_cast<Client*>(aData.UserData);
+
+		auto it = client.myServerInfoContracts.begin();
+		while (it != client.myServerInfoContracts.end())
+		{
+			ServerInfoContract& infoContract = *it;
+
+			if (infoContract.Remote == aData.Address)
+			{
+				infoContract.Task.Finish(
+					ServerInfo{
+						.Name = aData.Message.Name,
+						.Description = aData.Message.Description
+					}
+				);
+
+				it = client.myServerInfoContracts.erase(it);
+			}
+			else
+			{
+				it = std::next(it);
+			}
+		}
 	}
 
 	void Client::OnConnectionResult(const shared::NetworkManager::MessageCallbackData<shared::NM_ConnectionResult>& aData)

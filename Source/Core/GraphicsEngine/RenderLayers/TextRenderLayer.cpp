@@ -155,7 +155,7 @@ void Text::SetText(const wchar_t* aText) noexcept
 void Text::SetText(const char* aText) noexcept
 {
 	myVerticesIsDirty |= true;
-	myText = CommonUtilities::UTF8(aText);
+	myText = CommonUtilities::ToWide(aText, CommonUtilities::STRING_ENCODING_UTF8);
 }
 
 std::wstring_view Text::GetText() const noexcept

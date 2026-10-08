@@ -46,6 +46,7 @@ namespace server
 		bool CreateMessage(shared::NetworkManager::NetworkMessage* outMessage, const _MessageTy& aMessage);
 
 	private:
+		static void OnInfoRequest(const shared::NetworkManager::MessageCallbackData<shared::NM_ServerInfoRequest>& aData);
 		static void OnConnectionRequest(const shared::NetworkManager::MessageCallbackData<shared::NM_ConnectionRequest>& aData);
 		static void OnDisconnect(const shared::NetworkManager::MessageCallbackData<shared::NM_Disconnect>& aData);
 
@@ -94,10 +95,17 @@ namespace server
 	inline void Server::SetMessageCallback(MessageCallback<_MessageTy> aCallback, void* aUserData)
 	{
 		myNetworkManager.SetCallback<_MessageTy>(&MessageCallbackDecorator<_MessageTy>, this);
-		myCallbacks[_MessageTy::ID] = _CallbackEntry{
-			.Callback = aCallback,
-			.UserData = aUserData
-		};
+		if (aCallback == nullptr)
+		{
+			myCallbacks.erase(_MessageTy::ID);
+		}
+		else
+		{
+			myCallbacks[_MessageTy::ID] = _CallbackEntry{
+				.Callback = aCallback,
+				.UserData = aUserData
+			};
+		}
 	}
 
 	template<class _MessageTy>

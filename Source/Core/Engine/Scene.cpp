@@ -12,6 +12,10 @@ void Scene::Initialize(Engine* aEngine)
 
 	OnInit();
 }
+void Scene::Shutdown()
+{
+	OnShutdown();
+}
 Scene::~Scene()
 {
 }

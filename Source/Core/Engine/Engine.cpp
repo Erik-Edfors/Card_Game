@@ -226,6 +226,7 @@ void Engine::PopScene()
 {
 	if (not mySceneStack.empty())
 	{
+		mySceneStack.back()->Shutdown();
 		mySceneStack.pop_back();
 	}
 }

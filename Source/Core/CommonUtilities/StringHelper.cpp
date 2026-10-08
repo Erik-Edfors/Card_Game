@@ -42,44 +42,43 @@
 #define NOMCX //- Modem Configuration Extensions
 #include <Windows.h>
 
-std::wstring CommonUtilities::UTF8(const std::string_view aView)
+static UINT GetCodePage(CommonUtilities::STRING_ENCODING aEncoding)
 {
-    const UINT result = MultiByteToWideChar(CP_UTF8, NULL, aView.data(), -1, NULL, NULL);
+    switch (aEncoding)
+    {
+    case CommonUtilities::STRING_ENCODING_ANSI: return CP_ACP;
+    case CommonUtilities::STRING_ENCODING_UTF7: return CP_UTF7;
+    case CommonUtilities::STRING_ENCODING_UTF8: return CP_UTF8;
+    default: return CP_ACP;
+    }
+}
+
+std::wstring CommonUtilities::ToWide(const std::string_view aView, STRING_ENCODING aEncoding)
+{
+    const UINT codePage = GetCodePage(aEncoding);
+
+    const UINT result = MultiByteToWideChar(codePage, NULL, aView.data(), -1, NULL, NULL);
     if (result == 0)
     {
         return {};
     }
-
     std::wstring output(result - 1, L'\0');
-    MultiByteToWideChar(CP_UTF8, NULL, aView.data(), -1, output.data(), result);
-
+    MultiByteToWideChar(codePage, NULL, aView.data(), -1, output.data(), result);
     return output;
 }
 
-std::wstring CommonUtilities::UTF7(const std::string_view aView)
+std::string CommonUtilities::ToNarrow(const std::wstring_view aView, STRING_ENCODING aEncoding)
 {
-    const UINT result = MultiByteToWideChar(CP_UTF7, NULL, aView.data(), -1, NULL, NULL);
-    if (result == 0)
-    {
-        return {};
-    }
+    const UINT codePage = GetCodePage(aEncoding);
 
-    std::wstring output(result - 1, L'\0');
-    MultiByteToWideChar(CP_UTF7, NULL, aView.data(), -1, output.data(), result);
-
-    return output;
-}
-
-std::string CommonUtilities::ANSI(const std::wstring_view aView)
-{
-    const UINT result = WideCharToMultiByte(CP_ACP, NULL, aView.data(), -1, NULL, NULL, NULL, NULL);
+    const UINT result = WideCharToMultiByte(codePage, NULL, aView.data(), -1, NULL, NULL, NULL, NULL);
     if (result == 0)
     {
         return {};
     }
 
     std::string output(result - 1, '\0');
-    WideCharToMultiByte(CP_ACP, WC_COMPOSITECHECK, aView.data(), -1, output.data(), result, NULL, NULL);
+    WideCharToMultiByte(codePage, WC_COMPOSITECHECK, aView.data(), -1, output.data(), result, NULL, NULL);
 
     return output;
 }

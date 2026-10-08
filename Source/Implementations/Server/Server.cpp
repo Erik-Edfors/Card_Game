@@ -7,6 +7,20 @@
 
 namespace server
 {
+	void Server::OnInfoRequest(const shared::NetworkManager::MessageCallbackData<shared::NM_ServerInfoRequest>& aData)
+	{
+		Server& server = *reinterpret_cast<Server*>(aData.UserData);
+		if (server.IsAllowingConnections())
+		{
+			shared::NM_ServerInfo info = {
+				.Name = "Server!",
+				.Description = "A Description!"
+			};
+			shared::NetworkManager::NetworkMessage message;
+			server.CreateMessage(&message, info);
+			server.SendTo(message, aData.Address);
+		}
+	}
 	void Server::OnConnectionRequest(const shared::NetworkManager::MessageCallbackData<shared::NM_ConnectionRequest>& aData)
 	{
 		Server& server = *reinterpret_cast<Server*>(aData.UserData);
@@ -61,6 +75,7 @@ namespace server
 			return false;
 		}
 
+		myNetworkManager.SetCallback<shared::NM_ServerInfoRequest>(&OnInfoRequest, this);
 		myNetworkManager.SetCallback<shared::NM_ConnectionRequest>(&OnConnectionRequest, this);
 		myNetworkManager.SetCallback<shared::NM_Disconnect>(&OnDisconnect, this);
 
