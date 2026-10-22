@@ -1,9 +1,13 @@
 #include "Server.pch.h"
 #include "MainScene.h"
 #include "../ServerApp.h"
+#include "../Server.h"
+#include "LobbyScene.h"
 
-//#include <Core/imgui/imgui.h>
-//#include <Core/imgui/misc/cpp/imgui_stdlib.h>
+#include <Core/Engine/Engine.h>
+
+#include <Core/imgui/imgui.h>
+#include <Core/imgui/misc/cpp/imgui_stdlib.h>
 
 //#include <Core/CommonUtilities/ArgsParser.hpp>
 //#include <Core/CommonUtilities/StringHash.hpp>
@@ -63,14 +67,14 @@ namespace server
 	//	}
 	//}
 
-	MainScene::MainScene(server::ServerApp* aServer) : 
+	MainScene::MainScene(server::ServerApp* aServer) :
 		myServer(aServer)
 	{
 	}
 	MainScene::~MainScene()
 	{
 	}
-	
+
 	//shared::Console& MainScene::GetConsole() noexcept
 	//{
 	//	return myConsole;
@@ -96,6 +100,43 @@ namespace server
 #define LOG_CATEGORY CLASS_CATEGORY"::OnUpdate"
 
 		aDeltaTime;
+
+		Server& server = myServer->GetServer();
+
+		const ImGuiWindowFlags flags = ImGuiWindowFlags_None
+			| ImGuiWindowFlags_NoBringToFrontOnFocus
+			| ImGuiWindowFlags_NoDecoration
+			| ImGuiWindowFlags_NoMove
+			| ImGuiWindowFlags_NoResize;
+
+		ImGui::SetNextWindowPos({ 0.f, 0.f });
+		ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
+		if (ImGui::Begin("Main", nullptr, flags))
+		{
+			std::string input = server.GetName();
+			ImGui::Text("Name");
+			ImGui::SetNextItemWidth(-1);
+			if (ImGui::InputText("##Name", &input, ImGuiInputTextFlags_AutoSelectAll))
+			{
+				server.SetName(input);
+			}
+			input = server.GetDescription();
+			ImGui::Text("Description");
+			ImGui::SetNextItemWidth(-1);
+			if (ImGui::InputText("##Description", &input, ImGuiInputTextFlags_AutoSelectAll))
+			{
+				server.SetDescription(input);
+			}
+			ImGui::NewLine();
+			if (ImGui::Button("Host Game", { -1.f, 0.f }))
+			{
+				if (not server.GetName().empty())
+				{
+					GetEngine().ChangeScene<LobbyScene>(myServer);
+				}
+			}
+		}
+		ImGui::End();
 
 		//ImGui::ShowDemoWindow();
 

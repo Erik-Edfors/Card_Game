@@ -39,9 +39,11 @@ namespace client
 		Client();
 		~Client();
 
-		bool Initialize(networking::Port aPort);
+		bool Initialize();
 		bool Shutdown();
 		void Update();
+
+		shared::ClientID GetID() const noexcept;
 
 		CommonUtilities::Contract<ServerInfo> RequestServerInfo(const networking::SocketAddress& aServer, float aTimeout = 30.f);
 
@@ -60,9 +62,10 @@ namespace client
 		void SetMessageCallback(MessageCallback<_MessageTy> aCallback, void* aUserData, bool aAllowForeign = false);
 
 		template<class _MessageTy>
-		bool CreateMessage(shared::NetworkManager::NetworkMessage* outMessage, const _MessageTy& aMessage);
+		bool CreateMessage(shared::NetworkManager::NetworkMessage* outMessage, const _MessageTy& aMessage, bool aAssured);
 
 	private:
+		static void OnKeepAlive(const MessageCallbackData<shared::NM_KeepAlive>& aData);
 		static void OnServerInfo(const shared::NetworkManager::MessageCallbackData<shared::NM_ServerInfo>& aData);
 		static void OnConnectionResult(const shared::NetworkManager::MessageCallbackData<shared::NM_ConnectionResult>& aData);
 		static void OnDisconnect(const shared::NetworkManager::MessageCallbackData<shared::NM_Disconnect>& aData);
@@ -72,7 +75,7 @@ namespace client
 		template<class _MessageTy>
 		static void MessageCallbackDecorator(const shared::NetworkManager::MessageCallbackData<_MessageTy>& aData);
 
-		struct ServerInfoContract
+		struct _ServerInfoContract
 		{
 			networking::SocketAddress Remote;
 			CommonUtilities::Task<ServerInfo> Task;
@@ -80,30 +83,33 @@ namespace client
 			float Timeout;
 		};
 
-		std::vector<ServerInfoContract> myServerInfoContracts;
-
-		shared::NetworkManager myNetworkManager;
-		size_t myConnectionAttempts;
-		std::chrono::steady_clock::time_point myConnectionStart;
-		std::chrono::steady_clock::time_point myLastHeardFromRemote;
-		networking::SocketAddress myServer;
-
-		CLIENT_CONNECTION_STATUS myConnectionStatus;
-
-		struct _CallbackEntry
+		struct _MessageCallbackEntry
 		{
 			void* Callback;
 			void* UserData;
 			bool AllowForeign;
 		};
 
-		std::unordered_map<MessageID, _CallbackEntry> myCallbacks;
+		shared::ClientID myID;
+
+		std::vector<_ServerInfoContract> myServerInfoContracts;
+
+		shared::NetworkManager myNetworkManager;
+		size_t myConnectionAttempts;
+		std::chrono::steady_clock::time_point myConnectionStart;
+		std::chrono::steady_clock::time_point myLastHeardFromRemote;
+		std::chrono::steady_clock::time_point myLastKeepAlive;
+		networking::SocketAddress myServer;
+
+		CLIENT_CONNECTION_STATUS myConnectionStatus;
+
+		std::unordered_map<MessageID, _MessageCallbackEntry> myCallbacks;
 	};
 
 	template<class _MessageTy>
-	inline bool Client::CreateMessage(shared::NetworkManager::NetworkMessage* outMessage, const _MessageTy& aMessage)
+	inline bool Client::CreateMessage(shared::NetworkManager::NetworkMessage* outMessage, const _MessageTy& aMessage, bool aAssured)
 	{
-		return myNetworkManager.CreateMessage<_MessageTy>(outMessage, aMessage);
+		return myNetworkManager.CreateMessage<_MessageTy>(outMessage, aMessage, aAssured);
 	}
 
 	template<class _MessageTy>
@@ -116,7 +122,7 @@ namespace client
 		}
 		else
 		{
-			myCallbacks[_MessageTy::ID] = _CallbackEntry{
+			myCallbacks[_MessageTy::ID] = _MessageCallbackEntry{
 				.Callback = aCallback,
 				.UserData = aUserData,
 				.AllowForeign = aAllowForeign
@@ -135,7 +141,7 @@ namespace client
 			return;
 		}
 
-		const _CallbackEntry& entry = it->second;
+		const _MessageCallbackEntry& entry = it->second;
 
 		bool isForeign = not client.IsConnectedTo(aData.Address);
 

@@ -6,16 +6,6 @@ Scene::Scene() :
 	myEngine(nullptr)
 {
 }
-void Scene::Initialize(Engine* aEngine)
-{
-	myEngine = aEngine;
-
-	OnInit();
-}
-void Scene::Shutdown()
-{
-	OnShutdown();
-}
 Scene::~Scene()
 {
 }
@@ -32,4 +22,22 @@ Engine& Scene::GetEngine() noexcept
 cs::ComponentSystem& Scene::GetComponentSystem() noexcept
 {
 	return myComponentSystem;
+}
+void Scene::Initialize(Engine* aEngine)
+{
+	myEngine = aEngine;
+
+	OnInit();
+}
+void Scene::Shutdown()
+{
+	OnShutdown();
+}
+void Scene::Enter()
+{
+	OnEnter();
+}
+void Scene::Exit()
+{
+	OnExit();
 }

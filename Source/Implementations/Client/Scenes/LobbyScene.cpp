@@ -1,5 +1,6 @@
 #include "Client.pch.h"
 #include "LobbyScene.h"
+#include "GameScene.h"
 
 #include "../ClientApp.h"
 
@@ -17,15 +18,28 @@
 #include <Core/Assets/TextureRegistry.h>
 #include <Core/Assets/FontRegistry.h>
 
+#include <Core/imgui/imgui.h>
+#include <Core/imgui/misc/cpp/imgui_stdlib.h>
+
 namespace client
 {
-	LobbyScene::LobbyScene(ClientApp* aClient) : 
-		myClient(aClient)
+	LobbyScene::LobbyScene(ClientApp* aApp) :
+		myClient(aApp),
+		myGameScene(std::make_unique<GameScene>(aApp))
 	{
+	}
+
+	Client& LobbyScene::GetClient() const noexcept
+	{
+		return myClient->GetClient();
 	}
 
 	void LobbyScene::OnInit()
 	{
+		Client& client = myClient->GetClient();
+
+		client.SetMessageCallback<shared::NM_StartGame>(&OnStartGame, this);
+
 		cs::ComponentSystem& cs = GetComponentSystem();
 		cs.RegisterComponentType<TransformComponent>();
 		cs.RegisterComponentType<CameraComponent>();
@@ -52,7 +66,7 @@ namespace client
 
 			controller;
 		}
-		
+
 		{
 			cs::EntityHandle spriteHandle = cs.CreateEntity();
 
@@ -78,8 +92,17 @@ namespace client
 		}
 	}
 
+	void LobbyScene::OnShutdown()
+	{
+		Client& client = myClient->GetClient();
+
+		client.SetMessageCallback<shared::NM_StartGame>(nullptr, nullptr);
+	}
+
 	void LobbyScene::OnUpdate(float aDeltaTime)
 	{
+		aDeltaTime;
+
 		const CommonUtilities::Matrix4x4f view = myCamera->GetView();
 		const CommonUtilities::Matrix4x4f projection = myCamera->GetProjection();
 
@@ -92,6 +115,49 @@ namespace client
 		textRL->SetView(view);
 		textRL->SetProjection(projection);
 
-		aDeltaTime;
+		const ImGuiWindowFlags flags = ImGuiWindowFlags_None
+			| ImGuiWindowFlags_NoBringToFrontOnFocus
+			| ImGuiWindowFlags_NoDecoration
+			| ImGuiWindowFlags_NoMove
+			| ImGuiWindowFlags_NoResize;
+
+		ImGui::SetNextWindowPos({ 0.f, 0.f });
+		ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
+		if (ImGui::Begin("Lobby", nullptr, flags))
+		{
+			if (ImGui::InputText("Name", &myNameInput))
+			{
+				if (myNameInput.length() >= 24)
+				{
+					myNameInput.resize(24);
+				}
+
+				shared::NM_NameRequest nameRequest{
+					.Name = myNameInput
+				};
+				shared::NetworkManager::NetworkMessage message;
+				GetClient().CreateMessage(&message, nameRequest, true);
+				GetClient().Send(message);
+			}
+		}
+		ImGui::End();
+	}
+
+	//void LobbyScene::OnAssignPlayer(const Client::MessageCallbackData<shared::NM_AssignPlayer>& aData)
+	//{
+	//	LobbyScene& scene = *reinterpret_cast<LobbyScene*>(aData.UserData);
+
+	//	if (scene.GetClient().GetID() == aData.Message.Client)
+	//	{
+	//		scene.myGameScene->SetPlayerID(aData.Message.PlayerID);
+	//	}
+	//}
+
+	void LobbyScene::OnStartGame(const Client::MessageCallbackData<shared::NM_StartGame>& aData)
+	{
+		LobbyScene& scene = *reinterpret_cast<LobbyScene*>(aData.UserData);
+
+		GameScene* gameScene = scene.GetEngine().PushScene<GameScene>(std::move(scene.myGameScene));
+		gameScene->InitializeGame(aData.Message.NumPlayers);
 	}
 }

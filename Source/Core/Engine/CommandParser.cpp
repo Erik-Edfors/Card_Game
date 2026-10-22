@@ -13,17 +13,22 @@ CommandParser::CommandParser()
 
 CommandParser::~CommandParser() = default;
 
-void CommandParser::AddCommand(const char* aSignature, CommandCallback aCallback, void* aUserData)
+void CommandParser::AddCommand(std::string_view aSignature, CommandCallback aCallback, void* aUserData)
 {
-	myCommands.emplace(aSignature, _CommandEntry{ .Callback = aCallback, .UserData = aUserData });
+	myCommands.emplace(aSignature.data(), _CommandEntry{.Callback = aCallback, .UserData = aUserData});
 }
 
-bool CommandParser::Call(const char* aCommand)
+void CommandParser::RemoveCommand(std::string_view aSignature)
+{
+	myCommands.erase(aSignature.data());
+}
+
+bool CommandParser::Call(std::string_view aCommand)
 {
 	const std::regex firstRx("^\\s*(?:([^\"][^\\s]*)|\"([^\"]*)\")\\s*(.*)$");
 	std::smatch matches;
 	std::vector<std::string> strArgs;
-	std::string current = aCommand;
+	std::string current = aCommand.data();
 	while (std::regex_match(current, matches, firstRx))
 	{
 		strArgs.push_back(matches[1].matched ? matches[1] : matches[2]);
@@ -43,7 +48,14 @@ bool CommandParser::Call(const char* aCommand)
 			arguments[i] = strArgs[i].c_str();
 		}
 		_CommandEntry& entry = it->second;
-		entry.Callback(arguments, numArguments, entry.UserData);
+
+		const CallbackData data = {
+			.Arguments = arguments,
+			.NumArguments = numArguments,
+			.UserData = entry.UserData
+		};
+
+		entry.Callback(data);
 		return true;
 	}
 	return false;

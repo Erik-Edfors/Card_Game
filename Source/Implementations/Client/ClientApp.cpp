@@ -51,12 +51,9 @@
 
 namespace client
 {
-	static void Ping(const char* const* aArguments, size_t aNumArguments, void* aUserData)
+	static void Ping(const CommandParser::CallbackData& aData)
 	{
-		aArguments;
-		aNumArguments;
-
-		ClientApp& client = *reinterpret_cast<ClientApp*>(aUserData);
+		ClientApp& client = *reinterpret_cast<ClientApp*>(aData.UserData);
 
 		networking::SocketAddress address = {
 			.Port = 54322,
@@ -65,16 +62,13 @@ namespace client
 
 		shared::NM_Ping ping;
 		shared::NetworkManager::NetworkMessage message;
-		client.GetClient().CreateMessage(&message, ping);
+		client.GetClient().CreateMessage(&message, ping, false);
 		client.GetClient().SendTo(message, address);
 	}
 
-	static void Connect(const char* const* aArguments, size_t aNumArguments, void* aUserData)
+	static void Connect(const CommandParser::CallbackData& aData)
 	{
-		aArguments;
-		aNumArguments;
-
-		ClientApp& client = *reinterpret_cast<ClientApp*>(aUserData);
+		ClientApp& client = *reinterpret_cast<ClientApp*>(aData.UserData);
 
 		networking::SocketAddress address = {
 			.Port = 54322,
@@ -82,7 +76,7 @@ namespace client
 		};
 
 		CommonUtilities::ArgsParser parser;
-		parser.Parse(aArguments, aNumArguments);
+		parser.Parse(aData.Arguments, aData.NumArguments);
 
 		const CommonUtilities::Argument* arguments;
 		size_t numArguments;
@@ -109,12 +103,9 @@ namespace client
 		client.GetClient().RequestConnection(address);
 	}
 
-	static void Status(const char* const* aArguments, size_t aNumArguments, void* aUserData)
+	static void Status(const CommandParser::CallbackData& aData)
 	{
-		aArguments;
-		aNumArguments;
-
-		ClientApp& client = *reinterpret_cast<ClientApp*>(aUserData);
+		ClientApp& client = *reinterpret_cast<ClientApp*>(aData.UserData);
 		Console& console = client.GetEngine().GetConsole();
 
 		static const std::unordered_map<unsigned int, std::string> connectionStatusNames = {
@@ -192,7 +183,7 @@ namespace client
 			return false;
 		}
 
-		if (not myClient->Initialize(54321)) //TODO: Allow user selected port
+		if (not myClient->Initialize()) //TODO: Allow user selected port
 		{
 			LOG_ERROR(LOG_CATEGORY, "Failed to initialize NetworkManager!");
 			return false;

@@ -4,7 +4,10 @@
 namespace cardgame
 {
 	Card::Card() :
-		myGame(nullptr)
+		myGame(nullptr),
+		myID(0),
+		myLocation(0),
+		myOwner(0)
 	{
 	}
 
@@ -12,22 +15,103 @@ namespace cardgame
 	{
 	}
 
-	void Card::Init(Game* aGame)
+	void Card::Init(Game* aGame, CardID aID)
 	{
 		myGame = aGame;
+		myID = aID;
 		myEventListener.SetPusher(&myGame->GetEventPusher());
+
+		OnInit();
 	}
-	void Card::Update()
+	bool Card::Update()
 	{
+		bool action = false;
+
 		CommonUtilities::Event event;
 		while (myEventListener.GetEvent(&event))
 		{
-			OnEvent(event);
+			action |= OnEvent(event.ID, event.Data);
 		}
+
+		return action;
 	}
 
-	Game* Card::GetGame() const noexcept
+	void Card::ResetLocks() noexcept
 	{
-		return myGame;
+		myRepetitionLocks.clear();
+	}
+
+	CardID Card::GetID() const noexcept
+	{
+		return myID;
+	}
+
+	void Card::SetOwner(PlayerID aOwner) noexcept
+	{
+		myOwner = aOwner;
+	}
+
+	PlayerID Card::GetOwner() const noexcept
+	{
+		return myOwner;
+	}
+
+	void Card::SetLocation(LocationID aLocation)
+	{
+		myLocation = aLocation;
+	}
+
+	LocationID Card::GetLocation() const noexcept
+	{
+		return myLocation;
+	}
+
+	Game& Card::GetGame() const noexcept
+	{
+		return *myGame;
+	}
+
+	bool Card::IsInHand() const noexcept
+	{
+		const Player* player = GetGame().GetPlayer(GetOwner());
+		return player != nullptr && player->GetHandLocation() == GetLocation();
+	}
+	bool Card::IsInPlay() const noexcept
+	{
+		const Player* player = GetGame().GetPlayer(GetOwner());
+		return player != nullptr && player->GetPlayLocation() == GetLocation();
+	}
+	bool Card::IsInDeck() const noexcept
+	{
+		const Player* player = GetGame().GetPlayer(GetOwner());
+		return player != nullptr && player->GetDeckLocation() == GetLocation();
+	}
+	bool Card::IsInDiscard() const noexcept
+	{
+		const Player* player = GetGame().GetPlayer(GetOwner());
+		return player != nullptr && player->GetDiscardLocation() == GetLocation();
+	}
+
+	bool Card::RepeatLock(CommonUtilities::StringHash aLock) noexcept
+	{
+		if (myRepetitionLocks.contains(aLock))
+		{
+			return false;
+		}
+		myRepetitionLocks.insert(aLock);
+		return true;
+	}
+
+	void Card::BeginListen(CommonUtilities::StringHash aEvent) noexcept
+	{
+		myEventListener.BeginListen(aEvent);
+	}
+	void Card::StopListen(CommonUtilities::StringHash aEvent) noexcept
+	{
+		myEventListener.StopListen(aEvent);
+	}
+	void Card::StopListen() noexcept
+	{
+		myEventListener.StopListen();
 	}
 }

@@ -5,14 +5,21 @@
 class CommandParser
 {
 public:
-	using CommandCallback = void(*)(const char* const* aArguments, size_t aNumArguments, void* aUserData);
+	struct CallbackData
+	{
+		const char* const* Arguments;
+		size_t NumArguments;
+		void* UserData;
+	};
+	using CommandCallback = void(*)(const CallbackData& aData);
 
 	CommandParser();
 	~CommandParser();
 
-	void AddCommand(const char* aSignature, CommandCallback aCallback, void* aUserData);
+	void AddCommand(std::string_view aSignature, CommandCallback aCallback, void* aUserData);
+	void RemoveCommand(std::string_view aSignature);
 
-	bool Call(const char* aCommand);
+	bool Call(std::string_view aCommand);
 
 private:
 	struct _CommandEntry

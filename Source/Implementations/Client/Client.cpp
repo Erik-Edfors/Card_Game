@@ -4,11 +4,13 @@
 namespace client
 {
 	Client::Client() :
+		myID(shared::INVALID_CLIENT_ID),
 		myConnectionStatus(CLIENT_CONNECTION_DISCONNECTED),
 		myConnectionAttempts(0),
 		myServer({ }),
 		myConnectionStart({}),
-		myLastHeardFromRemote({})
+		myLastHeardFromRemote({}),
+		myLastKeepAlive({})
 	{
 	}
 
@@ -16,13 +18,14 @@ namespace client
 	{
 	}
 
-	bool Client::Initialize(networking::Port aPort)
+	bool Client::Initialize()
 	{
-		if (not myNetworkManager.Initialize(4096, aPort))
+		if (not myNetworkManager.Initialize(4096))
 		{
 			return false;
 		}
 
+		SetMessageCallback<shared::NM_KeepAlive>(&OnKeepAlive, nullptr);
 		myNetworkManager.SetCallback<shared::NM_ServerInfo>(&OnServerInfo, this);
 		myNetworkManager.SetCallback<shared::NM_ConnectionResult>(&OnConnectionResult, this);
 		myNetworkManager.SetCallback<shared::NM_Disconnect>(&OnDisconnect, this);
@@ -52,7 +55,7 @@ namespace client
 			auto it = myServerInfoContracts.begin();
 			while (it != myServerInfoContracts.end())
 			{
-				ServerInfoContract& infoContract = *it;
+				_ServerInfoContract& infoContract = *it;
 
 				if (std::chrono::duration<float>(now - infoContract.TimeOfIssue).count() > infoContract.Timeout)
 				{
@@ -91,9 +94,33 @@ namespace client
 			{
 				Disconnect(shared::NETWORK_DISCONNECT_TIMED_OUT);
 			}
+
+			// Sending ping to server to keep connection alive
+			{
+				//TODO: Allow user to set interval.
+				constexpr float keepAliveInterval = 5.f;
+				if (std::chrono::duration<float>(now - myLastKeepAlive).count() > keepAliveInterval)
+				{
+					shared::NM_KeepAlive keepAlive = {
+					};
+					shared::NetworkManager::NetworkMessage message;
+					if (CreateMessage(&message, keepAlive, false))
+					{
+						if (Send(message))
+						{
+							myLastKeepAlive = now;
+						}
+					}
+				}
+			}
 		}
 		break;
 		}
+	}
+
+	shared::ClientID Client::GetID() const noexcept
+	{
+		return myID;
 	}
 
 	CommonUtilities::Contract<Client::ServerInfo> Client::RequestServerInfo(const networking::SocketAddress& aServer, float aTimeout)
@@ -106,7 +133,7 @@ namespace client
 		};
 
 		shared::NetworkManager::NetworkMessage message;
-		if (not CreateMessage(&message, request))
+		if (not CreateMessage(&message, request, true))
 		{
 			task.Cancel();
 			return contract;
@@ -119,7 +146,7 @@ namespace client
 		}
 
 		myServerInfoContracts.push_back(
-			ServerInfoContract{
+			_ServerInfoContract{
 				.Remote = aServer,
 				.Task = std::move(task),
 				.TimeOfIssue = std::chrono::steady_clock::now(),
@@ -162,7 +189,7 @@ namespace client
 			.Reason = aReason
 		};
 		shared::NetworkManager::NetworkMessage message;
-		if (not myNetworkManager.CreateMessage(&message, disconnect))
+		if (not myNetworkManager.CreateMessage(&message, disconnect, true))
 		{
 			// TODO: Log failed to create message.
 			// This causes a dirty disconnect.
@@ -217,6 +244,11 @@ namespace client
 		return myNetworkManager.SendTo(aMessage, myServer);
 	}
 
+	void Client::OnKeepAlive(const MessageCallbackData<shared::NM_KeepAlive>& aData)
+	{
+		aData;
+	}
+
 	void Client::OnServerInfo(const shared::NetworkManager::MessageCallbackData<shared::NM_ServerInfo>& aData)
 	{
 		Client& client = *reinterpret_cast<Client*>(aData.UserData);
@@ -224,7 +256,7 @@ namespace client
 		auto it = client.myServerInfoContracts.begin();
 		while (it != client.myServerInfoContracts.end())
 		{
-			ServerInfoContract& infoContract = *it;
+			_ServerInfoContract& infoContract = *it;
 
 			if (infoContract.Remote == aData.Address)
 			{
@@ -268,6 +300,7 @@ namespace client
 
 		// Connection accepted.
 		client.myConnectionStatus = CLIENT_CONNECTION_CONNECTED;
+		client.myID = aData.Message.Client;
 		client.myLastHeardFromRemote = std::chrono::steady_clock::now();
 	}
 
@@ -287,6 +320,13 @@ namespace client
 			return;
 		}
 
+		if (client.GetID() != aData.Message.Client)
+		{
+			// Another client was disconnected.
+			//TODO: Pass along to a callback, so disconnecting clients can be handled.
+			return;
+		}
+
 		// Connection accepted.
 		client.myConnectionStatus = CLIENT_CONNECTION_DISCONNECTED;
 		client.myServer = {};
@@ -297,7 +337,7 @@ namespace client
 
 		};
 		shared::NetworkManager::NetworkMessage message;
-		if (not myNetworkManager.CreateMessage(&message, connectionRequest))
+		if (not myNetworkManager.CreateMessage(&message, connectionRequest, true))
 		{
 			// TODO: Log failed to create message.
 			return false;

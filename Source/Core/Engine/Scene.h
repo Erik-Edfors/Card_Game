@@ -21,11 +21,15 @@ protected:
 	Scene();
 	virtual void OnInit() {};
 	virtual void OnShutdown() {};
+	virtual void OnEnter() {};
+	virtual void OnExit() {};
 	virtual void OnUpdate(float aDeltaTime) { aDeltaTime; };
 
 private:
 	void Initialize(Engine* aEngine);
 	void Shutdown();
+	void Enter();
+	void Exit();
 
 	Engine* myEngine;
 	cs::ComponentSystem myComponentSystem;

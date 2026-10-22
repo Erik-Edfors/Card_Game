@@ -1,4 +1,74 @@
-# Plan
+# User Experience
+
+## Joining a game
+The following is a description of the wished user experience of joining a game.
+
+The user launches the game, entering the main menu. Inside there are 4 options. Host Game, Join Game, Settings and Exit.
+
+In this example the user clicks Join Game and enters the server select screen. In the server select screen, the user is greeted by a list of saved servers and the option to add a new server. The status of the server should be listed underneath the server name, and description. f.ex 'In Lobby', 'In Game', 'Not Reponding'.
+
+Clicking join on a server with status 'In Lobby' either connects the user to the server, or opens a password screen followed before connecting. Then the lobby screen is opened.
+
+In the lobby, the user can enter a name, and maybe color. Other players do the same, and now it is easy to distinguish players apart.
+
+When the game starts, the user is moved into the game screen. The bottom half of the screen is entirely dedicated to showing the user his hand and board of play.
+
+The upper half of the screen is dedicated to showing the other players boards.
+
+## Hosting a game
+The following is a description of the wished user experience of hosting a game.
+
+The user launches the server, entering the setup screen.
+
+The server loads the previous name, description and password from a saved file. The user can change these freely.
+
+The user then presses host, and is taken to the server lobby screen.
+
+The user launches the game and goes through the steps of **Joining a game** until they enter server select. Here there is the server under local servers.
+
+The user joins their own server, along with their friends who want to join the game.
+
+The user goes back to the server and presses 'Start Game'.
+
+The game starts, and the user can play the same as any other game.
+
+If a player missbehaves or the host has a power trip, they can at any moment enter the server and kick or ban a player. Banning a player saves their IP address in a blacklist. Only the server has access to the address of players. This information is NEVER shared between clients.
+
+# Game Rules
+
+## Starting
+* Cards are registered in a registry, which is passed to the CardFactory for creating cards during the game.
+* Players are initialized.
+* Each Client is assigned a PlayerID.
+* Clients send their deck list to the server, which populates their decks with the given cards.
+* Server draws each player 5 randomized cards from their decks.
+
+## Turn Order
+Every player has a TurnIndex, which the order of is randomised once at the start of the game.
+
+During a turn, only the player whose turn it is should be able to influence the servers game stateobject. (May change during development)
+
+At the start of a turn, the player whose turn it is, draws 1 card.
+
+## Playing cards
+By hovering over a card in their hand, and left clicking the mouse, a player can play a card after paying any associated costs.
+
+Playing a card means moving it to the play area, face up. Then any effects dictated by the card happens, followed after by any effect that triggers from the card entering play.
+
+## Life
+Some cards can cause a change of life to a player. When a player reaches 0 or lower life. They lose the game.
+
+## Cards
+Cards can have a cost, which must be payed to play the card.
+
+Cards can have triggers.
+ 
+Triggers call one or more effects.
+
+All triggers are locked when triggered until all effects and triggers are played out. This means that a card cannot have a trigger that is in some remove way triggered again by its own effect in an infinite loop.
+
+<!-- [Old Plan] -->
+<!-- # Plan
 
 ## Player & Hand
 The player and hand will have a manager that creates, moves, plays and sends commands to server.
@@ -152,4 +222,4 @@ Players are an odd one. They will need to manage zones and resources. They do no
 
 Client manages connection and communications as well as actions/commands. A user makes an action, the Client creates a command, sends it to the server for verification and plays the command. It should also undo commands when asked by the server.
 
-Commands are EVERYTHING a user can do to interact with the game except for CLIENT ONLY actions, such as menus. Commands should be applied to a scene so that it is easy to access by a client in a known location. How commands interact with game objects is to be determined. But most likely networked objects will have IDs that identify them, probably given by the server.
+Commands are EVERYTHING a user can do to interact with the game except for CLIENT ONLY actions, such as menus. Commands should be applied to a scene so that it is easy to access by a client in a known location. How commands interact with game objects is to be determined. But most likely networked objects will have IDs that identify them, probably given by the server. -->

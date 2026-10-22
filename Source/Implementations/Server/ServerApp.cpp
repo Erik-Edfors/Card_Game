@@ -23,12 +23,9 @@
 
 namespace server
 {
-	static void Ping(const char* const* aArguments, size_t aNumArguments, void* aUserData)
+	static void Ping(const CommandParser::CallbackData& aData)
 	{
-		aArguments;
-		aNumArguments;
-
-		ServerApp& server = *reinterpret_cast<ServerApp*>(aUserData);
+		ServerApp& server = *reinterpret_cast<ServerApp*>(aData.UserData);
 
 		networking::SocketAddress address = {
 			.Port = 54321,
@@ -37,16 +34,13 @@ namespace server
 
 		shared::NM_Ping ping;
 		shared::NetworkManager::NetworkMessage message;
-		server.GetServer().CreateMessage(&message, ping);
+		server.GetServer().CreateMessage(&message, ping, false);
 		server.GetServer().SendTo(message, address);
 	}
 
-	static void Status(const char* const* aArguments, size_t aNumArguments, void* aUserData)
+	static void Status(const CommandParser::CallbackData& aData)
 	{
-		aArguments;
-		aNumArguments;
-
-		ServerApp& server = *reinterpret_cast<ServerApp*>(aUserData);
+		ServerApp& server = *reinterpret_cast<ServerApp*>(aData.UserData);
 		Console& console = server.GetEngine().GetConsole();
 
 		console.PrintLine(std::format("Allowing Connection: {}", server.GetServer().IsAllowingConnections()));
@@ -119,7 +113,7 @@ namespace server
 			LOG_ERROR(LOG_CATEGORY, "Failed to initialize NetworkManager!");
 			return false;
 		}
-		myServer->SetAllowingConnections(true);	// TODO: Only allow when game is ready.
+		//myServer->SetAllowingConnections(true);	// TODO: Only allow when game is ready.
 
 		myEngine->GetCommandParser().AddCommand(
 			"ping",
@@ -137,7 +131,7 @@ namespace server
 		myEngine->GetGraphicsEngine().SetVSyncEnabled(true);
 
 		myEngine->SetConsoleEnabled(true);
-		myEngine->GetConsole().SetOpen(true);
+		//myEngine->GetConsole().SetOpen(true);
 
 		myEngine->PushScene<MainScene>(this);
 
@@ -150,6 +144,10 @@ namespace server
 #define LOG_CATEGORY CLASS_CATEGORY"::Shutdown"
 
 		bool result = true;
+
+		myEngine->GetCommandParser().RemoveCommand("ping");
+		myEngine->GetCommandParser().RemoveCommand("status");
+
 		if (not myEngine->Shutdown())
 		{
 			LOG_ERROR(LOG_CATEGORY, "Failed to shutdown Engine.");

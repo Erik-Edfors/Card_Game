@@ -27,7 +27,7 @@ static void locConsoleInputCallback(Console& aConsole, std::string_view aInput, 
 	}
 }
 
-Engine::Engine() : 
+Engine::Engine() :
 	myConsoleEnabled(false)
 {
 }
@@ -173,6 +173,44 @@ void Engine::Update()
 	{
 		mySceneStack.back()->Update(myTimeManager->GetDelta());
 	}
+
+	for (PushPopEntry& entry : myPushPopEntries)
+	{
+		switch (entry.Type)
+		{
+		case PushPopType::Pop:
+		{
+			if (not mySceneStack.empty())
+			{
+				Scene& toPop = *mySceneStack.back();
+				toPop.Exit();
+				toPop.Shutdown();
+
+				mySceneStack.pop_back();
+				if (not mySceneStack.empty())
+				{
+					Scene& toEnter = *mySceneStack.back();
+					toEnter.Enter();
+				}
+			}
+		}
+		break;
+		case PushPopType::Push:
+		{
+			if (not mySceneStack.empty())
+			{
+				Scene& toExit = *mySceneStack.back();
+				toExit.Exit();
+			}
+			mySceneStack.push_back(std::move(entry.Scene));
+			Scene& toPush = *mySceneStack.back();
+			toPush.Initialize(this);
+			toPush.Enter();
+		}
+		break;
+		}
+	}
+	myPushPopEntries.clear();
 }
 
 void Engine::EndFrame()
@@ -224,11 +262,23 @@ Scene* Engine::GetScene() noexcept
 
 void Engine::PopScene()
 {
-	if (not mySceneStack.empty())
-	{
-		mySceneStack.back()->Shutdown();
-		mySceneStack.pop_back();
-	}
+	PushPopEntry pop = {
+		.Type = PushPopType::Pop,
+		.Scene = nullptr
+	};
+	myPushPopEntries.push_back(std::move(pop));
+
+	//if (not mySceneStack.empty())
+	//{
+	//	mySceneStack.back()->Exit();
+	//	mySceneStack.back()->Shutdown();
+	//	mySceneStack.pop_back();
+
+	//	if (not mySceneStack.empty())
+	//	{
+	//		mySceneStack.back()->Enter();
+	//	}
+	//}
 }
 
 #undef FILE_CATEGORY 

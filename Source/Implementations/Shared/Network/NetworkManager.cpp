@@ -5,6 +5,18 @@
 
 namespace shared
 {
+	NBS_DEFINE_TYPE(
+		NetworkManager::MessageHeader,
+		Assured
+	);
+
+	NBS_DEFINE_TYPE(
+		NetworkManager::NetworkMessage,
+		Header,
+		ID,
+		Data
+	);
+
 	NetworkManager::NetworkManager() :
 		mySocket(nullptr)
 	{
@@ -18,7 +30,7 @@ namespace shared
 		}
 	}
 
-	bool NetworkManager::Initialize(size_t aMaxMessageSize, networking::Port aPort)
+	bool NetworkManager::Initialize(size_t aMaxMessageSize)
 	{
 		if (not networking::Socket::CreateSocket(
 			&mySocket,
@@ -27,15 +39,6 @@ namespace shared
 			networking::NETWORKING_INTERNET_PROTOCOL_UDP,
 			aMaxMessageSize
 		))
-		{
-			return false;
-		}
-
-		networking::SocketAddress address = networking::SocketAddress{
-			.Port = aPort,
-			.IPAddress = networking::NETWORKING_IPV4_ADDRESS_ANY
-		};
-		if (not mySocket->Bind(address))
 		{
 			return false;
 		}
@@ -54,40 +57,47 @@ namespace shared
 		return true;
 	}
 
+	bool NetworkManager::Bind(networking::Port aPort)
+	{
+		networking::SocketAddress address = networking::SocketAddress{
+			.Port = aPort,
+			.IPAddress = networking::NETWORKING_IPV4_ADDRESS_ANY
+		};
+		if (not mySocket->Bind(address))
+		{
+			return false;
+		}
+		return true;
+	}
+
 	void NetworkManager::Update(size_t aMaxRecieve)
 	{
 		CommonUtilities::Serializer serializer;
 
 		networking::SocketAddress address;
-		void* message;
-		size_t messageSize;
+		void* messageData;
+		size_t messageDataSize;
 
 		size_t numMessages = 0;
-		while (numMessages++ < aMaxRecieve && mySocket->RecieveFrom(&address, &message, &messageSize))
+		while (numMessages++ < aMaxRecieve && mySocket->RecieveFrom(&address, &messageData, &messageDataSize))
 		{
-			if (not CheckHash(message, messageSize))
+			if (not CheckHash(messageData, messageDataSize))
 			{
 				//TODO: Log, failed to read message hash.
 				continue;
 			}
 
-			CommonUtilities::MemoryReader reader(message, messageSize);
+			CommonUtilities::MemoryReader reader(messageData, messageDataSize);
 			reader.SetCursor(sizeof(unsigned int));	// To skip hash
 
-			MessageHeader header;
-			if (not serializer.Read(header, reader, sizeof(header)))
+			NetworkMessage message;
+			if (not serializer.Read(message, reader, 4096))
 			{
 				//TODO: Log failed to read header.
 				continue;
 			}
 
-			std::string rawID;
-			if (not serializer.Read(rawID, reader, 64))
-			{
-				//TODO: Log, failed to read message id.
-				continue;
-			}
-			const MessageID id = rawID.c_str();
+			const MessageID id = message.ID.c_str();
 
 			auto it = myCallbacks.find(id);
 			if (it == myCallbacks.end())
@@ -97,12 +107,32 @@ namespace shared
 			}
 
 			const CallbackEntry& entry = it->second;
-			entry.Callback(reinterpret_cast<char*>(message) + reader.GetCursor(), messageSize - reader.GetCursor(), address, entry.UserCallback, entry.UserData);
+			entry.Callback(message.Data.data(), message.Data.size(), address, entry.UserCallback, entry.UserData);
 		}
 	}
 	bool NetworkManager::SendTo(const NetworkMessage& aMessage, const networking::SocketAddress& aRemote)
 	{
-		return mySocket->SendTo(aRemote, aMessage.Data.data(), aMessage.Data.size());
+		CommonUtilities::MemoryWriter writer(myBuffer.data(), myBuffer.size());
+		CommonUtilities::Serializer serializer;
+
+		writer.SetCursor(sizeof(unsigned int));
+
+		if (not serializer.Write(aMessage, writer))
+		{
+			return false;
+		}
+
+		const size_t messageSize = writer.GetCursor();
+
+		const unsigned int hash = CreateHash(myBuffer.data() + sizeof(unsigned int), messageSize - sizeof(unsigned int));
+
+		writer.SetCursor(0);
+		if (not serializer.Write(hash, writer))
+		{
+			return false;
+		}
+
+		return mySocket->SendTo(aRemote, myBuffer.data(), messageSize);
 	}
 	unsigned int NetworkManager::CreateHash(const void* aMessage, size_t aMessageSize) noexcept
 	{

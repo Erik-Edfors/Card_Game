@@ -1,5 +1,8 @@
 #pragma once
+#include "../Defines.h"
 #include "MessageID.h"
+#include <Implementations/CardGame/Defines.h>
+#include <Implementations/CardGame/Commands.h>
 #include <Core/CommonUtilities/Serialization/TypeMacros.h>
 
 namespace shared
@@ -7,6 +10,11 @@ namespace shared
 	struct NM_Ping
 	{
 		NETWORK_DEFINE_MESSAGE_ID("PING");
+	};
+
+	struct NM_KeepAlive
+	{
+		NETWORK_DEFINE_MESSAGE_ID("KEEP_ALIVE");
 	};
 
 	struct NM_ServerInfoRequest
@@ -45,6 +53,7 @@ namespace shared
 	{
 		NETWORK_DEFINE_MESSAGE_ID("DISCONNECT");
 
+		ClientID Client;
 		NETWORK_DISCONNECT_REASON Reason;
 	};
 
@@ -52,6 +61,79 @@ namespace shared
 	{
 		NETWORK_DEFINE_MESSAGE_ID("CONNECTION_RESULT");
 
+		ClientID Client;
 		bool Accepted;
+	};
+
+	struct NM_NameRequest
+	{
+		NETWORK_DEFINE_MESSAGE_ID("REQ_NAME");
+
+		std::string Name;
+	};
+	NBS_DEFINE_TYPE(
+		NM_NameRequest,
+		Name
+	);
+
+	struct NM_NameChange
+	{
+		NETWORK_DEFINE_MESSAGE_ID("NAME_CHANGE");
+
+		ClientID Client;
+		std::string Name;
+	};
+	NBS_DEFINE_TYPE(
+		NM_NameChange,
+		Client,
+		Name
+	);
+
+	struct NM_AssignPlayer
+	{
+		NETWORK_DEFINE_MESSAGE_ID("ASSIGN_PLAYER");
+
+		cardgame::PlayerID PlayerID;
+	};
+
+	struct NM_StartGame
+	{
+		NETWORK_DEFINE_MESSAGE_ID("START_GAME");
+
+		size_t NumPlayers;
+	};
+
+	struct NM_GameReady
+	{
+		NETWORK_DEFINE_MESSAGE_ID("GAME_READY");
+	};
+
+#pragma region Client Actions
+
+	//------------------
+	// CLIENT ACTIONS
+	//------------------
+
+	struct NM_PlayCardRequest
+	{
+		NETWORK_DEFINE_MESSAGE_ID("REQ_PLAY_CARD");
+
+		cardgame::PlayerID Player;
+		cardgame::CardID Card;
+	};
+
+	struct NM_EndTurnRequest
+	{
+		NETWORK_DEFINE_MESSAGE_ID("REQ_END_TURN");
+	};
+
+#pragma endregion
+
+	struct NM_Command
+	{
+		NETWORK_DEFINE_MESSAGE_ID("COMMAND");
+
+		cardgame::Command Command;
+		size_t Index;
 	};
 }

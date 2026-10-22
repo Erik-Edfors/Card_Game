@@ -107,11 +107,12 @@ namespace CommonUtilities
 		typedef _IDHasher Hasher;
 
 		typedef TEventPusher<_IDTy, _DataTy, _IDHasher> EventPusher;
+		typedef TEventManager<_IDTy, _DataTy, _IDHasher> EventManager;
 		typedef TGlobalEventManager<_IDTy, _DataTy, _IDHasher> GlobalEventManager;
 		typedef TEvent<_IDTy, _DataTy> Event;
 
 	private:
-		friend class EventPusher;
+		friend class EventManager;
 
 	public:
 		TEventListener() noexcept;

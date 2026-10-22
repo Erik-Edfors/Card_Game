@@ -92,16 +92,35 @@ public:
 
 	Scene* GetScene() noexcept;
 
+	//TODO: Change PushScene and PopScene to only add/remove scenes after update.
 	template<class _SceneTy, class... _Args>
-	void PushScene(_Args&&... aArgs);
-
+	_SceneTy* PushScene(_Args&&... aArgs);
 	template<class _SceneTy>
-	void ChangeScene();
+	_SceneTy* PushScene(std::unique_ptr<_SceneTy>&& aScene);
+
+	template<class _SceneTy, class... _Args>
+	_SceneTy* ChangeScene(_Args&&... aArgs);
+	template<class _SceneTy>
+	_SceneTy* ChangeScene(std::unique_ptr<_SceneTy>&& aScene);
 
 	void PopScene();
 
 private:
 	bool myConsoleEnabled;
+
+	enum class PushPopType
+	{
+		Push,
+		Pop
+	};
+
+	struct PushPopEntry
+	{
+		PushPopType Type;
+		std::unique_ptr<Scene> Scene;
+	};
+
+	std::vector<PushPopEntry> myPushPopEntries;
 
 	graphics::PImpl<graphics::Window> myWindow;
 
@@ -118,15 +137,32 @@ private:
 };
 
 template<class _SceneTy, class... _Args>
-inline void Engine::PushScene(_Args&&... aArgs)
+inline _SceneTy* Engine::PushScene(_Args&&... aArgs)
 {
-	mySceneStack.push_back(std::make_unique<_SceneTy>(std::forward<_Args>(aArgs)...));
-	mySceneStack.back()->Initialize(this);
+	return PushScene(std::make_unique<_SceneTy>(aArgs...));
+}
+template<class _SceneTy>
+inline _SceneTy* Engine::PushScene(std::unique_ptr<_SceneTy>&& aScene)
+{
+	_SceneTy* scene = aScene.get();
+	PushPopEntry push = {
+		.Type = PushPopType::Push,
+		.Scene = std::move(aScene)
+	};
+	myPushPopEntries.push_back(std::move(push));
+
+	return scene;
 }
 
-template<class _SceneTy>
-inline void Engine::ChangeScene()
+template<class _SceneTy, class... _Args>
+inline _SceneTy* Engine::ChangeScene(_Args&&... aArgs)
 {
 	PopScene();
-	PushScene<_SceneTy>();
+	return PushScene<_SceneTy>(std::make_unique<_SceneTy>(aArgs...));
+}
+template<class _SceneTy>
+inline _SceneTy* Engine::ChangeScene(std::unique_ptr<_SceneTy>&& aScene)
+{
+	PopScene();
+	return PushScene<_SceneTy>(std::move(aScene));
 }

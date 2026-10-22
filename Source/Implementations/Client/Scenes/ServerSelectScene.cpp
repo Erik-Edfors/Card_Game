@@ -1,7 +1,10 @@
 #include "Client.pch.h"
 #include "ServerSelectScene.h"
+#include "LobbyScene.h"
 #include "../Client.h"
 #include "../ClientApp.h"
+
+#include <Core/Engine/Engine.h>
 
 #include <Core/Assets/AssetManager.h>
 
@@ -184,6 +187,7 @@ namespace client
 			case CLIENT_CONNECTION_CONNECTED:
 			{
 				ImGui::Button("Connected!", { -1.f, 0.f });
+				GetEngine().ChangeScene<LobbyScene>(myClient);
 			}
 			break;
 			}
