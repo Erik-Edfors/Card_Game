@@ -114,6 +114,40 @@ namespace shared
 	// CLIENT ACTIONS
 	//------------------
 
+	struct NM_SubmitPlayers
+	{
+		NETWORK_DEFINE_MESSAGE_ID("SUBMIT_PLAYERS");
+
+		cardgame::PlayerID Players[cardgame::MAX_SELECTED_PLAYERS];
+		size_t Count;
+	};
+	struct NM_SubmitCards
+	{
+		NETWORK_DEFINE_MESSAGE_ID("SUBMIT_CARDS");
+
+		cardgame::CardID Cards[cardgame::MAX_SELECTED_CARDS];
+		size_t Count;
+	};
+	struct NM_SubmitLocations
+	{
+		NETWORK_DEFINE_MESSAGE_ID("SUBMIT_LOCATIONS");
+
+		cardgame::LocationID Locations[cardgame::MAX_SELECTED_LOCATIONS];
+		size_t Count;
+	};
+	struct NM_SubmitAmount
+	{
+		NETWORK_DEFINE_MESSAGE_ID("SUBMIT_AMOUNT");
+
+		int Amount;
+	};
+	struct NM_SubmitOption
+	{
+		NETWORK_DEFINE_MESSAGE_ID("SUBMIT_OPTION");
+
+		size_t Index;
+	};
+
 	struct NM_PlayCardRequest
 	{
 		NETWORK_DEFINE_MESSAGE_ID("REQ_PLAY_CARD");

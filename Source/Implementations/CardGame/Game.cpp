@@ -1,12 +1,13 @@
 #include "Game.h"
 #include <ranges>
+#include "Task.h"
 
 namespace cardgame
 {
 	Game::Game() :
-		myNextCardID(1),
-		myNextLocationID(1),
-		myNextPlayerID(1),
+		myNextCardID(INVALID_CARD_ID + 1),
+		myNextLocationID(INVALID_LOCATION_ID + 1),
+		myNextPlayerID(INVALID_PLAYER_ID + 1),
 		myTurnPlayer(nullptr),
 		myTurnIndex(0)
 	{
@@ -50,13 +51,26 @@ namespace cardgame
 
 		switch (aCommand.Type)
 		{
+		case COMMAND_SUBMIT_PLAYERS: result = Do(aCommand.Command.SubmitPlayers); break;
+		case COMMAND_SUBMIT_CARDS: result = Do(aCommand.Command.SubmitCards); break;
+		case COMMAND_SUBMIT_LOCATIONS: result = Do(aCommand.Command.SubmitLocations); break;
+		case COMMAND_SUBMIT_AMOUNT: result = Do(aCommand.Command.SubmitAmount); break;
+		case COMMAND_SUBMIT_OPTION: result = Do(aCommand.Command.SubmitOption); break;
+
 		case COMMAND_PLAY: result = Do(aCommand.Command.Play); break;
 		case COMMAND_MOVE_CARD: result = Do(aCommand.Command.MoveCard); break;
 		case COMMAND_CREATE_CARD: result = Do(aCommand.Command.CreateCard); break;
 		case COMMAND_END_TURN: result = Do(aCommand.Command.EndTurn); break;
 		case COMMAND_START: result = Do(aCommand.Command.Start); break;
+		case COMMAND_HEAL_PLAYER: result = Do(aCommand.Command.HealPlayer); break;
 		case COMMAND_DAMAGE_PLAYER: result = Do(aCommand.Command.DamagePlayer); break;
+		case COMMAND_ADD_PLAYER_RESOURCES: result = Do(aCommand.Command.AddPlayerResources); break;
+		case COMMAND_REMOVE_PLAYER_RESOURCES: result = Do(aCommand.Command.RemovePlayerResources); break;
 		case COMMAND_SET_NAME: result = Do(aCommand.Command.SetName); break;
+
+		default:
+			//TODO: Log invalid command type.
+			return false;
 		}
 
 		if (result)
@@ -66,6 +80,20 @@ namespace cardgame
 		}
 
 		return result;
+	}
+
+	bool Game::HasTasks() const noexcept
+	{
+		return not myTaskQueue.empty();
+	}
+
+	const Task* Game::GetTask() const noexcept
+	{
+		if (not HasTasks())
+		{
+			return nullptr;
+		}
+		return myTaskQueue.front();
 	}
 
 	const Player* Game::GetPlayer(PlayerID aID) const noexcept
@@ -278,6 +306,128 @@ namespace cardgame
 	PlayerID Game::CreatePlayerID() noexcept
 	{
 		return myNextPlayerID++;
+	}
+
+	bool Game::PushTask(Task* aTask)
+	{
+		myTaskQueue.push(aTask);
+
+		return true;
+	}
+
+	bool Game::Do(SubmitPlayersCommand aCommand)
+	{
+		if (myTaskQueue.empty())
+		{
+			return false;
+		}
+		if (myTaskQueue.front()->GetType() != TASK_TARGET_PLAYERS)
+		{
+			return false;
+		}
+
+		TargetPlayersTask* task = static_cast<TargetPlayersTask*>(myTaskQueue.front());
+
+		if (task->Submit(aCommand.Players, aCommand.Count))
+		{
+			myTaskQueue.pop();
+
+			EventTaskSubmitted taskSubmitted = {
+			};
+			myEventManager.Push(EVENT_TASK_SUBMITTED, taskSubmitted);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	bool Game::Do(SubmitCardsCommand aCommand)
+	{
+		if (myTaskQueue.empty())
+		{
+			return false;
+		}
+		if (myTaskQueue.front()->GetType() != TASK_TARGET_CARDS)
+		{
+			return false;
+		}
+		
+		TargetCardsTask* task = static_cast<TargetCardsTask*>(myTaskQueue.front());
+
+		if (task->Submit(aCommand.Cards, aCommand.Count))
+		{
+			myTaskQueue.pop();
+			return true;
+		}
+
+		return false;
+	}
+
+	bool Game::Do(SubmitLocationsCommand aCommand)
+	{
+		if (myTaskQueue.empty())
+		{
+			return false;
+		}
+		if (myTaskQueue.front()->GetType() != TASK_TARGET_LOCATIONS)
+		{
+			return false;
+		}
+
+		TargetLocationsTask* task = static_cast<TargetLocationsTask*>(myTaskQueue.front());
+
+		if (task->Submit(aCommand.Locations, aCommand.Count))
+		{
+			myTaskQueue.pop();
+			return true;
+		}
+
+		return false;
+	}
+
+	bool Game::Do(SubmitAmountCommand aCommand)
+	{
+		if (myTaskQueue.empty())
+		{
+			return false;
+		}
+		if (myTaskQueue.front()->GetType() != TASK_AMOUNT)
+		{
+			return false;
+		}
+
+		AmountTask* task = static_cast<AmountTask*>(myTaskQueue.front());
+
+		if (task->Submit(aCommand.Amount))
+		{
+			myTaskQueue.pop();
+			return true;
+		}
+
+		return false;
+	}
+
+	bool Game::Do(SubmitOptionCommand aCommand)
+	{
+		if (myTaskQueue.empty())
+		{
+			return false;
+		}
+		if (myTaskQueue.front()->GetType() != TASK_OPTION)
+		{
+			return false;
+		}
+
+		OptionTask* task = static_cast<OptionTask*>(myTaskQueue.front());
+
+		if (task->Submit(aCommand.Index))
+		{
+			myTaskQueue.pop();
+			return true;
+		}
+
+		return false;
 	}
 
 	bool Game::Do(PlayCommand aCommand)

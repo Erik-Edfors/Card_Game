@@ -38,6 +38,12 @@ namespace server
 		static void OnCmdGame(const CommandParser::CallbackData& aData);
 
 		//static void OnCommandRequest(const Server::MessageCallbackData<shared::NM_CommandRequest>& aData);
+		static void OnSubmitPlayers(const Server::MessageCallbackData<shared::NM_SubmitPlayers>& aData);
+		static void OnSubmitCards(const Server::MessageCallbackData<shared::NM_SubmitCards>& aData);
+		static void OnSubmitLocations(const Server::MessageCallbackData<shared::NM_SubmitLocations>& aData);
+		static void OnSubmitAmount(const Server::MessageCallbackData<shared::NM_SubmitAmount>& aData);
+		static void OnSubmitOption(const Server::MessageCallbackData<shared::NM_SubmitOption>& aData);
+
 		static void OnPlayCardRequest(const Server::MessageCallbackData<shared::NM_PlayCardRequest>& aData);
 		static void OnEndTurnRequest(const Server::MessageCallbackData<shared::NM_EndTurnRequest>& aData);
 		//static void OnGameReady(const Server::MessageCallbackData<shared::NM_GameReady>& aData);

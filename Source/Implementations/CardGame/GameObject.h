@@ -4,10 +4,13 @@
 namespace cardgame
 {
 	class Game;
+	class Task;
 
 	class GameObject
 	{
 	protected:
+		bool PushTask(Game& aGame, Task* aTask);
+
 		bool Do(Game& aGame, PlayCommand aCommand);
 		bool Do(Game& aGame, MoveCardCommand aCommand);
 		bool Do(Game& aGame, CreateCardCommand aCommand);

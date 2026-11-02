@@ -3,6 +3,7 @@
 
 namespace cardgame
 {
+	bool GameObject::PushTask(Game& aGame, Task* aTask) { return static_cast<GameObjectInterface&>(aGame).PushTask(aTask); }
 	bool GameObject::Do(Game& aGame, PlayCommand aCommand) { return static_cast<GameObjectInterface&>(aGame).Do(aCommand); }
 	bool GameObject::Do(Game& aGame, MoveCardCommand aCommand) { return static_cast<GameObjectInterface&>(aGame).Do(aCommand); }
 	bool GameObject::Do(Game& aGame, CreateCardCommand aCommand) { return static_cast<GameObjectInterface&>(aGame).Do(aCommand); }

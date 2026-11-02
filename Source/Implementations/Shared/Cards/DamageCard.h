@@ -1,5 +1,6 @@
 #pragma once
 #include <Implementations/CardGame/Card.h>
+#include "../Tasks/TargetOpponentTask.h"
 
 namespace shared
 {
@@ -17,5 +18,7 @@ namespace shared
 	protected:
 		virtual void OnInit() override;
 		virtual bool OnEvent(CommonUtilities::StringHash aEvent, const std::any& aData) override;
+	private:
+		TargetOpponentTask myTargetTask;
 	};
 }

@@ -38,6 +38,7 @@ namespace shared
 	void DamageCard::OnInit()
 	{
 		BeginListen(cardgame::Game::EVENT_CARD_PLAYED);
+		BeginListen(cardgame::Game::EVENT_TASK_SUBMITTED);
 	}
 
 	bool DamageCard::OnEvent(CommonUtilities::StringHash aEvent, const std::any& aData)
@@ -49,36 +50,25 @@ namespace shared
 			cardgame::Game::EventCardPlayed data = std::any_cast<cardgame::Game::EventCardPlayed>(aData);
 			if (data.Card == GetID() && RepeatLock("PLAYED"))
 			{
-				size_t numPlayers = GetGame().GetNumPlayers();
-				const cardgame::Player** players = new const cardgame::Player * [numPlayers];
-				numPlayers = GetGame().GetPlayers(players, numPlayers);
+				myTargetTask = {};
+				myTargetTask.SetOwner(GetOwner());
 
-				for (size_t i = 0; i < numPlayers; i++)
-				{
-					const cardgame::Player& player = *players[i];
-					if (GetOwner() != player.GetID())
-					{
-						cardgame::DamagePlayerCommand command = {
-							.Source = GetID(),
-							.Target = player.GetID(),
-							.Amount = 2
-						};
-
-						Do(GetGame(), command);
-					}
-				}
-
-				const cardgame::Player* owner = GetGame().GetPlayer(GetOwner());
-
-				cardgame::MoveCardCommand command = {
-					.Card = GetID(),
-					.Location = owner->GetDiscardLocation()
+				return PushTask(GetGame(), &myTargetTask);
+			}
+		}
+		break;
+		case cardgame::Game::EVENT_TASK_SUBMITTED:
+		{
+			if (myTargetTask.IsFinished())
+			{
+				cardgame::DamagePlayerCommand command = {
+					.Source = GetID(),
+					.Target = myTargetTask.GetTarget(),
+					.Amount = 2
 				};
-				Do(GetGame(), command);
+				myTargetTask = {};
 
-				delete[] players;
-
-				return true;
+				return Do(GetGame(), command);
 			}
 		}
 		break;

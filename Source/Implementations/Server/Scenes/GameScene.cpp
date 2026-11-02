@@ -14,6 +14,8 @@
 
 #include <Implementations/Shared/Cards/Cards.h>
 
+#include <Implementations/CardGame/Task.h>
+
 namespace server
 {
 	GameScene::GameScene(ServerApp* aServerApp) :
@@ -107,6 +109,11 @@ namespace server
 
 		server.SetMessageCallback<shared::NM_PlayCardRequest>(&OnPlayCardRequest, this);
 		server.SetMessageCallback<shared::NM_EndTurnRequest>(&OnEndTurnRequest, this);
+		server.SetMessageCallback<shared::NM_SubmitPlayers>(&OnSubmitPlayers, this);
+		server.SetMessageCallback<shared::NM_SubmitCards>(&OnSubmitCards, this);
+		server.SetMessageCallback<shared::NM_SubmitLocations>(&OnSubmitLocations, this);
+		server.SetMessageCallback<shared::NM_SubmitAmount>(&OnSubmitAmount, this);
+		server.SetMessageCallback<shared::NM_SubmitOption>(&OnSubmitOption, this);
 
 		GetEngine().GetCommandParser().AddCommand("game", &OnCmdGame, this);
 
@@ -202,6 +209,11 @@ namespace server
 		//server.SetMessageCallback<shared::NM_CommandRequest>(nullptr, nullptr);
 		server.SetMessageCallback<shared::NM_PlayCardRequest>(nullptr, nullptr);
 		server.SetMessageCallback<shared::NM_EndTurnRequest>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitPlayers>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitCards>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitLocations>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitAmount>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitOption>(nullptr, nullptr);
 	}
 	void GameScene::OnUpdate(float aDeltaTime)
 	{
@@ -277,12 +289,123 @@ namespace server
 		}
 	}
 
-	void GameScene::OnPlayCardRequest(const Server::MessageCallbackData<shared::NM_PlayCardRequest>& aData)
+	void GameScene::OnSubmitPlayers(const Server::MessageCallbackData<shared::NM_SubmitPlayers>& aData)
 	{
 		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
 
+		// Sent invalid count.
+		if (aData.Message.Count > cardgame::MAX_SELECTED_PLAYERS)
+		{
+			return;
+		}
+
+		cardgame::SubmitPlayersCommand submitPlayers = {};
+		submitPlayers.Count = aData.Message.Count;
+		memcpy(submitPlayers.Players, aData.Message.Players, sizeof(submitPlayers.Players));
+
+		cardgame::Command command = {
+			.Type = cardgame::COMMAND_SUBMIT_PLAYERS,
+			.Command = {
+				.SubmitPlayers = submitPlayers
+			}
+		};
+
+		scene.PushCommand(command);
+	}
+
+	void GameScene::OnSubmitCards(const Server::MessageCallbackData<shared::NM_SubmitCards>& aData)
+	{
+		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+
+		// Sent invalid count.
+		if (aData.Message.Count > cardgame::MAX_SELECTED_CARDS)
+		{
+			return;
+		}
+
+		cardgame::SubmitCardsCommand submitCards = {};
+		submitCards.Count = aData.Message.Count;
+		memcpy(submitCards.Cards, aData.Message.Cards, sizeof(submitCards.Cards));
+
+		cardgame::Command command = {
+			.Type = cardgame::COMMAND_SUBMIT_CARDS,
+			.Command = {
+				.SubmitCards = submitCards
+			}
+		};
+
+		scene.PushCommand(command);
+	}
+
+	void GameScene::OnSubmitLocations(const Server::MessageCallbackData<shared::NM_SubmitLocations>& aData)
+	{
+		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+
+		// Sent invalid count.
+		if (aData.Message.Count > cardgame::MAX_SELECTED_LOCATIONS)
+		{
+			return;
+		}
+
+		cardgame::SubmitLocationsCommand submitLocations = {};
+		submitLocations.Count = aData.Message.Count;
+		memcpy(submitLocations.Locations, aData.Message.Locations, sizeof(submitLocations.Locations));
+
+		cardgame::Command command = {
+			.Type = cardgame::COMMAND_SUBMIT_LOCATIONS,
+			.Command = {
+				.SubmitLocations = submitLocations
+			}
+		};
+
+		scene.PushCommand(command);
+	}
+
+	void GameScene::OnSubmitAmount(const Server::MessageCallbackData<shared::NM_SubmitAmount>& aData)
+	{
+		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+
+		cardgame::Command command = {
+			.Type = cardgame::COMMAND_SUBMIT_AMOUNT,
+			.Command = {
+				.SubmitAmount = {
+					.Amount = aData.Message.Amount
+				}
+			}
+		};
+
+		scene.PushCommand(command);
+	}
+
+	void GameScene::OnSubmitOption(const Server::MessageCallbackData<shared::NM_SubmitOption>& aData)
+	{
+		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+
+		cardgame::Command command = {
+			.Type = cardgame::COMMAND_SUBMIT_OPTION,
+			.Command = {
+				.SubmitOption = {
+					.Index = aData.Message.Index
+				}
+			}
+		};
+
+		scene.PushCommand(command);
+	}
+
+	void GameScene::OnPlayCardRequest(const Server::MessageCallbackData<shared::NM_PlayCardRequest>& aData)
+	{
+		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+		cardgame::Game& game = scene.myGame;
+
 		//TODO: Verify that action is allowed by client.
 		// Make sure client has authority over the given player id.
+
+		// All tasks must be finished before any cards can be played.
+		if (game.HasTasks())
+		{
+			return;
+		}
 
 		//TODO: Randomize card in draw pile to move to hand.
 		cardgame::Command play = {
@@ -312,6 +435,12 @@ namespace server
 
 		//TODO: Verify that action is allowed by client.
 		// Make sure client has authority over the current turn player.
+
+		// All tasks must be finished before any cards can be played.
+		if (game.HasTasks())
+		{
+			return;
+		}
 
 		cardgame::Command endTurn = {
 			.Type = cardgame::COMMAND_END_TURN,
