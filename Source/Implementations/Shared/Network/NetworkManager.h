@@ -1,10 +1,13 @@
 #pragma once
+#include "../Defines.h"
 #include "MessageID.h"
 #include <Core/Networking/Socket.h>
 #include <Core/CommonUtilities/Serialization/Serialization.hpp>
 #include <Core/CommonUtilities/Serialization/Serializer.hpp>
 #include <Core/CommonUtilities/Serialization/MemoryWrapper.hpp>
+#include <map>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace shared
 {
@@ -13,6 +16,7 @@ namespace shared
 	public:
 		struct MessageHeader
 		{
+			MessageIndex Index;
 			bool Assured;
 		};
 
@@ -22,6 +26,15 @@ namespace shared
 			std::string ID;
 			std::vector<char> Data;
 		};
+
+		struct AssuredTimeoutCallbackData
+		{
+			networking::SocketAddress Remote;
+			MessageIndex Index;
+			void* UserData;
+		};
+
+		using AssuredTimeoutCallback = void(*)(const AssuredTimeoutCallbackData& aData);
 
 		template<class _MessageTy>
 		struct MessageCallbackData
@@ -43,10 +56,13 @@ namespace shared
 		bool Shutdown();
 
 		bool Bind(networking::Port aPort);
+		bool IsBound() const;
 
 		void Update(size_t aMaxRecieve);
 
 		bool SendTo(const NetworkMessage& aMessage, const networking::SocketAddress& aRemote);
+
+		void SetAssuredTimeoutCallback(AssuredTimeoutCallback aCallback, void* aUserData);
 
 		template<class _MessageTy>
 		bool CreateMessage(NetworkMessage* outMessage, const _MessageTy& aMessage, bool aAssured);
@@ -66,14 +82,44 @@ namespace shared
 			void* UserData;
 		};
 
+		struct SentAssuredMessageEntry
+		{
+			std::chrono::steady_clock::time_point TimeFirstSent;
+			std::chrono::steady_clock::time_point TimeLastSent;
+			networking::SocketAddress Remote;
+			NetworkMessage Message;
+		};
+
+		struct RecievedAssuredMessageEntry
+		{
+			std::chrono::steady_clock::time_point TimeFirstRecieved;
+			networking::SocketAddress Remote;
+		};
+
+		bool AlreadyRecieved(const networking::SocketAddress& aRemote, MessageIndex aIndex) const noexcept;
+		void UpdateRecieved();
+		void UpdateSent();
+
+		bool ResendAssured(const SentAssuredMessageEntry& aEntry);
+
+		size_t BufferMessage(const NetworkMessage& aMessage);
+
 		static unsigned int CreateHash(const void* aMessage, size_t aMessageSize) noexcept;
 		static bool CheckHash(const void* aMessage, size_t aMessageSize) noexcept;
 
 		template<class _MessageTy>
 		static void ProcessRecievedMessage(const void* aData, size_t aDataSize, const networking::SocketAddress& aRemote, void* aUserCallback, void* aUserData);
 
+		MessageIndex myNextMessageIndex;
+
+		std::map<MessageIndex, SentAssuredMessageEntry> mySentAssuredMessages;
+		std::map<networking::SocketAddress, std::map<MessageIndex, RecievedAssuredMessageEntry>> myRecievedAssuredMessages;
+
 		std::unordered_map<MessageID, CallbackEntry> myCallbacks;
 		CommonUtilities::Serializer mySerializer;
+
+		AssuredTimeoutCallback myAssuredTimeoutCallback;
+		void* myAssuredTimeoutCallbackUserData;
 
 		networking::Socket* mySocket;
 
@@ -99,6 +145,7 @@ namespace shared
 
 		*outMessage = NetworkMessage{
 			.Header = MessageHeader{
+				.Index = 0u,
 				.Assured = aAssured
 			},
 			.ID = _MessageTy::ID.GetString(),

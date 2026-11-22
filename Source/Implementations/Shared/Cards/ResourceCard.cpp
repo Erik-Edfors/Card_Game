@@ -29,7 +29,7 @@ namespace shared
 
 	const char* ResourceCard::GetDescription() const
 	{
-		return "Add 1 Resource at the beginning of your Turn.";
+		return "Add 1 RP at the Beginning of your Turn.";
 	}
 
 	void ResourceCard::OnInit()

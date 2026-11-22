@@ -22,6 +22,8 @@ namespace cardgame
 		LocationID GetDiscardLocation() const noexcept;
 		TurnIndex GetTurnIndex() const noexcept;
 
+		void SetTurnIndex(TurnIndex aTurnIndex) noexcept;
+
 		void SetResourceCount(ResourceCount aAmount) noexcept;
 		ResourceCount GetResourceCount() const noexcept;
 

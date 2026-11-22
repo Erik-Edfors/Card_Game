@@ -101,6 +101,12 @@ namespace graphics
 	{
 		if (outPtr)
 		{
+			if (*outPtr != nullptr)
+			{
+				(**outPtr).RemoveReference();
+				*outPtr = nullptr;
+			}
+
 			_CastTy* ptr = dynamic_cast<_CastTy*>(myRefObject);
 
 			if (ptr)

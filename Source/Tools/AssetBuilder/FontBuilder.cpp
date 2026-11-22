@@ -168,37 +168,6 @@ bool FontBuilder::Build(const std::filesystem::path& aInputFile, const std::file
 		return false;
 	}
 
-	//// TEMP: Temporary bmp export for testing purposes.
-	//bool saveResult = msdfgen::saveBmp(generator.atlasStorage(), aOutputFile.string().c_str());
-	//if (saveResult == false)
-	//{
-	//	std::wcout << L"Failed to save bitmap!" << std::endl;
-	//	msdfgen::destroyFont(font);
-	//	msdfgen::deinitializeFreetype(ft);
-	//	return false;
-	//}
-
-	//std::wofstream glyphFile(std::filesystem::path(aOutputFile).replace_extension(".txt"));
-
-	//for (msdf_atlas::GlyphGeometry& glyph : glyphs)
-	//{
-	//	msdf_atlas::GlyphBox box = glyph;
-	//	glyphFile << std::format(L"[{:03}]: ", glyph.getCodepoint()) << std::endl;
-	//	glyphFile << std::format(L"\tAdvance: {}", box.advance) << std::endl;
-	//	if (not glyph.isWhitespace())
-	//	{
-	//		int w, h;
-	//		glyph.getBoxSize(w, h);
-	//		glyphFile << std::format(L"\tCharacter: {}", static_cast<wchar_t>(glyph.getCodepoint())) << std::endl;
-	//		glyphFile << std::format(L"\tRectangle: x = {}, y = {}, w = {}, h = {}", box.rect.x, height - box.rect.y, box.rect.w, box.rect.h) << std::endl;
-	//		glyphFile << std::format(L"\tBounds: l = {}, r = {}, t = {}, b = {}", box.bounds.l, box.bounds.r, box.bounds.t, box.bounds.b) << std::endl;
-	//		glyphFile << std::format(L"\tMultiplied Bounds: l = {}, r = {}, t = {}, b = {}", w * box.bounds.l, w * box.bounds.r, h * box.bounds.t, h * box.bounds.b) << std::endl;
-	//	}
-	//}
-
-	//TODO: Get glyph bounding boxes, origins, advances and potentially kerning, and save this as well.
-
-	//std::wcout << L"Failed to build font! Build not yet added." << std::endl;
 	msdfgen::destroyFont(font);
 	msdfgen::deinitializeFreetype(ft);
 	return true;

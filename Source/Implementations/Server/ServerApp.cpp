@@ -108,7 +108,10 @@ namespace server
 			return false;
 		}
 
-		if (not myServer->Initialize(54322))	// TODO: Allow setting other port.
+		static const char* const iniFilename = "server_imgui.ini";
+		ImGui::GetIO().IniFilename = iniFilename;
+
+		if (not myServer->Initialize())
 		{
 			LOG_ERROR(LOG_CATEGORY, "Failed to initialize NetworkManager!");
 			return false;
@@ -131,7 +134,6 @@ namespace server
 		myEngine->GetGraphicsEngine().SetVSyncEnabled(true);
 
 		myEngine->SetConsoleEnabled(true);
-		//myEngine->GetConsole().SetOpen(true);
 
 		myEngine->PushScene<MainScene>(this);
 
@@ -214,6 +216,29 @@ namespace server
 	Server& ServerApp::GetServer() const noexcept
 	{
 		return *myServer;
+	}
+	bool ServerApp::ResetServer()
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::ResetServer"
+
+		if (not myServer->Shutdown())
+		{
+			LOG_ERROR(LOG_CATEGORY, "Failed to shutdown NetworkManager.");
+			return false;
+		}
+
+		myServer = std::make_unique<Server>();
+		if (not myServer->Initialize())
+		{
+			LOG_ERROR(LOG_CATEGORY, "Failed to initialize NetworkManager!");
+			return false;
+		}
+
+		myServer->SetMessageCallback<shared::NM_Ping>(&OnPing, this);
+
+		return true;
+
+#undef LOG_CATEGORY
 	}
 }
 

@@ -32,7 +32,7 @@ namespace client
 
 		std::string myNameInput;
 
-		ClientApp* myClient;
+		ClientApp* myApp;
 		cs::ComponentRef<CameraComponent> myCamera;
 	};
 }

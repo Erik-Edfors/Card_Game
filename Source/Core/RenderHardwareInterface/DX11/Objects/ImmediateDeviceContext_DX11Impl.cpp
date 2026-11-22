@@ -89,6 +89,7 @@ namespace graphics
 		Microsoft::WRL::ComPtr<ID3D11CommandList> commandList;
 		HRESULT result = deferred->GetDeviceContext()->FinishCommandList(false, &commandList);
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, STRINGIFY(ID3D11DeviceContext::FinishCommandList), LOG_CATEGORY);
+		result;
 
 		GetDeviceContext()->ExecuteCommandList(commandList.Get(), aRestoreImmediateContextAfter);
 

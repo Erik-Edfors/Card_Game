@@ -5,12 +5,32 @@
 namespace cs
 {
 	Component::Component() :
-		mySystem(nullptr),
-		myHandle({}),
-		myEntityHandle({}),
+		myRegistry(nullptr),
+		myHandle(INVALID_COMPONENT_HANDLE),
+		myEntityHandle(INVALID_ENTITY_HANDLE),
+		myEnabled(true),
 		myIsDestroyed(false),
 		myIsStarted(false)
 	{
+	}
+	void Component::SetEnabled(bool aEnabled) noexcept
+	{
+		if (myEnabled != aEnabled)
+		{
+			myEnabled = aEnabled;
+			if (aEnabled)
+			{
+				OnEnable();
+			}
+			else
+			{
+				OnDisable();
+			}
+		}
+	}
+	bool Component::IsEnabled() const noexcept
+	{
+		return myEnabled;
 	}
 	void Component::Destroy()
 	{
@@ -28,9 +48,13 @@ namespace cs
 	{
 		return myIsStarted;
 	}
+	ComponentRegistryBase& Component::GetRegistry() const noexcept
+	{
+		return *myRegistry;
+	}
 	ComponentSystem& Component::GetSystem() const noexcept
 	{
-		return *mySystem;
+		return GetRegistry().GetSystem();
 	}
 	ComponentHandle Component::GetHandle() const noexcept
 	{
@@ -40,9 +64,9 @@ namespace cs
 	{
 		return myEntityHandle;
 	}
-	void Component::Initialize(ComponentSystem* aSystem, ComponentHandle aHandle, EntityHandle aEntityHandle)
+	void Component::Initialize(ComponentRegistryBase* aRegistry, ComponentHandle aHandle, EntityHandle aEntityHandle)
 	{
-		mySystem = aSystem;
+		myRegistry = aRegistry;
 		myHandle = aHandle;
 		myEntityHandle = aEntityHandle;
 		OnInit();
@@ -57,10 +81,16 @@ namespace cs
 	}
 	void Component::Update(float aDeltaTime)
 	{
-		OnUpdate(aDeltaTime);
+		if (IsEnabled())
+		{
+			OnUpdate(aDeltaTime);
+		}
 	}
 	void Component::LateUpdate(float aDeltaTime)
 	{
-		OnLateUpdate(aDeltaTime);
+		if (IsEnabled())
+		{
+			OnLateUpdate(aDeltaTime);
+		}
 	}
 }

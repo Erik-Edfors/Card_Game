@@ -53,8 +53,7 @@ bool Engine::Initialize(HWND aWindow, const wchar_t* aAssetPath)
 	myWindow = window.Get();
 
 	graphics::GRAPHICS_DEVICE_FLAGS deviceFlags = graphics::GRAPHICS_DEVICE_ALLOW_TEARING
-		| graphics::GRAPHICS_DEVICE_BGRA_SUPPORT
-		| graphics::GRAPHICS_DEVICE_VIDEO_SUPPORT;
+		| graphics::GRAPHICS_DEVICE_BGRA_SUPPORT;
 
 #ifdef _DEBUG
 	deviceFlags |= graphics::GRAPHICS_DEVICE_DEBUG;
@@ -204,7 +203,6 @@ void Engine::Update()
 			}
 			mySceneStack.push_back(std::move(entry.Scene));
 			Scene& toPush = *mySceneStack.back();
-			toPush.Initialize(this);
 			toPush.Enter();
 		}
 		break;

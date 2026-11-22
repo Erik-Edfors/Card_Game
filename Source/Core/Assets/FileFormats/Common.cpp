@@ -1,3 +1,4 @@
+#include "Assets.pch.h"
 #include "Common.h"
 #include <memory>
 

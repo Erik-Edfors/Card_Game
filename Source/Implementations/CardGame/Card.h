@@ -10,6 +10,7 @@ namespace cardgame
 
 	class Card : public GameObject
 	{
+		friend class Game;
 	public:
 		virtual ResourceCount GetPlayCost() const = 0;
 		virtual bool CanBePlayed() const = 0;
@@ -19,7 +20,7 @@ namespace cardgame
 		Card();
 		virtual ~Card();
 
-		void Init(Game* aGame, CardID aID);
+		void Init(Game* aGame, CardID aID, PlayerID aOwner, LocationID aLocation);
 		bool Update();
 		void ResetLocks() noexcept;
 
@@ -41,6 +42,7 @@ namespace cardgame
 	protected:
 		virtual void OnInit() {};
 		virtual bool OnEvent(CommonUtilities::StringHash aEvent, const std::any& aData) = 0;
+		virtual void OnDestroyed() {};
 
 		bool RepeatLock(CommonUtilities::StringHash aLock) noexcept;
 

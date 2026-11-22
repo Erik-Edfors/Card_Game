@@ -527,6 +527,42 @@ namespace graphics
 		return result::OK;
 #undef LOG_CATEGORY
 	}
+	result::Code DeviceContext_DX11Impl::CopyTexture(Texture2D* aSource, unsigned int aSrcLeft, unsigned int aSrcTop, unsigned int aSrcRight, unsigned int aSrcBottom, Texture2D* aDestination, unsigned int aDestX, unsigned int aDestY)
+	{
+#define LOG_CATEGORY CLASS_CATEGORY"::CopyTexture"
+
+		GRAPHICS_ASSERT(aSrcRight <= aSource->GetDesc().Width, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aSrcRight) " must be less than Width (%i) of " STRINGIFY(aSource) ".", aSource->GetDesc().Width);
+		GRAPHICS_ASSERT(aSrcBottom <= aSource->GetDesc().Height, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aSrcBottom) " must be less than Height (%i) of " STRINGIFY(aSource) ".", aSource->GetDesc().Height);
+		GRAPHICS_ASSERT(aSrcLeft < aSrcRight, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aSrcLeft) " must be less than " STRINGIFY(aSrcRight) " (%u)", aSrcRight);
+		GRAPHICS_ASSERT(aSrcTop < aSrcBottom, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aSrcTop) " must be less than " STRINGIFY(aSrcBottom) " (%u)", aSrcBottom);
+
+		GRAPHICS_ASSERT(aDestX + aSrcRight - aSrcLeft <= aDestination->GetDesc().Width, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDestX + aSrcRight - aSrcLeft) " must be less than or equal to Width (%i) of " STRINGIFY(aDestination) ".", aDestination->GetDesc().Width);
+		GRAPHICS_ASSERT(aDestY + aSrcBottom - aSrcTop <= aDestination->GetDesc().Height, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDestY + aSrcBottom - aSrcTop) " must be less than or equal to Height (%i) of " STRINGIFY(aDestination) ".", aDestination->GetDesc().Height);
+
+		Texture2D_DX11Impl* source = dynamic_cast<Texture2D_DX11Impl*>(aSource);
+		GRAPHICS_ASSERT(source != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aSource) " could not be cast to " STRINGIFY(Texture2D_DX11Impl) "!");
+		Texture2D_DX11Impl* destination = dynamic_cast<Texture2D_DX11Impl*>(aDestination);
+		GRAPHICS_ASSERT(destination != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDestination) " could not be cast to " STRINGIFY(Texture2D_DX11Impl) "!");
+
+		ID3D11Texture2D* dxSource = source->GetTexture();
+		GRAPHICS_ASSERT(dxSource != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aSource) " has no valid texture assigned.");
+		ID3D11Texture2D* dxDestination = destination->GetTexture();
+		GRAPHICS_ASSERT(dxDestination != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDestination) " has no valid texture assigned.");
+
+		const D3D11_BOX box = {
+			.left = aSrcLeft,
+			.top = aSrcTop,
+			.front = 0u,
+			.right = aSrcRight,
+			.bottom = aSrcBottom,
+			.back = 1u
+		};
+
+		myDeviceContext->CopySubresourceRegion(dxDestination, 0, aDestX, aDestY, 0, dxSource, 0, &box);
+
+		return result::OK;
+#undef LOG_CATEGORY	
+	}
 //	result::Code DeviceContext_DX11Impl::Map(Texture2D* aTexture, unsigned int aSubResource, GRAPHICS_MAP aMapType, GRAPHICS_MAP_FLAGS aMapFlags, void** outData, unsigned int* outRowPitch, unsigned int* outDepthPitch)
 //	{
 //#define LOG_CATEGORY CLASS_CATEGORY"::Map"

@@ -10,21 +10,24 @@ namespace graphics
 		Window_DX11Impl(HWND aWindowHandle);
 		~Window_DX11Impl();
 
-		float GetLeft() override;
-		float GetRight() override;
-		float GetTop() override;
-		float GetBottom() override;
+		float GetLeft() const override;
+		float GetRight() const override;
+		float GetTop() const override;
+		float GetBottom() const override;
 
-		float GetWidth() override;
-		float GetHeight() override;
+		float GetWidth() const override;
+		float GetHeight() const override;
 
-		float GetClientLeft() override;
-		float GetClientRight() override;
-		float GetClientTop() override;
-		float GetClientBottom() override;
+		float GetClientLeft() const override;
+		float GetClientRight() const override;
+		float GetClientTop() const override;
+		float GetClientBottom() const override;
 
-		float GetClientWidth() override;
-		float GetClientHeight() override;
+		float GetClientWidth() const override;
+		float GetClientHeight() const override;
+
+		float GetMouseX() const override;
+		float GetMouseY() const override;
 
 		void SetImGuiEnabled(bool aEnabled) noexcept;
 		bool IsImGuiEnabled() const noexcept;
@@ -35,6 +38,8 @@ namespace graphics
 
 	private:
 		HWND myWindowHandle;
+		INT myMouseX;
+		INT myMouseY;
 		UINT myWidth;
 		UINT myHeight;
 		bool myImGuiEnabled;

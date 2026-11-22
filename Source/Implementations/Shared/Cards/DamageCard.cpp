@@ -22,7 +22,7 @@ namespace shared
 
 	bool DamageCard::CanBePlayed() const
 	{
-		return IsInHand();
+		return IsInHand() && GetGame().GetNumPlayers() > 1;
 	}
 
 	const char* DamageCard::GetName() const
@@ -32,13 +32,18 @@ namespace shared
 
 	const char* DamageCard::GetDescription() const
 	{
-		return "Deals 2 Damage to each Opponent.";
+		return "Cost: 2 RP.\n\nDeal 2 Damage to Target Opponent.";
 	}
 
 	void DamageCard::OnInit()
 	{
 		BeginListen(cardgame::Game::EVENT_CARD_PLAYED);
-		BeginListen(cardgame::Game::EVENT_TASK_SUBMITTED);
+		BeginListen(cardgame::Game::EVENT_TASK_FINISHED);
+
+		myTargetTask.Initialize(
+			GetOwner(), 
+			GetOwner()
+		);
 	}
 
 	bool DamageCard::OnEvent(CommonUtilities::StringHash aEvent, const std::any& aData)
@@ -48,32 +53,47 @@ namespace shared
 		case cardgame::Game::EVENT_CARD_PLAYED:
 		{
 			cardgame::Game::EventCardPlayed data = std::any_cast<cardgame::Game::EventCardPlayed>(aData);
-			if (data.Card == GetID() && RepeatLock("PLAYED"))
+			if (data.Card == GetID())
 			{
-				myTargetTask = {};
-				myTargetTask.SetOwner(GetOwner());
-
+				myTargetTask.Reset();
 				return PushTask(GetGame(), &myTargetTask);
 			}
 		}
 		break;
-		case cardgame::Game::EVENT_TASK_SUBMITTED:
+		case cardgame::Game::EVENT_TASK_FINISHED:
 		{
 			if (myTargetTask.IsFinished())
 			{
-				cardgame::DamagePlayerCommand command = {
+				const cardgame::PlayerID target = myTargetTask.GetTarget();
+				myTargetTask.Reset();
+
+				const cardgame::Player* player = GetGame().GetPlayer(GetOwner());
+
+				const cardgame::DamagePlayerCommand damagePlayer = {
 					.Source = GetID(),
-					.Target = myTargetTask.GetTarget(),
+					.Target = target,
 					.Amount = 2
 				};
-				myTargetTask = {};
+				const cardgame::MoveCardCommand moveCard = {
+					.Card = GetID(),
+					.Location = player->GetDiscardLocation()
+				};
 
-				return Do(GetGame(), command);
+				if (Do(GetGame(), damagePlayer))
+				{
+					Do(GetGame(), moveCard);
+
+					return true;
+				}
 			}
 		}
 		break;
 		}
 
 		return false;
+	}
+	void DamageCard::OnDestroyed()
+	{
+		RetractTask(GetGame(), &myTargetTask);
 	}
 }

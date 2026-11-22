@@ -2,6 +2,7 @@
 #include "GameScene.h"
 #include "../ServerApp.h"
 #include "../Server.h"
+#include "MainScene.h"
 
 #include <Core/imgui/imgui.h>
 #include <Core/imgui/misc/cpp/imgui_stdlib.h>
@@ -16,57 +17,68 @@
 
 #include <Implementations/CardGame/Task.h>
 
+#include <Core/CommonUtilities/Random.hpp>
+
+#define FILE_CATEGORY "GameScene.cpp"
+#define CLASS_CATEGORY FILE_CATEGORY"->GameScene"
+
 namespace server
 {
 	GameScene::GameScene(ServerApp* aServerApp) :
-		myServer(aServerApp)
+		myApp(aServerApp)
 	{
+		cardgame::CardFactory factory;
+		shared::RegisterCards(factory);
+
+		if (not myGame.Initialize(factory))
+		{
+			//TODO: handle failure
+		}
 	}
 	GameScene::~GameScene()
 	{
 	}
 
-	bool GameScene::InitializeGame(size_t aNumPlayers)
+	const cardgame::Player* GameScene::AssignPlayer(shared::ClientID aClient, std::string_view aName)
 	{
-		if (aNumPlayers == 0)
+		cardgame::PlayerID id = cardgame::INVALID_PLAYER_ID;
 		{
-			//TODO: Log, cannot start with 0 players.
-			return false;
-		}
-
-		cardgame::CardFactory factory;
-		shared::RegisterCards(factory);
-
-		if (not myGame.Initialize(aNumPlayers, factory))
-		{
-			//TODO: handle failure
-			return false;
-		}
-
-		return true;
-	}
-
-	const cardgame::Player* GameScene::AssignPlayer(shared::ClientID aClient)
-	{
-		const size_t numPlayers = myGame.GetNumPlayers();
-		const cardgame::Player** players = new const cardgame::Player * [numPlayers];
-		myGame.GetPlayers(players, numPlayers);
-
-		for (size_t i = 0; i < numPlayers; i++)
-		{
-			const cardgame::Player* player = players[i];
-			const cardgame::PlayerID id = player->GetID();
-			if (not myPlayerToClient.contains(id))
+			cardgame::Command command = {
+				.Type = cardgame::COMMAND_CREATE_PLAYER,
+				.Command = {
+					.CreatePlayer = {
+					}
+				}
+			};
+			cardgame::Command::Result result = {};
+			if (not PushCommand(command, &result))
 			{
-				myPlayerToClient[id] = aClient;
-				myClientToPlayer[aClient] = id;
+				//TODO: Log.
+			}
+			id = result.CreatePlayer.Player;
+		}
 
-				delete[] players;
-				return player;
+		{
+			cardgame::SetNameCommand setName = {};
+			setName.Player = id;
+			aName.substr(0, sizeof(setName.Name) - 1).copy(setName.Name, sizeof(setName.Name), 0);
+
+			cardgame::Command command = {
+				.Type = cardgame::COMMAND_SET_NAME,
+				.Command = {
+					.SetName = setName
+				}
+			};
+			if (not PushCommand(command))
+			{
+				//TODO: Log.
 			}
 		}
-		delete[] players;
-		return nullptr;
+		myClientToPlayer[aClient] = id;
+		myPlayerToClient[id] = aClient;
+
+		const cardgame::Player* player = myGame.GetPlayer(id);
+		return player;
 	}
 
 	const cardgame::Player* GameScene::GetPlayer(shared::ClientID aClient)
@@ -75,10 +87,10 @@ namespace server
 		return it != myClientToPlayer.end() ? myGame.GetPlayer(it->second) : nullptr;
 	}
 
-	bool GameScene::PushCommand(const cardgame::Command& aCommand)
+	bool GameScene::PushCommand(const cardgame::Command& aCommand, cardgame::Command::Result* outResult)
 	{
 		const size_t index = myGame.GetNumCommands();
-		if (myGame.PushCommand(aCommand))
+		if (myGame.PushCommand(aCommand, outResult))
 		{
 			SendCommand(aCommand, index);
 			return true;
@@ -99,12 +111,27 @@ namespace server
 
 	Server& GameScene::GetServer() const noexcept
 	{
-		return myServer->GetServer();
+		return myApp->GetServer();
 	}
 
 	void GameScene::OnInit()
 	{
-		Server& server = myServer->GetServer();
+		std::random_device rd = std::random_device();
+		CommonUtilities::Seed(myRNG, std::ref(rd));
+
+		myGameListener.SetPusher(&myGame.GetEventPusher());
+
+		myGameListener.BeginListen(cardgame::Game::EVENT_TURN_BEGIN);
+	}
+
+	void GameScene::OnShutdown()
+	{
+		myGame.Shutdown();
+	}
+	void GameScene::OnEnter()
+	{
+		Server& server = myApp->GetServer();
+
 		server.SetAllowingConnections(false);
 
 		server.SetMessageCallback<shared::NM_PlayCardRequest>(&OnPlayCardRequest, this);
@@ -115,7 +142,30 @@ namespace server
 		server.SetMessageCallback<shared::NM_SubmitAmount>(&OnSubmitAmount, this);
 		server.SetMessageCallback<shared::NM_SubmitOption>(&OnSubmitOption, this);
 
+		server.SetDisconnectionCallback(OnDisconnect, this);
+
 		GetEngine().GetCommandParser().AddCommand("game", &OnCmdGame, this);
+	}
+	void GameScene::OnExit()
+	{
+		Server& server = myApp->GetServer();
+
+		//server.SetMessageCallback<shared::NM_CommandRequest>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_PlayCardRequest>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_EndTurnRequest>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitPlayers>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitCards>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitLocations>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitAmount>(nullptr, nullptr);
+		server.SetMessageCallback<shared::NM_SubmitOption>(nullptr, nullptr);
+
+		server.SetDisconnectionCallback(nullptr, nullptr);
+
+		GetEngine().GetCommandParser().RemoveCommand("game");
+	}
+	void GameScene::OnStart()
+	{
+		Server& server = myApp->GetServer();
 
 		const size_t numPlayers = myGame.GetNumPlayers();
 		const cardgame::Player** players = new const cardgame::Player * [numPlayers];
@@ -136,54 +186,36 @@ namespace server
 				server.SendTo(message, server.GetClientRemote(client));
 			}
 
-			for (size_t j = 0; j < 5; j++)
-			{
-				cardgame::Command command = {
-					.Type = cardgame::COMMAND_CREATE_CARD,
-					.Command = {
-						.CreateCard = {
-							.Owner = player.GetID(),
-							.Location = player.GetHandLocation(),
-							.FactoryID = "CORE_DAMAGE_CARD"_hash
-						}
-					}
-				};
-
-				if (not PushCommand(command))
-				{
-					//TODO: Log, failed to create card.
-				}
-			}
-
-			for (size_t j = 0; j < 5; j++)
-			{
-				cardgame::Command command = {
-					.Type = cardgame::COMMAND_CREATE_CARD,
-					.Command = {
-						.CreateCard = {
-							.Owner = player.GetID(),
-							.Location = player.GetHandLocation(),
-							.FactoryID = "CORE_RESOURCE_CARD"_hash
-						}
-					}
-				};
-
-				if (not PushCommand(command))
-				{
-					//TODO: Log, failed to create card.
-				}
-			}
+			AddCardsToDeck(player.GetID(), 10, "CORE_RESOURCE_CARD");
+			AddCardsToDeck(player.GetID(), 10, "CORE_DAMAGE_CARD");
+			AddCardsToDeck(player.GetID(), 4, "CORE_SHIELD_CARD");
+			AddCardsToDeck(player.GetID(), 2, "CORE_DESTROY_CARD");
+			AddCardsToDeck(player.GetID(), 2, "CORE_SACRIFICE_CARD");
 		}
 
 		{
-			cardgame::Command command = {
+			const cardgame::Command seedCommand = {
+				.Type = cardgame::COMMAND_SET_SEED,
+				.Command = {
+					.SetSeed = {
+						.Seed = std::random_device()()
+					}
+				}
+			};
+
+			const cardgame::Command startCommand = {
 				.Type = cardgame::COMMAND_START,
 				.Command = {
 					.Start = {
 					}
 				}
 			};
-			if (not PushCommand(command))
+
+			if (not PushCommand(seedCommand))
+			{
+				//TODO: Log, failed to seed game.
+			}
+			if (not PushCommand(startCommand))
 			{
 				//TODO: Log, failed to start game.
 			}
@@ -191,33 +223,22 @@ namespace server
 
 		delete[] players;
 	}
-
-	void GameScene::OnShutdown()
-	{
-		GetEngine().GetCommandParser().RemoveCommand("game");
-
-		myGame.Shutdown();
-	}
-	void GameScene::OnEnter()
-	{
-		//server.SetMessageCallback<shared::NM_CommandRequest>(&OnCommandRequest, this);
-	}
-	void GameScene::OnExit()
-	{
-		Server& server = myServer->GetServer();
-
-		//server.SetMessageCallback<shared::NM_CommandRequest>(nullptr, nullptr);
-		server.SetMessageCallback<shared::NM_PlayCardRequest>(nullptr, nullptr);
-		server.SetMessageCallback<shared::NM_EndTurnRequest>(nullptr, nullptr);
-		server.SetMessageCallback<shared::NM_SubmitPlayers>(nullptr, nullptr);
-		server.SetMessageCallback<shared::NM_SubmitCards>(nullptr, nullptr);
-		server.SetMessageCallback<shared::NM_SubmitLocations>(nullptr, nullptr);
-		server.SetMessageCallback<shared::NM_SubmitAmount>(nullptr, nullptr);
-		server.SetMessageCallback<shared::NM_SubmitOption>(nullptr, nullptr);
-	}
 	void GameScene::OnUpdate(float aDeltaTime)
 	{
+#define LOG_CATEGORY CLASS_CATEGORY"::OnUpdate"
 		aDeltaTime;
+
+		CommonUtilities::Event event;
+		while (myGameListener.GetEvent(&event))
+		{
+			switch (event.ID)
+			{
+			case cardgame::Game::EVENT_TURN_BEGIN: OnTurnBegin(std::any_cast<cardgame::Game::EventTurnBegin>(event.Data)); break;
+			default:
+				LOG_WARNING(LOG_CATEGORY, "Recieved unprocessed event. Event '{}'.", event.ID);
+				break;
+			}
+		}
 
 		const ImGuiWindowFlags flags = ImGuiWindowFlags_None
 			| ImGuiWindowFlags_NoBringToFrontOnFocus
@@ -229,16 +250,77 @@ namespace server
 		ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
 		if (ImGui::Begin("Game", nullptr, flags))
 		{
-			const cardgame::Player* turnPlayer = myGame.GetTurnPlayer();
+			ImGui::SeparatorText("Game Controls");
 
-			ImGui::Text(std::format("Number of players: {}", myGame.GetNumPlayers()).c_str());
-			ImGui::Text(std::format("Turn: {}", myGame.GetTurnIndex()).c_str());
-			if (turnPlayer != nullptr)
+			if (ImGui::Button("End Game", { -1, 0 }))
 			{
-				ImGui::Text(std::format("Turn Player: {}", myPlayerToClient.at(turnPlayer->GetID())).c_str());
+				GetEngine().ChangeScene<MainScene>(myApp);
 			}
+
+			if (ImGui::BeginChild("##Players", { -1, -1 }, ImGuiChildFlags_Borders))
+			{
+				ImGui::SeparatorText("Players");
+
+				size_t numPlayers = myGame.GetNumPlayers();
+				const cardgame::Player** players = new const cardgame::Player * [numPlayers];
+				numPlayers = myGame.GetPlayers(players, numPlayers);
+
+				for (size_t i = 0; i < numPlayers; i++)
+				{
+					const cardgame::Player* player = players[i];
+
+					shared::ClientID client = shared::INVALID_CLIENT_ID;
+
+					auto it = myPlayerToClient.find(player->GetID());
+					if (it != myPlayerToClient.end())
+					{
+						client = it->second;
+					}
+
+					ImGui::PushID(static_cast<int>(i));
+
+					if (ImGui::BeginChild("##Player", { -1, 0 }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
+					{
+						// Cannot kick a non-client player
+						ImGui::BeginDisabled(client == shared::INVALID_CLIENT_ID);
+						if (ImGui::Button("Kick"))
+						{
+							GetServer().DisconnectClient(client, shared::NETWORK_DISCONNECT_KICKED_BY_OPERATOR);
+						}
+						ImGui::EndDisabled();
+
+						ImGui::SameLine();
+						const float nameWidth = ImGui::CalcTextSize("WWWWWWWWWWWWWWWW").x;
+						if (ImGui::BeginChild("##Name", { nameWidth, 0.f }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
+						{
+							ImGui::Text(player->GetName().c_str());
+						}
+						ImGui::EndChild();
+
+						ImGui::SameLine();
+						if (ImGui::BeginChild("##Health", { 0.f, 0.f }, ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
+						{
+							ImGui::Text(std::format("{} HP", player->GetHealth()).c_str());
+						}
+						ImGui::EndChild();
+
+						ImGui::SameLine();
+						if (ImGui::BeginChild("##Resources", { 0.f, 0.f }, ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
+						{
+							ImGui::Text(std::format("{} RP", player->GetResourceCount()).c_str());
+						}
+						ImGui::EndChild();
+					}
+					ImGui::EndChild();
+
+					ImGui::PopID();
+				}
+			}
+			ImGui::EndChild();
 		}
 		ImGui::End();
+
+#undef LOG_CATEGORY
 	}
 
 	void GameScene::OnCmdGame(const CommandParser::CallbackData& aData)
@@ -282,6 +364,78 @@ namespace server
 				delete[] commands;
 			}
 			break;
+			case "damage"_hash:
+			{
+				if (numArguments >= 4)
+				{
+					cardgame::Health damage = 0;
+					try
+					{
+						damage = std::stoi(arguments[3].GetValue());
+					}
+					catch (std::exception)
+					{
+						break;
+					}
+
+					size_t numPlayers = scene.myGame.GetNumPlayers();
+					const cardgame::Player** players = new const cardgame::Player * [numPlayers];
+					numPlayers = scene.myGame.GetPlayers(players, numPlayers);
+
+					for (size_t i = 0; i < numPlayers; i++)
+					{
+						const cardgame::Player* player = players[i];
+						if (player != nullptr && player->GetName() == arguments[2].GetValue())
+						{
+							scene.PushCommand(
+								cardgame::Command{
+									.Type = cardgame::COMMAND_DAMAGE_PLAYER,
+										.Command = {
+										.DamagePlayer = {
+											.Source = cardgame::INVALID_CARD_ID,
+											.Target = player->GetID(),
+											.Amount = damage
+										}
+									}
+								}
+							);
+						}
+					}
+
+					delete[] players;
+				}
+			}
+			break;
+			case "kill"_hash:
+			{
+				if (numArguments >= 3)
+				{
+					size_t numPlayers = scene.myGame.GetNumPlayers();
+					const cardgame::Player** players = new const cardgame::Player * [numPlayers];
+					numPlayers = scene.myGame.GetPlayers(players, numPlayers);
+
+					for (size_t i = 0; i < numPlayers; i++)
+					{
+						const cardgame::Player* player = players[i];
+						if (player != nullptr && player->GetName() == arguments[2].GetValue())
+						{
+							scene.PushCommand(
+								cardgame::Command{
+									.Type = cardgame::COMMAND_REMOVE_PLAYER,
+										.Command = {
+										.RemovePlayer = {
+											.Player = player->GetID()
+										}
+									}
+								}
+							);
+						}
+					}
+
+					delete[] players;
+				}
+			}
+			break;
 			default:
 				console.PrintLine(std::format("Unknown argument! {}", arguments[1].GetValue()));
 				break;
@@ -292,6 +446,7 @@ namespace server
 	void GameScene::OnSubmitPlayers(const Server::MessageCallbackData<shared::NM_SubmitPlayers>& aData)
 	{
 		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+		Server& server = scene.GetServer();
 
 		// Sent invalid count.
 		if (aData.Message.Count > cardgame::MAX_SELECTED_PLAYERS)
@@ -299,23 +454,41 @@ namespace server
 			return;
 		}
 
+		auto it = scene.myClientToPlayer.find(server.GetClientID(aData.Address));
+		if (it == scene.myClientToPlayer.end())
+		{
+			return;
+		}
+		const cardgame::PlayerID player = it->second;
+
 		cardgame::SubmitPlayersCommand submitPlayers = {};
+		submitPlayers.Authority = player;
 		submitPlayers.Count = aData.Message.Count;
 		memcpy(submitPlayers.Players, aData.Message.Players, sizeof(submitPlayers.Players));
 
-		cardgame::Command command = {
+		const cardgame::Command command = {
 			.Type = cardgame::COMMAND_SUBMIT_PLAYERS,
 			.Command = {
 				.SubmitPlayers = submitPlayers
 			}
 		};
 
-		scene.PushCommand(command);
+		const bool succeeded = scene.PushCommand(command);
+		const shared::NM_SubmissionResult result = {
+			.Succeeded = succeeded
+		};
+
+		shared::NetworkManager::NetworkMessage message;
+		if (server.CreateMessage(&message, result, true))
+		{
+			server.SendTo(message, aData.Address);
+		}
 	}
 
 	void GameScene::OnSubmitCards(const Server::MessageCallbackData<shared::NM_SubmitCards>& aData)
 	{
 		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+		Server& server = scene.GetServer();
 
 		// Sent invalid count.
 		if (aData.Message.Count > cardgame::MAX_SELECTED_CARDS)
@@ -323,23 +496,41 @@ namespace server
 			return;
 		}
 
+		auto it = scene.myClientToPlayer.find(server.GetClientID(aData.Address));
+		if (it == scene.myClientToPlayer.end())
+		{
+			return;
+		}
+		const cardgame::PlayerID player = it->second;
+
 		cardgame::SubmitCardsCommand submitCards = {};
+		submitCards.Authority = player;
 		submitCards.Count = aData.Message.Count;
 		memcpy(submitCards.Cards, aData.Message.Cards, sizeof(submitCards.Cards));
 
-		cardgame::Command command = {
+		const cardgame::Command command = {
 			.Type = cardgame::COMMAND_SUBMIT_CARDS,
 			.Command = {
 				.SubmitCards = submitCards
 			}
 		};
 
-		scene.PushCommand(command);
+		const bool succeeded = scene.PushCommand(command);
+		const shared::NM_SubmissionResult result = {
+			.Succeeded = succeeded
+		};
+
+		shared::NetworkManager::NetworkMessage message;
+		if (server.CreateMessage(&message, result, true))
+		{
+			server.SendTo(message, aData.Address);
+		}
 	}
 
 	void GameScene::OnSubmitLocations(const Server::MessageCallbackData<shared::NM_SubmitLocations>& aData)
 	{
 		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+		Server& server = scene.GetServer();
 
 		// Sent invalid count.
 		if (aData.Message.Count > cardgame::MAX_SELECTED_LOCATIONS)
@@ -347,59 +538,110 @@ namespace server
 			return;
 		}
 
+		auto it = scene.myClientToPlayer.find(server.GetClientID(aData.Address));
+		if (it == scene.myClientToPlayer.end())
+		{
+			return;
+		}
+		const cardgame::PlayerID player = it->second;
+
 		cardgame::SubmitLocationsCommand submitLocations = {};
+		submitLocations.Authority = player;
 		submitLocations.Count = aData.Message.Count;
 		memcpy(submitLocations.Locations, aData.Message.Locations, sizeof(submitLocations.Locations));
 
-		cardgame::Command command = {
+		const cardgame::Command command = {
 			.Type = cardgame::COMMAND_SUBMIT_LOCATIONS,
 			.Command = {
 				.SubmitLocations = submitLocations
 			}
 		};
 
-		scene.PushCommand(command);
+		const bool succeeded = scene.PushCommand(command);
+		const shared::NM_SubmissionResult result = {
+			.Succeeded = succeeded
+		};
+
+		shared::NetworkManager::NetworkMessage message;
+		if (server.CreateMessage(&message, result, true))
+		{
+			server.SendTo(message, aData.Address);
+		}
 	}
 
 	void GameScene::OnSubmitAmount(const Server::MessageCallbackData<shared::NM_SubmitAmount>& aData)
 	{
 		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+		Server& server = scene.GetServer();
 
-		cardgame::Command command = {
+		auto it = scene.myClientToPlayer.find(server.GetClientID(aData.Address));
+		if (it == scene.myClientToPlayer.end())
+		{
+			return;
+		}
+		const cardgame::PlayerID player = it->second;
+
+		const cardgame::Command command = {
 			.Type = cardgame::COMMAND_SUBMIT_AMOUNT,
 			.Command = {
 				.SubmitAmount = {
+					.Authority = player,
 					.Amount = aData.Message.Amount
 				}
 			}
 		};
 
-		scene.PushCommand(command);
+		const bool succeeded = scene.PushCommand(command);
+		const shared::NM_SubmissionResult result = {
+			.Succeeded = succeeded
+		};
+
+		shared::NetworkManager::NetworkMessage message;
+		if (server.CreateMessage(&message, result, true))
+		{
+			server.SendTo(message, aData.Address);
+		}
 	}
 
 	void GameScene::OnSubmitOption(const Server::MessageCallbackData<shared::NM_SubmitOption>& aData)
 	{
 		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+		Server& server = scene.GetServer();
 
-		cardgame::Command command = {
+		auto it = scene.myClientToPlayer.find(server.GetClientID(aData.Address));
+		if (it == scene.myClientToPlayer.end())
+		{
+			return;
+		}
+		const cardgame::PlayerID player = it->second;
+
+		const cardgame::Command command = {
 			.Type = cardgame::COMMAND_SUBMIT_OPTION,
 			.Command = {
 				.SubmitOption = {
+					.Authority = player,
 					.Index = aData.Message.Index
 				}
 			}
 		};
 
-		scene.PushCommand(command);
+		const bool succeeded = scene.PushCommand(command);
+		const shared::NM_SubmissionResult result = {
+			.Succeeded = succeeded
+		};
+
+		shared::NetworkManager::NetworkMessage message;
+		if (server.CreateMessage(&message, result, true))
+		{
+			server.SendTo(message, aData.Address);
+		}
 	}
 
 	void GameScene::OnPlayCardRequest(const Server::MessageCallbackData<shared::NM_PlayCardRequest>& aData)
 	{
 		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+		Server& server = scene.GetServer();
 		cardgame::Game& game = scene.myGame;
-
-		//TODO: Verify that action is allowed by client.
-		// Make sure client has authority over the given player id.
 
 		// All tasks must be finished before any cards can be played.
 		if (game.HasTasks())
@@ -407,8 +649,27 @@ namespace server
 			return;
 		}
 
-		//TODO: Randomize card in draw pile to move to hand.
-		cardgame::Command play = {
+		const cardgame::Card* card = game.GetCard(aData.Message.Card);
+		if (card == nullptr)
+		{
+			return;
+		}
+
+		auto it = scene.myClientToPlayer.find(server.GetClientID(aData.Address));
+		if (it == scene.myClientToPlayer.end())
+		{
+			return;
+		}
+		const cardgame::PlayerID player = it->second;
+
+		// Ignore if player tries to play a card belonging to another player.
+		// TODO: Allow if a card effect gives control over another player.
+		if (player != card->GetOwner() || player != aData.Message.Player)
+		{
+			return;
+		}
+
+		const cardgame::Command play = {
 			.Type = cardgame::COMMAND_PLAY,
 			.Command = {
 				.Play = {
@@ -431,7 +692,12 @@ namespace server
 		cardgame::Game& game = scene.myGame;
 		Server& server = scene.GetServer();
 
-		const shared::ClientID client = server.GetClientID(aData.Address);
+		auto it = scene.myClientToPlayer.find(server.GetClientID(aData.Address));
+		if (it == scene.myClientToPlayer.end())
+		{
+			return;
+		}
+		const cardgame::PlayerID player = it->second;
 
 		//TODO: Verify that action is allowed by client.
 		// Make sure client has authority over the current turn player.
@@ -450,11 +716,10 @@ namespace server
 			}
 		};
 
-		const cardgame::PlayerID issuer = scene.myClientToPlayer.at(client);
 		const cardgame::Player* turnPlayer = game.GetTurnPlayer();
 
 		// Only the player, whose turn it is, can end the turn.
-		if (turnPlayer == nullptr || issuer != turnPlayer->GetID())
+		if (turnPlayer == nullptr || player != turnPlayer->GetID())
 		{
 			return;
 		}
@@ -465,9 +730,36 @@ namespace server
 		}
 	}
 
+	void GameScene::OnDisconnect(const Server::DisconnectionCallbackData& aData)
+	{
+		GameScene& scene = *reinterpret_cast<GameScene*>(aData.UserData);
+
+		auto it = scene.myClientToPlayer.find(aData.Client);
+		if (it == scene.myClientToPlayer.end())
+		{
+			return;
+		}
+
+		const cardgame::PlayerID playerID = it->second;
+
+		const cardgame::Command command = {
+			.Type = cardgame::COMMAND_REMOVE_PLAYER,
+			.Command = {
+				.RemovePlayer = {
+					.Player = playerID
+				}
+			}
+		};
+
+		scene.PushCommand(command);
+
+		scene.myClientToPlayer.erase(aData.Client);
+		scene.myPlayerToClient.erase(playerID);
+	}
+
 	bool GameScene::SendCommand(const cardgame::Command& aCommand, size_t aIndex)
 	{
-		Server& server = myServer->GetServer();
+		Server& server = myApp->GetServer();
 
 		shared::NM_Command command = {
 			.Command = aCommand,
@@ -482,6 +774,74 @@ namespace server
 		if (not server.SendToClients(message))
 		{
 			return false;
+		}
+
+		return true;
+	}
+
+	void GameScene::OnTurnBegin(const cardgame::Game::EventTurnBegin& aData)
+	{
+		const cardgame::Player* player = myGame.GetPlayer(aData.Owner);
+		if (player == nullptr)
+		{
+			//TODO: Log.
+			return;
+		}
+		const cardgame::Location* deck = myGame.GetLocation(player->GetDeckLocation());
+
+		for (size_t i = 0; i < 3; i++)
+		{
+			const int deckSize = static_cast<int>(deck->GetNumCards());
+
+			if (deckSize == 0)
+			{
+				break;
+			}
+
+			const size_t index = std::uniform_int_distribution<int>(0, deckSize - 1)(myRNG);
+
+			cardgame::CardID card;
+			deck->GetCards(&card, index, 1);
+
+			const cardgame::Command command = {
+				.Type = cardgame::COMMAND_MOVE_CARD,
+				.Command = {
+					.MoveCard = {
+						.Card = card,
+						.Location = player->GetHandLocation()
+					}
+				}
+			};
+
+			PushCommand(command);
+		}
+	}
+
+	bool GameScene::AddCardsToDeck(cardgame::PlayerID aPlayer, size_t aNumCards, CommonUtilities::StringHash aCardFactoryID)
+	{
+		const cardgame::Player* player = GetGame().GetPlayer(aPlayer);
+		if (player == nullptr)
+		{
+			return false;
+		}
+
+		const cardgame::Command command = {
+			.Type = cardgame::COMMAND_CREATE_CARD,
+			.Command = {
+				.CreateCard = {
+					.Owner = player->GetID(),
+					.Location = player->GetDeckLocation(),
+					.FactoryID = aCardFactoryID
+				}
+			}
+		};
+
+		for (size_t i = 0; i < aNumCards; i++)
+		{
+			if (not PushCommand(command))
+			{
+				return false;
+			}
 		}
 
 		return true;
@@ -534,3 +894,6 @@ namespace server
 	//	}
 	//}
 }
+
+#undef FILE_CATEGORY
+#undef CLASS_CATEGORY

@@ -15,9 +15,12 @@ namespace server
 		LobbyScene(ServerApp* aApp);
 		~LobbyScene();
 
+		void SetMaxPlayers(size_t aMax) noexcept;
+		size_t GetMaxPlayers() const noexcept;
+
+		size_t GetNumPlayers() const noexcept;
+
 	protected:
-		virtual void OnInit() override;
-		virtual void OnShutdown() override;
 		virtual void OnEnter() override;
 		virtual void OnExit() override;
 		virtual void OnUpdate(float aDeltaTime) override;
@@ -43,5 +46,6 @@ namespace server
 		ServerApp* myApp;
 
 		std::vector<PlayerInfo> myPlayers;
+		size_t myMaxPlayers;
 	};
 }

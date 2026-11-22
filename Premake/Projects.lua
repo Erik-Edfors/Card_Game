@@ -93,6 +93,12 @@ group("Tools")
                 "libpng16.lib",
                 "z.lib"
             }
+        
+        filter("configurations:Retail")
+            links {
+                "libpng16.lib",
+                "z.lib"
+            }
 
     -- fontBuilderDir = toolsDir .. "FontBuilder/"
     -- project("FontBuilder")
@@ -264,6 +270,9 @@ group("Core")
         includedirs {
             assetsDir
         }
+
+        pchheader("Assets.pch.h")
+    	pchsource(assetsDir .. "Assets.pch.cpp")
 
         files {
     		assetsDir .. "**.h",
@@ -470,8 +479,6 @@ group("Core")
         kind("StaticLib")
         language("C++")
         cppdialect("C++20")
-
-        shaderobjectfileoutput("../../../Assets/Shaders/%%(Filename).cso")
 
         files {
             shadersDir .. "**.hlsl",

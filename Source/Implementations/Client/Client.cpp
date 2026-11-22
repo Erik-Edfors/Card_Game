@@ -4,7 +4,7 @@
 namespace client
 {
 	Client::Client() :
-		myID(shared::INVALID_CLIENT_ID),
+		//myID(shared::INVALID_CLIENT_ID),
 		myConnectionStatus(CLIENT_CONNECTION_DISCONNECTED),
 		myConnectionAttempts(0),
 		myServer({ }),
@@ -79,11 +79,11 @@ namespace client
 			{
 				Disconnect(shared::NETWORK_DISCONNECT_TIMED_OUT);
 			}
-			else if (static_cast<float>(myConnectionAttempts) * 0.5f < timeSinceConnectionRequest) // TODO: Allow setting time between connection attempts.
-			{
-				SendConnectionRequest(myServer);
-				++myConnectionAttempts;
-			}
+			//else if (static_cast<float>(myConnectionAttempts) * 0.5f < timeSinceConnectionRequest) // TODO: Allow setting time between connection attempts.
+			//{
+			//	SendConnectionRequest(myServer);
+			//	++myConnectionAttempts;
+			//}
 		}
 		break;
 		case CLIENT_CONNECTION_CONNECTED:
@@ -118,10 +118,10 @@ namespace client
 		}
 	}
 
-	shared::ClientID Client::GetID() const noexcept
-	{
-		return myID;
-	}
+	//shared::ClientID Client::GetID() const noexcept
+	//{
+	//	return myID;
+	//}
 
 	CommonUtilities::Contract<Client::ServerInfo> Client::RequestServerInfo(const networking::SocketAddress& aServer, float aTimeout)
 	{
@@ -300,7 +300,7 @@ namespace client
 
 		// Connection accepted.
 		client.myConnectionStatus = CLIENT_CONNECTION_CONNECTED;
-		client.myID = aData.Message.Client;
+		//client.myID = aData.Message.Client;
 		client.myLastHeardFromRemote = std::chrono::steady_clock::now();
 	}
 
@@ -320,16 +320,18 @@ namespace client
 			return;
 		}
 
-		if (client.GetID() != aData.Message.Client)
-		{
-			// Another client was disconnected.
-			//TODO: Pass along to a callback, so disconnecting clients can be handled.
-			return;
-		}
-
 		// Connection accepted.
 		client.myConnectionStatus = CLIENT_CONNECTION_DISCONNECTED;
 		client.myServer = {};
+	}
+	void Client::OnAssuredTimeout(const shared::NetworkManager::AssuredTimeoutCallbackData& aData)
+	{
+		Client& client = *reinterpret_cast<Client*>(aData.UserData);
+
+		if (client.GetRemote() == aData.Remote)
+		{
+			client.Disconnect(shared::NETWORK_DISCONNECT_TIMED_OUT);
+		}
 	}
 	bool Client::SendConnectionRequest(const networking::SocketAddress& aRemote)
 	{

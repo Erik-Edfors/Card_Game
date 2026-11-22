@@ -4,39 +4,44 @@ SamplerState Sampler : register(s0);
 
 Texture2D Atlas : register(t0);
 
-float median(float r, float g, float b) 
+float2 GetSize(Texture2D aTexture)
+{
+    float width, height;
+    aTexture.GetDimensions(width, height);
+    return float2(width, height);
+}
+
+float Median(float r, float g, float b) 
 {
     return max(min(r, g), min(max(r, g), b));
+}
+
+float2 Sqr(float2 x)
+{
+    return x * x;
+}
+
+float GetScreenPxRange(float2 uv) {
+    float2 unitRange = float2(OB_SDLength, OB_SDLength) / GetSize(Atlas);
+    float2 screenTexSize = 1.f / sqrt(Sqr(ddx(uv)) + Sqr(ddy(uv)));
+    return max(0.5f * dot(unitRange, screenTexSize), 1.f);
 }
 
 Text_PS_Out main(Text_PS_In input)
 {
     Text_PS_Out output;
-    float4 s = Atlas.Sample(Sampler, input.UV);
-    float sd = median(s.r, s.g, s.b);
 
-    const float atlasBorderThickness = OB_AtlasEmSize * OB_BorderThickness;
+    const float3 msd = Atlas.Sample(Sampler, input.UV).rgb;
+    const float sd = Median(msd.r, msd.g, msd.b);
+    const float screenRange = GetScreenPxRange(input.UV);
+    const float screenGlyphDistance = screenRange*(sd - 0.5f);
+    const float screenBorderDistance = screenRange*(sd - 0.5f + OB_AtlasEmSize * OB_BorderThickness / OB_SDLength);
+    const float glyphOpacity = clamp(screenGlyphDistance + 0.5f, 0.f, 1.f);
+    const float borderOpacity = (1.f - glyphOpacity) * clamp(screenBorderDistance + 0.5f, 0.f, 1.f);
 
-    const float distanceToGlyph = OB_SDLength * (0.5f - sd);
-    const float distanceToBorder = distanceToGlyph - atlasBorderThickness;
-    const float blurDistance = 2.f * OB_SDLength / OB_AtlasEmSize;     //TODO: fix Render Target size dependant.
+    clip(glyphOpacity + borderOpacity - 0.01f);
 
-    clip(-distanceToBorder);
-
-    const float colorFactor = smoothstep(0.f, blurDistance, distanceToGlyph);
-
-    const float4 color = OB_Color + colorFactor * (OB_BorderColor - OB_Color);
-
-    float opacity = 1.f - smoothstep(0.f, blurDistance, distanceToBorder + blurDistance);
-
-    output.Color = float4(color.rgb, color.a * opacity);
+    output.Color = OB_Color * glyphOpacity + OB_BorderColor * borderOpacity;
 
     return output;
-    //const float d = distance(input.LocalUV, Atlas.Sample(Sampler, input.UV).rg);
-    
-    //Text_PS_Out output;
-    ////output.Color = float4(d, 0.f, 0.f, 1.f);
-    //float factor = 1.f - smoothstep(0.05f, 0.1f, d);
-    //output.Color = float4(1.f, 1.f, 1.f, 1.f) * factor;
-    //return output;
 }

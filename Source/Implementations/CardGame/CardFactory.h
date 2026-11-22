@@ -14,16 +14,16 @@ namespace cardgame
 		CardFactory();
 		~CardFactory();
 
-		std::unique_ptr<Card> CreateCard(CardFactoryID aFactoryID, Game* aGame, CardID aCardID);
+		std::unique_ptr<Card> CreateCard(CardFactoryID aFactoryID);
 
 		template<class _CardTy>
 		void RegisterCard(CardFactoryID aID);
 
 	private:
 		template<class _CardTy>
-		static std::unique_ptr<Card> ConstructCard(Game* aGame, CardID aID);
+		static std::unique_ptr<Card> ConstructCard();
 
-		using CardConstructor = std::unique_ptr<Card>(*)(Game* aGame, CardID aID);
+		using CardConstructor = std::unique_ptr<Card>(*)();
 
 		std::unordered_map<CardFactoryID, CardConstructor> myConstructors;
 	};
@@ -35,10 +35,9 @@ namespace cardgame
 	}
 
 	template<class _CardTy>
-	inline std::unique_ptr<Card> CardFactory::ConstructCard(Game* aGame, CardID aID)
+	inline std::unique_ptr<Card> CardFactory::ConstructCard()
 	{
 		_CardTy* card = new _CardTy();
-		card->Init(aGame, aID);
 		return std::unique_ptr<Card>(card);
 	}
 }

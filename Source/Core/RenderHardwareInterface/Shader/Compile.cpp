@@ -1,10 +1,11 @@
 #include "RenderHardwareInterface.pch.h"
 #include "Compile.h"
-//#include <Core/RenderHardwareInterface/PImpl.hpp>
-//#include <Core/RenderHardwareInterface/Objects/Shaders/Shader.h>
-//#include <Core/RenderHardwareInterface/Objects/Data.h>
+
 #include <d3dcompiler.h>
 #include <wrl.h>
+#include <fstream>
+
+#define FILE_CATEGORY "Compile.cpp"
 
 namespace graphics
 {
@@ -60,14 +61,17 @@ namespace graphics
 
 	bool graphics::CompileShader(const char* aVersion, const std::filesystem::path& aFile, const char* aEntryPoint, void** outShaderCode, size_t* outShaderCodeSize)
 	{
+#define LOG_CATEGORY FILE_CATEGORY"->CompileShader"
+#define CREATE_ERROR_MSG(details) "Failed to compile shader '%s'! " details
+
 		if (outShaderCode == nullptr)
 		{
-			//TODO: log
+			LOG_ERROR(LOG_CATEGORY, CREATE_ERROR_MSG(STRINGIFY(outShaderCode) " was nullptr."), aFile.string());
 			return false;
 		}
 		if (outShaderCodeSize == nullptr)
 		{
-			//TODO: log
+			LOG_ERROR(LOG_CATEGORY, CREATE_ERROR_MSG(STRINGIFY(outShaderCodeSize) " was nullptr."), aFile.string());
 			return false;
 		}
 
@@ -77,7 +81,8 @@ namespace graphics
 		compileFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
 		compileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL0;
 		compileFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#elif
+#else
+		compileFlags |= D3DCOMPILE_SKIP_VALIDATION;
 		compileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
 
@@ -103,11 +108,14 @@ namespace graphics
 			ReleaseFromMemory(buffer);
 			if (FAILED(result))
 			{
-				//TODO: Log
 				if (error)
 				{
 					std::string errorMsg(reinterpret_cast<const char*>(error->GetBufferPointer()));
-					errorMsg;
+					LOG_ERROR(LOG_CATEGORY, CREATE_ERROR_MSG("%s"), aFile.string(), errorMsg);
+				}
+				else
+				{
+					LOG_ERROR(LOG_CATEGORY, CREATE_ERROR_MSG("An error happened, but failed to be determined."), aFile.string());
 				}
 				return false;
 			}
@@ -116,7 +124,7 @@ namespace graphics
 		const size_t bufferSize = code->GetBufferSize();
 		if (bufferSize == 0)
 		{
-			//TODO: Log
+			LOG_ERROR(LOG_CATEGORY, CREATE_ERROR_MSG("No code was generated."), aFile.string());
 			return false;
 		}
 
@@ -126,6 +134,8 @@ namespace graphics
 		memcpy(*outShaderCode, code->GetBufferPointer(), bufferSize);
 
 		return true;
+
+#undef LOG_CATEGORY
 	}
 
 	void ReleaseShaderCode(void* aShaderCode)
@@ -133,115 +143,5 @@ namespace graphics
 		free(aShaderCode);
 	}
 }
-//
-//static bool CompileShader(const std::filesystem::path& aFile, const char* aEntryPoint, ID3DBlob** outShader, const char* aShaderVersion)
-//{
-//    UINT compileFlags = NULL;
-//#ifdef _DEBUG
-//    compileFlags |= D3DCOMPILE_DEBUG;
-//    compileFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-//    compileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL0;
-//    compileFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
-//#elif
-//    compileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
-//#endif
-//
-//    void* buffer = nullptr;
-//    size_t bufferSize = 0;
-//    LoadFileIntoMemory(&buffer, &bufferSize, aFile.c_str(), 65'536, 10'485'760);
-//    Microsoft::WRL::ComPtr<ID3DBlob> code;
-//    Microsoft::WRL::ComPtr<ID3DBlob> error;
-//    HRESULT result = D3DCompile(
-//        buffer, 
-//        static_cast<SIZE_T>(bufferSize), 
-//        aFile.string().c_str(), 
-//        NULL, 
-//        D3D_COMPILE_STANDARD_FILE_INCLUDE, 
-//        aEntryPoint,
-//        aShaderVersion, 
-//        compileFlags, 
-//        NULL, 
-//        outShader,
-//        &error
-//    );
-//    ReleaseFromMemory(buffer);
-//    if (FAILED(result))
-//    {
-//        //TODO: Log
-//        return false;
-//    }
-//
-//    return true;
-//}
-//
-//bool CompileShader(graphics::Device* aDevice, const std::filesystem::path& aFile, const char* aEntryPoint, graphics::VertexShader** outShader)
-//{
-//    const std::string name = aFile.filename().replace_extension().string();
-//    Microsoft::WRL::ComPtr<ID3DBlob> shader;
-//    bool result = CompileShader(aFile, aEntryPoint, &shader, "vs_5_0");
-//    if (not result)
-//    {
-//        return false;
-//    }
-//    return GRAPHICS_SUCCEEDED(aDevice->CreateShader(outShader, name.c_str(), shader->GetBufferPointer(), shader->GetBufferSize()));
-//}
-//
-//bool CompileShader(graphics::Device* aDevice, const std::filesystem::path& aFile, const char* aEntryPoint, graphics::HullShader** outShader)
-//{
-//    const std::string name = aFile.filename().replace_extension().string();
-//    Microsoft::WRL::ComPtr<ID3DBlob> shader;
-//    bool result = CompileShader(aFile, aEntryPoint, &shader, "hs_5_0");
-//    if (not result)
-//    {
-//        return false;
-//    }
-//    return GRAPHICS_SUCCEEDED(aDevice->CreateShader(outShader, name.c_str(), shader->GetBufferPointer(), shader->GetBufferSize()));
-//}
-//
-//bool CompileShader(graphics::Device* aDevice, const std::filesystem::path& aFile, const char* aEntryPoint, graphics::DomainShader** outShader)
-//{
-//    const std::string name = aFile.filename().replace_extension().string();
-//    Microsoft::WRL::ComPtr<ID3DBlob> shader;
-//    bool result = CompileShader(aFile, aEntryPoint, &shader, "ds_5_0");
-//    if (not result)
-//    {
-//        return false;
-//    }
-//    return GRAPHICS_SUCCEEDED(aDevice->CreateShader(outShader, name.c_str(), shader->GetBufferPointer(), shader->GetBufferSize()));
-//}
-//
-//bool CompileShader(graphics::Device* aDevice, const std::filesystem::path& aFile, const char* aEntryPoint, graphics::GeometryShader** outShader)
-//{
-//    const std::string name = aFile.filename().replace_extension().string();
-//    Microsoft::WRL::ComPtr<ID3DBlob> shader;
-//    bool result = CompileShader(aFile, aEntryPoint, &shader, "gs_5_0");
-//    if (not result)
-//    {
-//        return false;
-//    }
-//    return GRAPHICS_SUCCEEDED(aDevice->CreateShader(outShader, name.c_str(), shader->GetBufferPointer(), shader->GetBufferSize()));
-//}
-//
-//bool CompileShader(graphics::Device* aDevice, const std::filesystem::path& aFile, const char* aEntryPoint, graphics::PixelShader** outShader)
-//{
-//    const std::string name = aFile.filename().replace_extension().string();
-//    Microsoft::WRL::ComPtr<ID3DBlob> shader;
-//    bool result = CompileShader(aFile, aEntryPoint, &shader, "ps_5_0");
-//    if (not result)
-//    {
-//        return false;
-//    }
-//    return GRAPHICS_SUCCEEDED(aDevice->CreateShader(outShader, name.c_str(), shader->GetBufferPointer(), shader->GetBufferSize()));
-//}
-//
-//bool CompileShader(graphics::Device* aDevice, const std::filesystem::path& aFile, const char* aEntryPoint, graphics::ComputeShader** outShader)
-//{
-//    const std::string name = aFile.filename().replace_extension().string();
-//    Microsoft::WRL::ComPtr<ID3DBlob> shader;
-//    bool result = CompileShader(aFile, aEntryPoint, &shader, "cs_5_0");
-//    if (not result)
-//    {
-//        return false;
-//    }
-//    return GRAPHICS_SUCCEEDED(aDevice->CreateShader(outShader, name.c_str(), shader->GetBufferPointer(), shader->GetBufferSize()));
-//}
+
+#undef FILE_CATEGORY

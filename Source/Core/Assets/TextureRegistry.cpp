@@ -1,6 +1,10 @@
+#include "Assets.pch.h"
 #include "TextureRegistry.h"
 #include <Core/RenderHardwareInterface/DDSLoad.h>
 #include <Core/RenderHardwareInterface/Device.h>
+
+#define FILE_CATEGORY "TextureRegistry.cpp"
+#define CLASS_CATEGORY FILE_CATEGORY"->TextureRegistry"
 
 assets::TextureRegistry::TextureRegistry(graphics::Device* aDevice) :
 	myDevice(aDevice)
@@ -9,6 +13,9 @@ assets::TextureRegistry::TextureRegistry(graphics::Device* aDevice) :
 
 bool assets::TextureRegistry::OnLoad(const std::filesystem::path& aPath, TextureAsset* outResult)
 {
+#define LOG_CATEGORY CLASS_CATEGORY"::OnLoad"
+#define MAKE_ERROR_MSG(details) "Failed to load texture '%s'! " details
+
 	TextureAsset asset;
 
 	const std::string name = aPath.filename().replace_extension().string();
@@ -18,7 +25,7 @@ bool assets::TextureRegistry::OnLoad(const std::filesystem::path& aPath, Texture
 
 	if (extension != ".dds")
 	{
-		//TODO: Log wrong extension
+		LOG_ERROR(LOG_CATEGORY, MAKE_ERROR_MSG("File must have '.dds' extension."), aPath.string());
 		return false;
 	}
 
@@ -35,7 +42,9 @@ bool assets::TextureRegistry::OnLoad(const std::filesystem::path& aPath, Texture
 
 	if (GRAPHICS_FAILED(result))
 	{
-		//TODO: Log result
+		const graphics::result::Message msg = graphics::result::GetErrorMessage(result);
+		LOG_ERROR(LOG_CATEGORY, MAKE_ERROR_MSG("%s: %s"), aPath.string(), msg.Type, msg.Desc);
+		msg;
 		return false;
 	}
 
@@ -54,7 +63,9 @@ bool assets::TextureRegistry::OnLoad(const std::filesystem::path& aPath, Texture
 		result = myDevice->CreateShaderResource(&asset.ShaderResource, &desc);
 		if (GRAPHICS_FAILED(result))
 		{
-			//TODO: Log result
+			const graphics::result::Message msg = graphics::result::GetErrorMessage(result);
+			LOG_ERROR(LOG_CATEGORY, MAKE_ERROR_MSG("%s: %s"), aPath.string(), msg.Type, msg.Desc);
+			msg;
 			return false;
 		}
 	}
@@ -62,4 +73,10 @@ bool assets::TextureRegistry::OnLoad(const std::filesystem::path& aPath, Texture
 	*outResult = std::move(asset);
 
 	return true;
+
+#undef MAKE_ERROR_MSG
+#undef LOG_CATEGORY
 }
+
+#undef FILE_CATEGORY
+#undef CLASS_CATEGORY

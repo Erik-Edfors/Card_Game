@@ -9,6 +9,14 @@ namespace shared
 		TargetOpponentTask() noexcept;
 		~TargetOpponentTask() noexcept;
 
+		void Initialize(
+			cardgame::PlayerID aAuthority,
+			cardgame::PlayerID aOwner
+		) noexcept;
+
+		void Reset() noexcept;
+
+		void SetAuthority(cardgame::PlayerID aPlayer) noexcept;
 		void SetOwner(cardgame::PlayerID aOwner) noexcept;
 
 		cardgame::PlayerID GetTarget() const noexcept;
@@ -16,6 +24,7 @@ namespace shared
 		virtual cardgame::TASK_TYPE GetType() const override;
 		virtual const char* GetDescriptor() const override;
 		virtual bool IsFinished() const override;
+		virtual cardgame::PlayerID GetAuthority() const override;
 
 		virtual unsigned int GetMinTargets() const override;
 		virtual unsigned int GetMaxTargets() const override;
@@ -23,6 +32,7 @@ namespace shared
 		virtual bool Submit(cardgame::PlayerID* aTargets, size_t aNumTargets) override;
 
 	private:
+		cardgame::PlayerID myAuthority;
 		cardgame::PlayerID myOwner;
 		cardgame::PlayerID myTarget;
 	};

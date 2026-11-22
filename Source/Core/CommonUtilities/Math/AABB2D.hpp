@@ -28,6 +28,9 @@ namespace CommonUtilities
 		Vector2<_Ty> Size() const;
 
 		AABB2D Intersection(const AABB2D& aAABB2D) const;
+
+		bool operator==(const AABB2D& aAABB2D) const noexcept;
+		bool operator!=(const AABB2D& aAABB2D) const noexcept;
 	};
 
 	using AABB2Di = AABB2D<int>;
@@ -83,5 +86,16 @@ namespace CommonUtilities
 		res.Max.x = (std::min)(Max.x, aAABB2D.Max.x);
 		res.Max.y = (std::min)(Max.y, aAABB2D.Max.y);
 		return res;
+	}
+
+	template<typename _Ty>
+	inline bool AABB2D<_Ty>::operator==(const AABB2D& aAABB2D) const noexcept
+	{
+		return Min == aAABB2D.Min && Max == aAABB2D.Max;
+	}
+	template<typename _Ty>
+	inline bool AABB2D<_Ty>::operator!=(const AABB2D& aAABB2D) const noexcept
+	{
+		return Min != aAABB2D.Min || Max != aAABB2D.Max;
 	}
 }

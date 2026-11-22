@@ -70,6 +70,8 @@ namespace client
 			{
 			case CLIENT_CONNECTION_DISCONNECTED:
 			{
+				ImGui::SeparatorText("Server Select");
+
 				ImGui::Text("Direct Connect");
 
 				ImGui::BeginChild("Direct Connect", { -1.f, 0.f }, ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY);
@@ -179,14 +181,17 @@ namespace client
 			break;
 			case CLIENT_CONNECTION_PENDING:
 			{
-				ImGui::BeginDisabled();
-				ImGui::Button("Connecting...", { -1.f, 0.f });
-				ImGui::EndDisabled();
+				ImGui::SeparatorText("Connecting...");
+
+				if (ImGui::Button("Cancel", { -1.f, 0.f }))
+				{
+					myClient->GetClient().Disconnect(shared::NETWORK_DISCONNECT_END_OF_SESSION);
+				}
 			}
 			break;
 			case CLIENT_CONNECTION_CONNECTED:
 			{
-				ImGui::Button("Connected!", { -1.f, 0.f });
+				ImGui::SeparatorText("Connected!");
 				GetEngine().ChangeScene<LobbyScene>(myClient);
 			}
 			break;
@@ -256,9 +261,9 @@ namespace client
 
 		if (not std::filesystem::exists(ServersPath))
 		{
-			std::filesystem::create_directories(ServersPath);
-			std::wofstream serverEntriesFile(ServersPath);
-			serverEntriesFile << L"{\n}" << std::endl;
+			std::filesystem::create_directories(std::filesystem::path(ServersPath).parent_path());
+			std::ofstream serverEntriesFile(ServersPath);
+			serverEntriesFile << "{\n}" << std::endl;
 			serverEntriesFile.close();
 		}
 		std::ifstream serverEntriesFile(ServersPath);

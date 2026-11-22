@@ -1,14 +1,11 @@
+#include "Assets.pch.h"
 #include "AssetManager.h"
 #include <fstream>
 #include <filesystem>
 
 namespace assets
 {
-	//std::unordered_map<std::filesystem::path, AssetManager::AssetRegistry> AssetManager::myAssets;
 	std::filesystem::path locAssetPath;
-
-	//static constexpr size_t locBufferSize = 1'048'576;
-	//static char locBuffer[locBufferSize];
 
 	bool AssetManager::Initialize(const std::filesystem::path& aAssetsPath)
 	{
@@ -49,44 +46,4 @@ namespace assets
 
 		return assets::ResourceID(id);
 	}
-
-	//size_t AssetManager::OpenFileContents(const std::filesystem::path& aPath, const void** outContents)
-	//{
-	//	std::ifstream file(aPath, std::ifstream::binary);
-	//
-	//	if (not file.is_open())
-	//	{
-	//		//TODO: log
-	//		return nullptr;
-	//	}
-	//
-	//	constexpr size_t readSize = 4096;
-	//	size_t remainder = locBufferSize;
-	//	bool finished = false;
-	//	while (finished == false && remainder > 0)
-	//	{
-	//		file.read(locBuffer, std::min(readSize, remainder));
-	//		remainder -= file.gcount();
-	//		finished = file.eof();
-	//
-	//		if (file.fail())
-	//		{
-	//			return nullptr;
-	//		}
-	//	}
-	//	if (not finished)
-	//	{
-	//		return nullptr;
-	//	}
-	//
-	//	return locBuffer;
-	//}
-	//
-	//void AssetManager::FreeFileContents(void* aFileContents)
-	//{
-	//	if (aFileContents != nullptr)
-	//	{
-	//		delete[] aFileContents;
-	//	}
-	//}
 }

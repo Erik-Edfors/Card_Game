@@ -129,6 +129,17 @@ namespace graphics
 			Texture2D* aDestination
 		) = 0;
 
+		virtual result::Code CopyTexture(
+			Texture2D* aSource,
+			unsigned int aSrcLeft,
+			unsigned int aSrcTop,
+			unsigned int aSrcRight,
+			unsigned int aSrcBottom,
+			Texture2D* aDestination,
+			unsigned int aDestX,
+			unsigned int aDestY
+		) = 0;
+
 		//virtual result::Code ResizeTexture(
 		//	Texture2D* aTexture,
 		//	unsigned int aWidth,

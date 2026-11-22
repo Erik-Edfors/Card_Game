@@ -20,70 +20,70 @@ namespace CommonUtilities
 		};
 
 		// Construct an identity quaternion (1, 0, 0, 0).
-		Quaternion();
+		constexpr Quaternion();
 		// Constructs a quaternion from the given values.
-		Quaternion(_Ty aW, _Ty aX, _Ty aY, _Ty aZ);
+		constexpr Quaternion(_Ty aW, _Ty aX, _Ty aY, _Ty aZ);
 		// Constructs a quaternion from the vector representation.
-		Quaternion(const Vector4<_Ty>& aVector);
+		constexpr Quaternion(const Vector4<_Ty>& aVector);
 		// Construct a quaternion representing rotation around an axis.
-		Quaternion(const Vector3<_Ty>& aAxis, _Ty aAngle);
+		constexpr Quaternion(const Vector3<_Ty>& aAxis, _Ty aAngle);
 		// Quaternion Destructor.
-		~Quaternion() = default;
+		constexpr ~Quaternion() = default;
 
 		// Rotates a vector.
-		Vector3<_Ty> Rotate(const Vector3<_Ty> aVector) const;
+		constexpr Vector3<_Ty> Rotate(const Vector3<_Ty> aVector) const;
 		// Gets a vector pointing in the forwards direction of the quaternion. Will be normalized if quaternion is normalized.
-		Vector3<_Ty> Forward() const;
+		constexpr Vector3<_Ty> Forward() const;
 		// Gets a vector pointing in the upwards direction of the quaternion. Will be normalized if quaternion is normalized.
-		Vector3<_Ty> Up() const;
+		constexpr Vector3<_Ty> Up() const;
 		// Gets a vector pointing in the right direction of the quaternion. Will be normalized if quaternion is normalized.
-		Vector3<_Ty> Right() const;
+		constexpr Vector3<_Ty> Right() const;
 
 		// Gets the dot product of this quaternion and another.
-		_Ty Dot(const Quaternion<_Ty>& aRHS) const;
+		constexpr _Ty Dot(const Quaternion<_Ty>& aRHS) const;
 
 		// Normalizes this quaternion.
-		void Normalize();
+		constexpr void Normalize();
 		// Gets a normalized quaternion with same rotation.
-		Quaternion<_Ty> GetNormalized() const;
+		constexpr Quaternion<_Ty> GetNormalized() const;
 		// Gets the conjugate of the quaternion.
-		Quaternion<_Ty> Conjugate() const;
+		constexpr Quaternion<_Ty> Conjugate() const;
 		// Gets the inverse of the quaternion.
-		Quaternion<_Ty> Inverse() const;
+		constexpr Quaternion<_Ty> Inverse() const;
 
 		// Gets the magnitude of the quaternion
-		_Ty Length() const;
+		constexpr _Ty Length() const;
 		// Gets the magnitude squared of the quaternion. Is faster than Length().
-		_Ty LengthSqr() const;
+		constexpr _Ty LengthSqr() const;
 
-		bool operator==(const Quaternion<_Ty>& aRhs) const;
-		bool operator!=(const Quaternion<_Ty>& aRhs) const;
+		constexpr bool operator==(const Quaternion<_Ty>& aRhs) const;
+		constexpr bool operator!=(const Quaternion<_Ty>& aRhs) const;
 
-		Quaternion<_Ty>& operator+=(const Quaternion<_Ty>& aRhs);
-		Quaternion<_Ty> operator+(const Quaternion<_Ty>& aRhs) const;
-		Quaternion<_Ty>& operator-=(const Quaternion<_Ty>& aRhs);
-		Quaternion<_Ty> operator-(const Quaternion<_Ty>& aRhs) const;
+		constexpr Quaternion<_Ty>& operator+=(const Quaternion<_Ty>& aRhs);
+		constexpr Quaternion<_Ty> operator+(const Quaternion<_Ty>& aRhs) const;
+		constexpr Quaternion<_Ty>& operator-=(const Quaternion<_Ty>& aRhs);
+		constexpr Quaternion<_Ty> operator-(const Quaternion<_Ty>& aRhs) const;
 
-		Quaternion<_Ty> operator-() const;
+		constexpr Quaternion<_Ty> operator-() const;
 
-		Quaternion<_Ty>& operator*=(const Quaternion<_Ty>& aRhs);
-		Quaternion<_Ty> operator*(const Quaternion<_Ty>& aRhs) const;
-		Quaternion<_Ty>& operator*=(const _Ty& aScalar);
-		Quaternion<_Ty> operator*(const _Ty& aScalar) const;
-		Quaternion<_Ty>& operator/=(const _Ty& aScalar);
-		Quaternion<_Ty> operator/(const _Ty& aScalar) const;
+		constexpr Quaternion<_Ty>& operator*=(const Quaternion<_Ty>& aRhs);
+		constexpr Quaternion<_Ty> operator*(const Quaternion<_Ty>& aRhs) const;
+		constexpr Quaternion<_Ty>& operator*=(const _Ty& aScalar);
+		constexpr Quaternion<_Ty> operator*(const _Ty& aScalar) const;
+		constexpr Quaternion<_Ty>& operator/=(const _Ty& aScalar);
+		constexpr Quaternion<_Ty> operator/(const _Ty& aScalar) const;
 	};
 
 	using Quaternionf = Quaternion<float>;
 	using Quaterniond = Quaternion<double>;
 
 	template<typename _Ty>
-	static Quaternion<_Ty> operator*(_Ty aScalar, Quaternion<_Ty> aQuaternion);
+	constexpr static Quaternion<_Ty> operator*(_Ty aScalar, Quaternion<_Ty> aQuaternion);
 	template<typename _Ty>
-	static Quaternion<_Ty> operator/(_Ty aScalar, Quaternion<_Ty> aQuaternion);
+	constexpr static Quaternion<_Ty> operator/(_Ty aScalar, Quaternion<_Ty> aQuaternion);
 
 	template<typename _Ty>
-	inline Quaternion<_Ty>::Quaternion() :
+	inline constexpr Quaternion<_Ty>::Quaternion() :
 		w(static_cast<_Ty>(1)),
 		x(static_cast<_Ty>(0)),
 		y(static_cast<_Ty>(0)),
@@ -91,7 +91,7 @@ namespace CommonUtilities
 	{
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty>::Quaternion(_Ty aW, _Ty aX, _Ty aY, _Ty aZ) :
+	inline constexpr Quaternion<_Ty>::Quaternion(_Ty aW, _Ty aX, _Ty aY, _Ty aZ) :
 		w(aW),
 		x(aX),
 		y(aY),
@@ -99,7 +99,7 @@ namespace CommonUtilities
 	{
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty>::Quaternion(const Vector4<_Ty>& aVector) :
+	inline constexpr Quaternion<_Ty>::Quaternion(const Vector4<_Ty>& aVector) :
 		x(aVector.x),
 		y(aVector.y),
 		z(aVector.z),
@@ -107,7 +107,7 @@ namespace CommonUtilities
 	{
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty>::Quaternion(const Vector3<_Ty>& aAxis, _Ty aAngle)
+	inline constexpr Quaternion<_Ty>::Quaternion(const Vector3<_Ty>& aAxis, _Ty aAngle)
 	{
 		const _Ty a = aAngle / static_cast<_Ty>(2);
 		const _Ty sin_a = std::sin(a);
@@ -118,7 +118,7 @@ namespace CommonUtilities
 		Normalize();
 	}
 	template<typename _Ty>
-	inline Vector3<_Ty> Quaternion<_Ty>::Rotate(const Vector3<_Ty> v) const
+	inline constexpr Vector3<_Ty> Quaternion<_Ty>::Rotate(const Vector3<_Ty> v) const
 	{
 		Vector3<float> u(x, y, z);
 
@@ -131,22 +131,22 @@ namespace CommonUtilities
 			+ 2.0f * s * u.Cross(v);
 	}
 	template<typename _Ty>
-	inline Vector3<_Ty> Quaternion<_Ty>::Forward() const
+	inline constexpr Vector3<_Ty> Quaternion<_Ty>::Forward() const
 	{
 		return Rotate(Vector3<_Ty>(static_cast<_Ty>(0), static_cast<_Ty>(0), static_cast<_Ty>(1)));
 	}
 	template<typename _Ty>
-	inline Vector3<_Ty> Quaternion<_Ty>::Up() const
+	inline constexpr Vector3<_Ty> Quaternion<_Ty>::Up() const
 	{
 		return Rotate(Vector3<_Ty>(static_cast<_Ty>(0), static_cast<_Ty>(1), static_cast<_Ty>(0)));
 	}
 	template<typename _Ty>
-	inline Vector3<_Ty> Quaternion<_Ty>::Right() const
+	inline constexpr Vector3<_Ty> Quaternion<_Ty>::Right() const
 	{
 		return Rotate(Vector3<_Ty>(static_cast<_Ty>(1), static_cast<_Ty>(0), static_cast<_Ty>(0)));
 	}
 	template<typename _Ty>
-	inline _Ty Quaternion<_Ty>::Dot(const Quaternion<_Ty>& aRHS) const
+	inline constexpr _Ty Quaternion<_Ty>::Dot(const Quaternion<_Ty>& aRHS) const
 	{
 		return w * aRHS.w
 			+ x * aRHS.x
@@ -154,7 +154,7 @@ namespace CommonUtilities
 			+ z * aRHS.z;
 	}
 	template<typename _Ty>
-	inline void Quaternion<_Ty>::Normalize()
+	inline constexpr void Quaternion<_Ty>::Normalize()
 	{
 		_Ty length = Length();
 		w /= length;
@@ -163,29 +163,29 @@ namespace CommonUtilities
 		z /= length;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> Quaternion<_Ty>::GetNormalized() const
+	inline constexpr Quaternion<_Ty> Quaternion<_Ty>::GetNormalized() const
 	{
 		Quaternion<_Ty> q(*this);
 		q.Normalize();
 		return q;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> Quaternion<_Ty>::Conjugate() const
+	inline constexpr Quaternion<_Ty> Quaternion<_Ty>::Conjugate() const
 	{
 		return Quaternion<_Ty>(w, -x, -y, -z);
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> Quaternion<_Ty>::Inverse() const
+	inline constexpr Quaternion<_Ty> Quaternion<_Ty>::Inverse() const
 	{
 		return Conjugate() / Length();
 	}
 	template<typename _Ty>
-	inline _Ty Quaternion<_Ty>::Length() const
+	inline constexpr _Ty Quaternion<_Ty>::Length() const
 	{
 		return std::sqrt(LengthSqr());
 	}
 	template<typename _Ty>
-	inline _Ty Quaternion<_Ty>::LengthSqr() const
+	inline constexpr _Ty Quaternion<_Ty>::LengthSqr() const
 	{
 		return w * w +
 			x * x +
@@ -195,7 +195,7 @@ namespace CommonUtilities
 
 #pragma region Operators
 	template<typename _Ty>
-	inline bool Quaternion<_Ty>::operator==(const Quaternion<_Ty>& aRhs) const
+	inline constexpr bool Quaternion<_Ty>::operator==(const Quaternion<_Ty>& aRhs) const
 	{
 		return w == aRhs.w &&
 			x == aRhs.x &&
@@ -203,7 +203,7 @@ namespace CommonUtilities
 			z == aRhs.z;
 	}
 	template<typename _Ty>
-	inline bool Quaternion<_Ty>::operator!=(const Quaternion<_Ty>& aRhs) const
+	inline constexpr bool Quaternion<_Ty>::operator!=(const Quaternion<_Ty>& aRhs) const
 	{
 		return w != aRhs.w ||
 			x != aRhs.x ||
@@ -213,7 +213,7 @@ namespace CommonUtilities
 
 
 	template<typename _Ty>
-	inline Quaternion<_Ty>& Quaternion<_Ty>::operator+=(const Quaternion<_Ty>& aRhs)
+	inline constexpr Quaternion<_Ty>& Quaternion<_Ty>::operator+=(const Quaternion<_Ty>& aRhs)
 	{
 		w += aRhs.w;
 		x += aRhs.x;
@@ -222,12 +222,12 @@ namespace CommonUtilities
 		return *this;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> Quaternion<_Ty>::operator+(const Quaternion<_Ty>& aRhs) const
+	inline constexpr Quaternion<_Ty> Quaternion<_Ty>::operator+(const Quaternion<_Ty>& aRhs) const
 	{
 		return Quaternion<_Ty>(*this) += aRhs;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty>& Quaternion<_Ty>::operator-=(const Quaternion<_Ty>& aRhs)
+	inline constexpr Quaternion<_Ty>& Quaternion<_Ty>::operator-=(const Quaternion<_Ty>& aRhs)
 	{
 		w -= aRhs.w;
 		x -= aRhs.x;
@@ -236,23 +236,23 @@ namespace CommonUtilities
 		return *this;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> Quaternion<_Ty>::operator-(const Quaternion<_Ty>& aRhs) const
+	inline constexpr Quaternion<_Ty> Quaternion<_Ty>::operator-(const Quaternion<_Ty>& aRhs) const
 	{
 		return Quaternion<_Ty>(*this) -= aRhs;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> Quaternion<_Ty>::operator-() const
+	inline constexpr Quaternion<_Ty> Quaternion<_Ty>::operator-() const
 	{
 		return Quaternion<_Ty>(-w, -x, -y, -z);
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty>& Quaternion<_Ty>::operator*=(const Quaternion<_Ty>& aRhs)
+	inline constexpr Quaternion<_Ty>& Quaternion<_Ty>::operator*=(const Quaternion<_Ty>& aRhs)
 	{
 		*this = (*this) * aRhs;
 		return *this;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> Quaternion<_Ty>::operator*(const Quaternion<_Ty>& aRhs) const
+	inline constexpr Quaternion<_Ty> Quaternion<_Ty>::operator*(const Quaternion<_Ty>& aRhs) const
 	{
 		Quaternion<_Ty> q;
 		q.w = w * aRhs.w - x * aRhs.x - y * aRhs.y - z * aRhs.z;
@@ -262,7 +262,7 @@ namespace CommonUtilities
 		return q;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty>& Quaternion<_Ty>::operator*=(const _Ty& aScalar)
+	inline constexpr Quaternion<_Ty>& Quaternion<_Ty>::operator*=(const _Ty& aScalar)
 	{
 		w *= aScalar;
 		x *= aScalar;
@@ -271,7 +271,7 @@ namespace CommonUtilities
 		return *this;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> Quaternion<_Ty>::operator*(const _Ty& aScalar) const
+	inline constexpr Quaternion<_Ty> Quaternion<_Ty>::operator*(const _Ty& aScalar) const
 	{
 		return Quaternion<_Ty>(
 			this->w * aScalar,
@@ -281,7 +281,7 @@ namespace CommonUtilities
 		);
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty>& Quaternion<_Ty>::operator/=(const _Ty& aScalar)
+	inline constexpr Quaternion<_Ty>& Quaternion<_Ty>::operator/=(const _Ty& aScalar)
 	{
 		w /= aScalar;
 		x /= aScalar;
@@ -290,7 +290,7 @@ namespace CommonUtilities
 		return *this;
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> Quaternion<_Ty>::operator/(const _Ty& aScalar) const
+	inline constexpr Quaternion<_Ty> Quaternion<_Ty>::operator/(const _Ty& aScalar) const
 	{
 		return Quaternion<_Ty>(
 			this->w / aScalar,
@@ -301,7 +301,7 @@ namespace CommonUtilities
 	}
 
 	template<typename _Ty>
-	inline Quaternion<_Ty> operator*(_Ty aScalar, Quaternion<_Ty> aQuaternion)
+	inline constexpr Quaternion<_Ty> operator*(_Ty aScalar, Quaternion<_Ty> aQuaternion)
 	{
 		return Quaternion<_Ty>(
 			aQuaternion.w * aScalar,
@@ -311,7 +311,7 @@ namespace CommonUtilities
 		);
 	}
 	template<typename _Ty>
-	inline Quaternion<_Ty> operator/(_Ty aScalar, Quaternion<_Ty> aQuaternion)
+	inline constexpr Quaternion<_Ty> operator/(_Ty aScalar, Quaternion<_Ty> aQuaternion)
 	{
 		return Quaternion<_Ty>(
 			aQuaternion.w / aScalar,

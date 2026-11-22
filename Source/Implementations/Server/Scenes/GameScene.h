@@ -5,6 +5,7 @@
 #include <Core/Networking/SocketAddress.h>
 #include <Implementations/CardGame/Game.h>
 #include <Implementations/Shared/Network/Messages.h>
+#include <random>
 
 namespace server
 {
@@ -16,13 +17,11 @@ namespace server
 		GameScene(ServerApp* aServerApp);
 		~GameScene();
 
-		bool InitializeGame(size_t aNumPlayers);
-
 		//cardgame::PlayerID AddPlayer(networking::SocketAddress aRemote);
-		const cardgame::Player* AssignPlayer(shared::ClientID aClient);
+		const cardgame::Player* AssignPlayer(shared::ClientID aClient, std::string_view aName);
 		const cardgame::Player* GetPlayer(shared::ClientID aClient);
 
-		bool PushCommand(const cardgame::Command& aCommand);
+		bool PushCommand(const cardgame::Command& aCommand, cardgame::Command::Result* outResult = nullptr);
 
 		const cardgame::Game& GetGame() const noexcept;
 		Server& GetServer() const noexcept;
@@ -32,6 +31,7 @@ namespace server
 		virtual void OnShutdown() override;
 		virtual void OnEnter() override;
 		virtual void OnExit() override;
+		virtual void OnStart() override;
 		virtual void OnUpdate(float aDeltaTime) override;
 
 	private:
@@ -48,12 +48,22 @@ namespace server
 		static void OnEndTurnRequest(const Server::MessageCallbackData<shared::NM_EndTurnRequest>& aData);
 		//static void OnGameReady(const Server::MessageCallbackData<shared::NM_GameReady>& aData);
 
+		static void OnDisconnect(const Server::DisconnectionCallbackData& aData);
+
 		bool SendCommand(const cardgame::Command& aCommand, size_t aIndex);
 
-		ServerApp* myServer;
+		void OnTurnBegin(const cardgame::Game::EventTurnBegin& aData);
+
+		bool AddCardsToDeck(cardgame::PlayerID aPlayer, size_t aNumCards, CommonUtilities::StringHash aCardFactoryID);
+
+		CommonUtilities::EventListener myGameListener;
+
+		ServerApp* myApp;
 		cardgame::Game myGame;
 		std::unordered_map<cardgame::PlayerID, shared::ClientID> myPlayerToClient;
 		std::unordered_map<shared::ClientID, cardgame::PlayerID> myClientToPlayer;
+
+		std::mt19937 myRNG;
 
 		//bool myGameStarted;
 		//size_t myNumReadyClients;

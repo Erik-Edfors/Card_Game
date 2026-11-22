@@ -17,12 +17,15 @@ public:
 	Engine& GetEngine() noexcept;
 	cs::ComponentSystem& GetComponentSystem() noexcept;
 
+	bool HasStarted() const noexcept;
+
 protected:
 	Scene();
 	virtual void OnInit() {};
 	virtual void OnShutdown() {};
 	virtual void OnEnter() {};
 	virtual void OnExit() {};
+	virtual void OnStart() {};
 	virtual void OnUpdate(float aDeltaTime) { aDeltaTime; };
 
 private:
@@ -32,5 +35,6 @@ private:
 	void Exit();
 
 	Engine* myEngine;
+	bool myStarted;
 	cs::ComponentSystem myComponentSystem;
 };

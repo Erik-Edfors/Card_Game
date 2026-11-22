@@ -51,6 +51,11 @@ namespace cardgame
 		return true;
 	}
 
+	size_t Location::GetNumCards() const noexcept
+	{
+		return myCards.size();
+	}
+
 	size_t Location::GetCards(CardID* outCards, size_t aStart, size_t aCount) const noexcept
 	{
 		const size_t total = myCards.size();
@@ -59,9 +64,9 @@ namespace cardgame
 			return 0;
 		}
 
-		const size_t count = aStart - std::min(aStart + aCount, total);
+		const size_t count = std::min(aCount, total - aStart);
 
-		memcpy(outCards, myCards.data(), sizeof(CardID) * count);
+		memcpy(outCards, myCards.data() + aStart, sizeof(CardID) * count);
 
 		return count;
 	}

@@ -162,20 +162,10 @@ namespace networking
 			return false;
 		}
 
-		//TODO: use getaddrinfo to try and connect to all possible addresses.
 		int result;
 		{
 			std::scoped_lock lk(GetMutex());
-			//if (aTimeout != 0)
-			//{
-			//	u_long block = 1;
-			//	result = ioctlsocket(mySocket, FIONBIO, &block);
-			//	if (result == SOCKET_ERROR)
-			//	{
-			//		LOG_ERROR_L(LOG_CATEGORY, "Failed to connect! Could not set Socket in non-blocking mode!");
-			//		return false;
-			//	}
-			//}
+
 			result = WSAConnect(mySocket, reinterpret_cast<sockaddr*>(&address), sizeof(address), NULL, NULL, NULL, NULL);
 			if (result == SOCKET_ERROR)
 			{
@@ -228,16 +218,6 @@ namespace networking
 
 			}
 
-			//if (aTimeout != 0)
-			//{
-			//	u_long block = 0;
-			//	result = ioctlsocket(mySocket, FIONBIO, &block);
-			//	if (result == SOCKET_ERROR)
-			//	{
-			//		LOG_WARNING_L(LOG_CATEGORY, "Could not set Socket back to blocking mode!");
-			//	}
-			//}
-
 			UpdateRemote();
 		}
 
@@ -260,13 +240,14 @@ namespace networking
 
 		if (IsBound())
 		{
+			LOG_ERROR_L(LOG_CATEGORY, "Failed to bind! Socket is already bound.");
 			return false;
 		}
 
 		sockaddr_storage address = {};
 		if (not GetWs2Address(&address, aAddress))	// Could not convert address
 		{
-			LOG_ERROR_L(LOG_CATEGORY, "Failed to bind! Could not convert SocketAddress!");
+			LOG_ERROR_L(LOG_CATEGORY, "Failed to bind! Could not convert SocketAddress.");
 			return false;
 		}
 
@@ -293,7 +274,12 @@ namespace networking
 	bool Socket_Win32::Listen(unsigned int aBacklog)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::Listen"
-		//TODO: assert socket is bound.
+
+		if (not IsBound())
+		{
+			LOG_ERROR_L(LOG_CATEGORY, "Failed to listen! Socket is not bound.");
+			return false;
+		}
 
 		int result;
 		{

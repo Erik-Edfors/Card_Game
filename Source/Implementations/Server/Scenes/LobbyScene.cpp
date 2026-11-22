@@ -1,6 +1,7 @@
 #include "Server.pch.h"
 #include "LobbyScene.h"
 #include "GameLoadingScene.h"
+#include "Scenes/MainScene.h"
 
 #include <Core/Engine/Engine.h>
 #include <Core/Engine/CommandParser.h>
@@ -15,14 +16,26 @@
 namespace server
 {
 	LobbyScene::LobbyScene(ServerApp* aApp) :
-		myApp(aApp)
+		myApp(aApp),
+		myMaxPlayers(2)
 	{
 	}
 	LobbyScene::~LobbyScene()
 	{
 	}
-
-	void LobbyScene::OnInit()
+	void LobbyScene::SetMaxPlayers(size_t aMax) noexcept
+	{
+		myMaxPlayers = aMax;
+	}
+	size_t LobbyScene::GetMaxPlayers() const noexcept
+	{
+		return myMaxPlayers;
+	}
+	size_t LobbyScene::GetNumPlayers() const noexcept
+	{
+		return myPlayers.size();
+	}
+	void LobbyScene::OnEnter()
 	{
 		Server& server = GetServer();
 		server.SetAllowingConnections(true);
@@ -31,7 +44,7 @@ namespace server
 		server.SetConnectionCallback(&OnConnection, this);
 		server.SetDisconnectionCallback(&OnDisconnection, this);
 	}
-	void LobbyScene::OnShutdown()
+	void LobbyScene::OnExit()
 	{
 		Server& server = GetServer();
 		server.SetAllowingConnections(false);
@@ -39,12 +52,6 @@ namespace server
 		server.SetMessageCallback<shared::NM_NameRequest>(nullptr, nullptr);
 		server.SetConnectionCallback(nullptr, nullptr);
 		server.SetDisconnectionCallback(nullptr, nullptr);
-	}
-	void LobbyScene::OnEnter()
-	{
-	}
-	void LobbyScene::OnExit()
-	{
 	}
 	void LobbyScene::OnUpdate(float aDeltaTime)
 	{
@@ -60,28 +67,48 @@ namespace server
 		ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
 		if (ImGui::Begin("Lobby", nullptr, flags))
 		{
+			ImGui::SeparatorText("Lobby");
+
 			if (ImGui::Button("Start Game", { -1.f, 0.f }))
 			{
 				StartGame();
 			}
-
-			int id = 0;
-			for (const PlayerInfo& player : myPlayers)
+			if (ImGui::Button("Cancel Game", { -1.f, 0.f }))
 			{
-				ImGui::PushID(id++);
+				GetServer().DisconnectClients(shared::NETWORK_DISCONNECT_END_OF_SESSION);
+				GetEngine().ChangeScene<MainScene>(myApp);
+			}
 
-				if (ImGui::BeginChild("##Player", { -1, 0.f }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Borders))
+			if (ImGui::BeginChild("##Players", { -1, -1 }, ImGuiChildFlags_Borders))
+			{
+				ImGui::SeparatorText("Players");
+
+				int id = 0;
+				std::vector<PlayerInfo> stagedPlayers = myPlayers;
+				for (const PlayerInfo& player : stagedPlayers)
 				{
-					if (ImGui::BeginChild("##Name", { 0.f, 0.f }, ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
+					ImGui::PushID(id++);
+
+					if (ImGui::BeginChild("##Player", { -1, 0.f }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Borders))
 					{
-						ImGui::Text(player.Name.c_str());
+						if (ImGui::Button("Kick"))
+						{
+							RemovePlayer(player.Client);
+							GetServer().DisconnectClient(player.Client, shared::NETWORK_DISCONNECT_KICKED_BY_OPERATOR);
+						}
+						ImGui::SameLine();
+						if (ImGui::BeginChild("##Name", { 0.f, 0.f }, ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
+						{
+							ImGui::Text(player.Name.c_str());
+						}
+						ImGui::EndChild();
 					}
 					ImGui::EndChild();
-				}
-				ImGui::EndChild();
 
-				ImGui::PopID();
+					ImGui::PopID();
+				}
 			}
+			ImGui::EndChild();
 		}
 		ImGui::End();
 	}
@@ -122,10 +149,20 @@ namespace server
 				.Name = ""
 			}
 		);
+
+		if (myPlayers.size() >= GetMaxPlayers())
+		{
+			GetServer().SetAllowingConnections(false);
+		}
 	}
 	void LobbyScene::RemovePlayer(shared::ClientID aClient)
 	{
 		std::erase_if(myPlayers, [aClient](const PlayerInfo& aPlayer) { return aPlayer.Client == aClient; });
+
+		if (myPlayers.size() < GetMaxPlayers())
+		{
+			GetServer().SetAllowingConnections(true);
+		}
 	}
 	void LobbyScene::StartGame()
 	{

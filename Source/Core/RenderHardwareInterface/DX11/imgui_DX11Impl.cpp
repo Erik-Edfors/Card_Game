@@ -17,7 +17,7 @@ namespace graphics
 	{
 #define LOG_CATEGORY FILE_CATEGORY"->InitializeImGui"
 
-		GRAPHICS_ASSERT(aDevice != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDevice) " cannot be nullptr!")
+		GRAPHICS_ASSERT(aDevice != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDevice) " cannot be nullptr!");
 
 		Device_DX11Impl* device = dynamic_cast<Device_DX11Impl*>(aDevice);
 		GRAPHICS_ASSERT(device != nullptr, LOG_CATEGORY, result::INVALID_ARGUMENT, STRINGIFY(aDevice) " was not a " STRINGIFY(Device_DX11Impl*) "!");

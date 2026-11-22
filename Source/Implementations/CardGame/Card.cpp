@@ -15,10 +15,13 @@ namespace cardgame
 	{
 	}
 
-	void Card::Init(Game* aGame, CardID aID)
+	void Card::Init(Game* aGame, CardID aID, PlayerID aOwner, LocationID aLocation)
 	{
 		myGame = aGame;
 		myID = aID;
+		SetOwner(aOwner);
+		SetLocation(aLocation);
+
 		myEventListener.SetPusher(&myGame->GetEventPusher());
 
 		OnInit();

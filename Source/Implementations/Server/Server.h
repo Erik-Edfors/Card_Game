@@ -45,9 +45,12 @@ namespace server
 		Server();
 		~Server();
 
-		bool Initialize(networking::Port aPort);
+		bool Initialize();
 		bool Shutdown();
 		void Update();
+
+		bool Bind(networking::Port aPort);
+		bool IsBound() const;
 
 		void SetName(std::string_view aName) noexcept;
 		const std::string& GetName() const noexcept;
@@ -86,6 +89,7 @@ namespace server
 		static void OnInfoRequest(const shared::NetworkManager::MessageCallbackData<shared::NM_ServerInfoRequest>& aData);
 		static void OnConnectionRequest(const shared::NetworkManager::MessageCallbackData<shared::NM_ConnectionRequest>& aData);
 		static void OnDisconnect(const shared::NetworkManager::MessageCallbackData<shared::NM_Disconnect>& aData);
+		static void OnAssuredTimeout(const shared::NetworkManager::AssuredTimeoutCallbackData& aData);
 
 		shared::ClientID AddClient(const networking::SocketAddress& aAddress);
 		bool RemoveClient(shared::ClientID aClient);

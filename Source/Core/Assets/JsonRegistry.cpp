@@ -1,3 +1,4 @@
+#include "Assets.pch.h"
 #include "JsonRegistry.h"
 #include <Core/Logger/Logger.h>
 

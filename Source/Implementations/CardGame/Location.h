@@ -25,6 +25,7 @@ namespace cardgame
 		void AddCard(CardID aID) noexcept;
 		bool RemoveCard(CardID aID) noexcept;
 
+		size_t GetNumCards() const noexcept;
 		size_t GetCards(CardID* outCards, size_t aStart, size_t aCount) const noexcept;
 
 		iterator begin() noexcept;

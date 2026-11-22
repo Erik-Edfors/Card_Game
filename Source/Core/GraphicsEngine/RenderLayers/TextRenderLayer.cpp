@@ -25,6 +25,9 @@ struct FrameBuffer
 {
 	CommonUtilities::Matrix4x4f View;
 	CommonUtilities::Matrix4x4f Projection;
+	CommonUtilities::Vector2f TargetSize;
+
+	unsigned int _padding[2];
 };
 struct ObjectBuffer
 {
@@ -44,6 +47,7 @@ Text::Text() noexcept :
 	myVerticesIsDirty(true),
 	myAtlasIsDirty(true),
 	myInstance({}),
+	myAlignment(0.f),
 	myColor({ 0.f, 0.f, 0.f, 1.f }),
 	myBorderColor({ 1.f, 1.f, 1.f, 1.f }),
 	myBorderThickness(0.f),
@@ -59,21 +63,38 @@ Text::~Text() noexcept
 
 void Text::SetTransform(const CommonUtilities::Matrix4x4f& aTransform) noexcept
 {
-	myObjectBufferIsDirty |= myTransform != aTransform;
-	myTransform = aTransform;
+	if (myObjectBufferIsDirty || myTransform != aTransform)
+	{
+		myObjectBufferIsDirty = true;
+		myTransform = aTransform;
+	}
 }
-
 const CommonUtilities::Matrix4x4f& Text::GetTransform() const noexcept
 {
 	return myTransform;
 }
 
-void Text::SetColor(CommonUtilities::Vector4f aColor) noexcept
+void Text::SetAlignment(float aAlignment) noexcept
 {
-	myObjectBufferIsDirty |= true;
-	myColor = aColor;
+	if (myVerticesIsDirty || myAlignment != aAlignment)
+	{
+		myVerticesIsDirty = true;
+		myAlignment = aAlignment;
+	}
+}
+float Text::GetAlignment() const noexcept
+{
+	return myAlignment;
 }
 
+void Text::SetColor(CommonUtilities::Vector4f aColor) noexcept
+{
+	if (myObjectBufferIsDirty || myColor != aColor)
+	{
+		myObjectBufferIsDirty = true;
+		myColor = aColor;
+	}
+}
 CommonUtilities::Vector4f Text::GetColor() const noexcept
 {
 	return myColor;
@@ -81,8 +102,11 @@ CommonUtilities::Vector4f Text::GetColor() const noexcept
 
 void Text::SetBorderColor(CommonUtilities::Vector4f aColor) noexcept
 {
-	myObjectBufferIsDirty |= true;
-	myBorderColor = aColor;
+	if (myObjectBufferIsDirty || myBorderColor != aColor)
+	{
+		myObjectBufferIsDirty = true;
+		myBorderColor = aColor;
+	}
 }
 
 CommonUtilities::Vector4f Text::GetBorderColor() const noexcept
@@ -92,8 +116,11 @@ CommonUtilities::Vector4f Text::GetBorderColor() const noexcept
 
 void Text::SetBorderThickness(float aBorderThickness) noexcept
 {
-	myObjectBufferIsDirty |= true;
-	myBorderThickness = aBorderThickness;
+	if (myObjectBufferIsDirty || myBorderThickness != aBorderThickness)
+	{
+		myObjectBufferIsDirty = true;
+		myBorderThickness = aBorderThickness;
+	}
 }
 
 float Text::GetBorderThickness() const noexcept
@@ -103,8 +130,11 @@ float Text::GetBorderThickness() const noexcept
 
 void Text::SetAdvancePadding(float aPadding) noexcept
 {
-	myVerticesIsDirty |= true;
-	myAdvancePadding = aPadding;
+	if (myVerticesIsDirty || myAdvancePadding != aPadding)
+	{
+		myVerticesIsDirty = true;
+		myAdvancePadding = aPadding;
+	}
 }
 
 float Text::GetAdvancePadding() const noexcept
@@ -114,9 +144,12 @@ float Text::GetAdvancePadding() const noexcept
 
 void Text::SetFont(const assets::FontFile* aFont) noexcept
 {
-	myAtlasIsDirty |= true;
-	myVerticesIsDirty |= true;
-	myFont = aFont;
+	if (myAtlasIsDirty && myVerticesIsDirty || myFont != aFont)
+	{
+		myAtlasIsDirty = true;
+		myVerticesIsDirty = true;
+		myFont = aFont;
+	}
 }
 
 const assets::FontFile* Text::GetFont() const noexcept
@@ -126,8 +159,11 @@ const assets::FontFile* Text::GetFont() const noexcept
 
 void Text::SetFontSize(float aFontSize) noexcept
 {
-	myObjectBufferIsDirty |= true;
-	myFontSize = aFontSize;
+	if (myObjectBufferIsDirty || myFontSize != aFontSize)
+	{
+		myObjectBufferIsDirty = true;
+		myFontSize = aFontSize;
+	}
 }
 
 float Text::GetFontSize() const noexcept
@@ -137,8 +173,11 @@ float Text::GetFontSize() const noexcept
 
 void Text::SetMaxWidth(float aMaxWidth) noexcept
 {
-	myVerticesIsDirty |= true;
-	myMaxWidth = aMaxWidth;
+	if (myVerticesIsDirty || myMaxWidth != aMaxWidth)
+	{
+		myVerticesIsDirty = true;
+		myMaxWidth = aMaxWidth;
+	}
 }
 
 float Text::GetMaxWidth() const noexcept
@@ -148,14 +187,21 @@ float Text::GetMaxWidth() const noexcept
 
 void Text::SetText(const wchar_t* aText) noexcept
 {
-	myVerticesIsDirty |= true;
-	myText = aText;
+	if (myVerticesIsDirty || myText != aText)
+	{
+		myVerticesIsDirty = true;
+		myText = aText;
+	}
 }
 
 void Text::SetText(const char* aText) noexcept
 {
-	myVerticesIsDirty |= true;
-	myText = CommonUtilities::ToWide(aText, CommonUtilities::STRING_ENCODING_UTF8);
+	std::wstring text = CommonUtilities::ToWide(aText, CommonUtilities::STRING_ENCODING_UTF8);
+	if (myVerticesIsDirty || myText != text)
+	{
+		myVerticesIsDirty = true;
+		myText = std::move(text);
+	}
 }
 
 std::wstring_view Text::GetText() const noexcept
@@ -192,17 +238,25 @@ void Text::Clean(graphics::Device* aDevice) const
 			._padding = {}
 		};
 
-		const graphics::ConstantBufferDesc desc = {
-			.Name = "Text ObjectBuffer",
-			.InitialData = &buffer,
-			.Size = sizeof(buffer),
-			.Usage = graphics::GRAPHICS_USAGE_IMMUTABLE,
-			.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_NONE
-		};
+		if (not myInstance.ObjectBuffer)
+		{
+			const graphics::ConstantBufferDesc desc = {
+				.Name = "Text ObjectBuffer",
+				.InitialData = &buffer,
+				.Size = sizeof(buffer),
+				.Usage = graphics::GRAPHICS_USAGE_DYNAMIC,
+				.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE
+			};
 
-		graphics::result::Code result = aDevice->CreateConstantBuffer(&myInstance.ObjectBuffer, &desc);
-		result;
-		//TODO: Log errors.
+			graphics::result::Code result = aDevice->CreateConstantBuffer(&myInstance.ObjectBuffer, &desc);
+			result;
+			//TODO: Log errors.
+		}
+		else
+		{
+			graphics::result::Code result = aDevice->UpdateConstantBuffer(myInstance.ObjectBuffer.Get(), &buffer, sizeof(buffer));
+			result;
+		}
 
 		myObjectBufferIsDirty = false;
 	}
@@ -274,6 +328,7 @@ void Text::Clean(graphics::Device* aDevice) const
 			const float advanceHeight = myFont->AdvanceHeight * myFontSize + advancePadding;
 
 			std::vector<GlyphVertex> vertices;
+			std::vector<GlyphVertex> lineVertices;
 			std::vector<GlyphVertex> wordVertices;
 			std::vector<wchar_t> wordCharacters;
 			CommonUtilities::Vector2f cursor;
@@ -317,8 +372,25 @@ void Text::Clean(graphics::Device* aDevice) const
 
 				if (c == L'\n')
 				{
+					const float right = cursor.x;
+
 					cursor.y -= advanceHeight;
 					cursor.x = 0.f;
+
+					if (not wordVertices.empty())
+					{
+						lineVertices.insert(lineVertices.end(), wordVertices.begin(), wordVertices.end());
+						wordVertices.clear();
+					}
+					wordCharacters.clear();
+
+					if (not lineVertices.empty())
+					{
+						AlignVertices(0.f, right, myAlignment, lineVertices.data(), lineVertices.size());
+
+						vertices.insert(vertices.end(), lineVertices.begin(), lineVertices.end());
+						lineVertices.clear();
+					}
 				}
 
 				if (it != myFont->Glyphs.end())
@@ -346,8 +418,11 @@ void Text::Clean(graphics::Device* aDevice) const
 					}
 					else
 					{
-						vertices.insert(vertices.end(), wordVertices.begin(), wordVertices.end());
-						wordVertices.clear();
+						if (not wordVertices.empty())
+						{
+							lineVertices.insert(lineVertices.end(), wordVertices.begin(), wordVertices.end());
+							wordVertices.clear();
+						}
 						wordCharacters.clear();
 					}
 
@@ -355,9 +430,17 @@ void Text::Clean(graphics::Device* aDevice) const
 				}
 			}
 
-			vertices.insert(vertices.end(), wordVertices.begin(), wordVertices.end());
+			lineVertices.insert(lineVertices.end(), wordVertices.begin(), wordVertices.end());
 			wordVertices.clear();
 			wordCharacters.clear();
+
+			if (not lineVertices.empty())
+			{
+				AlignVertices(0.f, cursor.x, myAlignment, lineVertices.data(), lineVertices.size());
+
+				vertices.insert(vertices.end(), lineVertices.begin(), lineVertices.end());
+				lineVertices.clear();
+			}
 
 			myInstance.VertexCount = static_cast<unsigned int>(vertices.size());
 
@@ -375,6 +458,22 @@ void Text::Clean(graphics::Device* aDevice) const
 		}
 
 		myVerticesIsDirty = false;
+	}
+}
+
+void Text::AlignVertices(float aLeft, float aRight, float aAlignment, GlyphVertex* aVertices, size_t aNumVertices) noexcept
+{
+	if (aAlignment == 0.f)
+	{
+		return;
+	}
+	const float offset = -aAlignment * (aRight - aLeft);
+	for (size_t i = 0; i < aNumVertices; i++)
+	{
+		GlyphVertex& vertex = aVertices[i];
+
+		vertex.Bounds[0] += offset;
+		vertex.Bounds[1] += offset;
 	}
 }
 
@@ -629,6 +728,8 @@ void TextRenderLayer::OnRender()
 
 	graphics::result::Code result;
 
+	const graphics::Texture2DDesc& rtTexDesc = myRenderTarget->GetTexture()->GetDesc();
+
 	GetContext()->PushEvent("Text Rendering");
 
 	//float clearColor[4] = { 0.f, 0.f, 0.f, 1.f };
@@ -636,14 +737,19 @@ void TextRenderLayer::OnRender()
 
 	//TODO: Set InputLayout
 
-	FrameBuffer frameBuffer = {
+	const FrameBuffer frameBuffer = {
 		.View = myView,
-		.Projection = myProjection
+		.Projection = myProjection,
+		.TargetSize = { 
+			static_cast<float>(rtTexDesc.Width), 
+			static_cast<float>(rtTexDesc.Height) 
+		},
+		._padding = {}
 	};
 	result = GetContext()->UpdateConstantBuffer(myFrameBuffer.Get(), &frameBuffer, sizeof(frameBuffer));
 	result = GetContext()->SetInputLayout(myInputLayout.Get());
 	result = GetContext()->SetBlendState(myBlendState.Get());
-	result = GetContext()->BindConstantBuffers(&myFrameBuffer, 1, 0, graphics::GRAPHICS_SHADER_STAGE_VERTEX);
+	result = GetContext()->BindConstantBuffers(&myFrameBuffer, 1, 0, graphics::GRAPHICS_SHADER_STAGE_VERTEX | graphics::GRAPHICS_SHADER_STAGE_PIXEL);
 
 	result = GetContext()->BindSamplerStates(&mySampler, 1, 0, graphics::GRAPHICS_SHADER_STAGE_PIXEL);
 

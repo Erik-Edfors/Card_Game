@@ -6,6 +6,7 @@ ECHO Copying Dependencies...
 MKDIR Bin\
 MKDIR Bin\Debug\
 MKDIR Bin\Release\
+MKDIR Bin\Retail\
 
 XCOPY Dependencies\* Bin\ /dys
 

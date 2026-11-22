@@ -4,8 +4,8 @@
 namespace cs
 {
 	ComponentSystem::ComponentSystem() : 
-		myNextEntityHandle({ 0 }),
-		myNextComponentHandle({ 0 })
+		myNextEntityHandle(INVALID_ENTITY_HANDLE.Handle + 1),
+		myNextComponentHandle(INVALID_COMPONENT_HANDLE.Handle + 1)
 	{
 	}
 	ComponentSystem::~ComponentSystem()

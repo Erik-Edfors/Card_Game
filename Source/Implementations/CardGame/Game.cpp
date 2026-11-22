@@ -8,33 +8,33 @@ namespace cardgame
 		myNextCardID(INVALID_CARD_ID + 1),
 		myNextLocationID(INVALID_LOCATION_ID + 1),
 		myNextPlayerID(INVALID_PLAYER_ID + 1),
-		myTurnPlayer(nullptr),
 		myTurnIndex(0)
 	{
+		myRNG.seed(0);
 	}
 	Game::~Game()
 	{
 	}
 
-	bool Game::Initialize(size_t aPlayerCount, const CardFactory& aCardFactory)
+	bool Game::Initialize(const CardFactory& aCardFactory)
 	{
 		myCardFactory = aCardFactory;
 
-		for (size_t i = 0; i < aPlayerCount; i++)
-		{
-			const PlayerID playerID = CreatePlayerID();
-			const LocationID handID = CreateLocationID();
-			const LocationID deckID = CreateLocationID();
-			const LocationID playID = CreateLocationID();
-			const LocationID discardID = CreateLocationID();
-			const TurnIndex turnIndex = static_cast<TurnIndex>(i);
+		//for (size_t i = 0; i < aPlayerCount; i++)
+		//{
+		//	const PlayerID playerID = CreatePlayerID();
+		//	const LocationID handID = CreateLocationID();
+		//	const LocationID deckID = CreateLocationID();
+		//	const LocationID playID = CreateLocationID();
+		//	const LocationID discardID = CreateLocationID();
+		//	const TurnIndex turnIndex = static_cast<TurnIndex>(i);
 
-			myLocations[handID] = std::make_unique<Location>(handID);
-			myLocations[deckID] = std::make_unique<Location>(deckID);
-			myLocations[playID] = std::make_unique<Location>(playID);
-			myLocations[discardID] = std::make_unique<Location>(discardID);
-			myPlayers[playerID] = std::make_unique<Player>(playerID, handID, deckID, playID, discardID, turnIndex);
-		}
+		//	myLocations[handID] = std::make_unique<Location>(handID);
+		//	myLocations[deckID] = std::make_unique<Location>(deckID);
+		//	myLocations[playID] = std::make_unique<Location>(playID);
+		//	myLocations[discardID] = std::make_unique<Location>(discardID);
+		//	myPlayers[playerID] = std::make_unique<Player>(playerID, handID, deckID, playID, discardID, turnIndex);
+		//}
 
 		return true;
 	}
@@ -45,28 +45,34 @@ namespace cardgame
 		return succeeded;
 	}
 
-	bool Game::PushCommand(const Command& aCommand)
+	bool Game::PushCommand(const Command& aCommand, Command::Result* outResult)
 	{
 		bool result = false;
 
 		switch (aCommand.Type)
 		{
-		case COMMAND_SUBMIT_PLAYERS: result = Do(aCommand.Command.SubmitPlayers); break;
-		case COMMAND_SUBMIT_CARDS: result = Do(aCommand.Command.SubmitCards); break;
-		case COMMAND_SUBMIT_LOCATIONS: result = Do(aCommand.Command.SubmitLocations); break;
-		case COMMAND_SUBMIT_AMOUNT: result = Do(aCommand.Command.SubmitAmount); break;
-		case COMMAND_SUBMIT_OPTION: result = Do(aCommand.Command.SubmitOption); break;
+		case COMMAND_SUBMIT_PLAYERS: result = Do(aCommand.Command.SubmitPlayers, outResult ? &outResult->SubmitPlayers : nullptr); break;
+		case COMMAND_SUBMIT_CARDS: result = Do(aCommand.Command.SubmitCards, outResult ? &outResult->SubmitCards : nullptr); break;
+		case COMMAND_SUBMIT_LOCATIONS: result = Do(aCommand.Command.SubmitLocations, outResult ? &outResult->SubmitLocations : nullptr); break;
+		case COMMAND_SUBMIT_AMOUNT: result = Do(aCommand.Command.SubmitAmount, outResult ? &outResult->SubmitAmount : nullptr); break;
+		case COMMAND_SUBMIT_OPTION: result = Do(aCommand.Command.SubmitOption, outResult ? &outResult->SubmitOption : nullptr); break;
 
-		case COMMAND_PLAY: result = Do(aCommand.Command.Play); break;
-		case COMMAND_MOVE_CARD: result = Do(aCommand.Command.MoveCard); break;
-		case COMMAND_CREATE_CARD: result = Do(aCommand.Command.CreateCard); break;
-		case COMMAND_END_TURN: result = Do(aCommand.Command.EndTurn); break;
-		case COMMAND_START: result = Do(aCommand.Command.Start); break;
-		case COMMAND_HEAL_PLAYER: result = Do(aCommand.Command.HealPlayer); break;
-		case COMMAND_DAMAGE_PLAYER: result = Do(aCommand.Command.DamagePlayer); break;
-		case COMMAND_ADD_PLAYER_RESOURCES: result = Do(aCommand.Command.AddPlayerResources); break;
-		case COMMAND_REMOVE_PLAYER_RESOURCES: result = Do(aCommand.Command.RemovePlayerResources); break;
-		case COMMAND_SET_NAME: result = Do(aCommand.Command.SetName); break;
+		case COMMAND_PLAY: result = Do(aCommand.Command.Play, outResult ? &outResult->Play : nullptr); break;
+		case COMMAND_MOVE_CARD: result = Do(aCommand.Command.MoveCard, outResult ? &outResult->MoveCard : nullptr); break;
+		case COMMAND_CREATE_CARD: result = Do(aCommand.Command.CreateCard, outResult ? &outResult->CreateCard : nullptr); break;
+		case COMMAND_REMOVE_CARD: result = Do(aCommand.Command.RemoveCard, outResult ? &outResult->RemoveCard : nullptr); break;
+		case COMMAND_CREATE_LOCATION: result = Do(aCommand.Command.CreateLocation, outResult ? &outResult->CreateLocation : nullptr); break;
+		case COMMAND_REMOVE_LOCATION: result = Do(aCommand.Command.RemoveLocation, outResult ? &outResult->RemoveLocation : nullptr); break;
+		case COMMAND_CREATE_PLAYER: result = Do(aCommand.Command.CreatePlayer, outResult ? &outResult->CreatePlayer : nullptr); break;
+		case COMMAND_REMOVE_PLAYER: result = Do(aCommand.Command.RemovePlayer, outResult ? &outResult->RemovePlayer : nullptr); break;
+		case COMMAND_END_TURN: result = Do(aCommand.Command.EndTurn, outResult ? &outResult->EndTurn : nullptr); break;
+		case COMMAND_START: result = Do(aCommand.Command.Start, outResult ? &outResult->Start : nullptr); break;
+		case COMMAND_HEAL_PLAYER: result = Do(aCommand.Command.HealPlayer, outResult ? &outResult->HealPlayer : nullptr); break;
+		case COMMAND_DAMAGE_PLAYER: result = Do(aCommand.Command.DamagePlayer, outResult ? &outResult->DamagePlayer : nullptr); break;
+		case COMMAND_ADD_PLAYER_RESOURCES: result = Do(aCommand.Command.AddPlayerResources, outResult ? &outResult->AddPlayerResources : nullptr); break;
+		case COMMAND_REMOVE_PLAYER_RESOURCES: result = Do(aCommand.Command.RemovePlayerResources, outResult ? &outResult->RemovePlayerResources : nullptr); break;
+		case COMMAND_SET_NAME: result = Do(aCommand.Command.SetName, outResult ? &outResult->SetName : nullptr); break;
+		case COMMAND_SET_SEED: result = Do(aCommand.Command.SetSeed, outResult ? &outResult->SetSeed : nullptr); break;
 
 		default:
 			//TODO: Log invalid command type.
@@ -183,7 +189,15 @@ namespace cardgame
 
 	const Player* Game::GetTurnPlayer() const noexcept
 	{
-		return myTurnPlayer;
+		for (const auto& entry : myPlayers)
+		{
+			const cardgame::Player* player = entry.second.get();
+			if (player->GetTurnIndex() == GetTurnIndex())
+			{
+				return player;
+			}
+		}
+		return nullptr;
 	}
 
 	size_t Game::GetNumCommands() const noexcept
@@ -218,7 +232,7 @@ namespace cardgame
 
 	unsigned int Game::GetGamestateHash() const noexcept
 	{
-		return CommonUtilities::TStringHash<Command>(myCommandStack.data(), myCommandStack.size());
+		return CommonUtilities::TStringHash<std::mt19937>(&myRNG, 1).Hash ^ CommonUtilities::TStringHash<Command>(myCommandStack.data(), myCommandStack.size()).Hash;
 	}
 
 	Player* Game::FindPlayer(PlayerID aID) noexcept
@@ -282,10 +296,18 @@ namespace cardgame
 			}
 			++loopCount;
 
+			if (not anyAction)
+			{
+				anyAction |= RemoveDeadPlayers();
+			}
+
 			if (loopCount > 1024)
 			{
 				//TODO: Log probably infinite loop!
-				break;
+				if (not RemoveDeadPlayers()) // Continue looping for as long as players are dying.
+				{
+					break;
+				}
 			}
 		}
 
@@ -293,6 +315,49 @@ namespace cardgame
 		{
 			card->ResetLocks();
 		}
+	}
+
+	bool Game::RemoveDeadPlayers()
+	{
+		bool anyAction = false;
+
+		std::vector<Player*> killedPlayers;
+		for (const std::unique_ptr<Player>& player : std::views::values(myPlayers))
+		{
+			if (player->GetHealth() <= 0)
+			{
+				killedPlayers.push_back(player.get());
+			}
+		}
+
+		while (not killedPlayers.empty())
+		{
+			size_t lowestHealthIndex = 0;
+			for (size_t i = 0; i < killedPlayers.size(); i++)
+			{
+				Player* player = killedPlayers[i];
+				if (player->GetHealth() < lowestHealthIndex)
+				{
+					lowestHealthIndex = i;
+				}
+			}
+
+			Player* lowestHealthPlayer = killedPlayers[lowestHealthIndex];
+
+			if (lowestHealthIndex + 1 != killedPlayers.size())
+			{
+				killedPlayers[lowestHealthIndex] = killedPlayers.back();
+			}
+			killedPlayers.pop_back();
+
+			const RemovePlayerCommand removePlayer = {
+				.Player = lowestHealthPlayer->GetID()
+			};
+
+			anyAction |= Do(removePlayer);
+		}
+
+		return anyAction;
 	}
 
 	CardID Game::CreateCardID() noexcept
@@ -315,7 +380,30 @@ namespace cardgame
 		return true;
 	}
 
-	bool Game::Do(SubmitPlayersCommand aCommand)
+	bool Game::RetractTask(Task* aTask)
+	{
+		std::queue<Task*> newQueue;
+		size_t numRemoved = 0;
+
+		while (not myTaskQueue.empty())
+		{
+			Task* task = myTaskQueue.front();
+			if (task != aTask)
+			{
+				newQueue.push(task);
+			}
+			else
+			{
+				++numRemoved;
+			}
+		}
+
+		myTaskQueue = std::move(newQueue);
+
+		return numRemoved != 0;
+	}
+
+	bool Game::Do(SubmitPlayersCommand aCommand, SubmitPlayersCommand::Result* outResult)
 	{
 		if (myTaskQueue.empty())
 		{
@@ -327,14 +415,26 @@ namespace cardgame
 		}
 
 		TargetPlayersTask* task = static_cast<TargetPlayersTask*>(myTaskQueue.front());
+		if (task->GetAuthority() != aCommand.Authority)
+		{
+			return false;
+		}
 
 		if (task->Submit(aCommand.Players, aCommand.Count))
 		{
+			EventTaskFinished taskSubmitted = {
+				.Type = task->GetType()
+			};
+			myEventManager.Push(EVENT_TASK_FINISHED, taskSubmitted);
+
 			myTaskQueue.pop();
 
-			EventTaskSubmitted taskSubmitted = {
-			};
-			myEventManager.Push(EVENT_TASK_SUBMITTED, taskSubmitted);
+			if (outResult != nullptr)
+			{
+				*outResult = SubmitPlayersCommand::Result{
+
+				};
+			}
 
 			return true;
 		}
@@ -342,7 +442,7 @@ namespace cardgame
 		return false;
 	}
 
-	bool Game::Do(SubmitCardsCommand aCommand)
+	bool Game::Do(SubmitCardsCommand aCommand, SubmitCardsCommand::Result* outResult)
 	{
 		if (myTaskQueue.empty())
 		{
@@ -352,19 +452,35 @@ namespace cardgame
 		{
 			return false;
 		}
-		
+
 		TargetCardsTask* task = static_cast<TargetCardsTask*>(myTaskQueue.front());
+		if (task->GetAuthority() != aCommand.Authority)
+		{
+			return false;
+		}
 
 		if (task->Submit(aCommand.Cards, aCommand.Count))
 		{
+			EventTaskFinished taskSubmitted = {
+				.Type = task->GetType()
+			};
+			myEventManager.Push(EVENT_TASK_FINISHED, taskSubmitted);
+
 			myTaskQueue.pop();
+
+			if (outResult != nullptr)
+			{
+				*outResult = SubmitCardsCommand::Result{
+
+				};
+			}
 			return true;
 		}
 
 		return false;
 	}
 
-	bool Game::Do(SubmitLocationsCommand aCommand)
+	bool Game::Do(SubmitLocationsCommand aCommand, SubmitLocationsCommand::Result* outResult)
 	{
 		if (myTaskQueue.empty())
 		{
@@ -376,17 +492,33 @@ namespace cardgame
 		}
 
 		TargetLocationsTask* task = static_cast<TargetLocationsTask*>(myTaskQueue.front());
+		if (task->GetAuthority() != aCommand.Authority)
+		{
+			return false;
+		}
 
 		if (task->Submit(aCommand.Locations, aCommand.Count))
 		{
+			EventTaskFinished taskSubmitted = {
+				.Type = task->GetType()
+			};
+			myEventManager.Push(EVENT_TASK_FINISHED, taskSubmitted);
+
 			myTaskQueue.pop();
+
+			if (outResult != nullptr)
+			{
+				*outResult = SubmitLocationsCommand::Result{
+
+				};
+			}
 			return true;
 		}
 
 		return false;
 	}
 
-	bool Game::Do(SubmitAmountCommand aCommand)
+	bool Game::Do(SubmitAmountCommand aCommand, SubmitAmountCommand::Result* outResult)
 	{
 		if (myTaskQueue.empty())
 		{
@@ -398,17 +530,33 @@ namespace cardgame
 		}
 
 		AmountTask* task = static_cast<AmountTask*>(myTaskQueue.front());
+		if (task->GetAuthority() != aCommand.Authority)
+		{
+			return false;
+		}
 
 		if (task->Submit(aCommand.Amount))
 		{
+			EventTaskFinished taskSubmitted = {
+				.Type = task->GetType()
+			};
+			myEventManager.Push(EVENT_TASK_FINISHED, taskSubmitted);
+
 			myTaskQueue.pop();
+
+			if (outResult != nullptr)
+			{
+				*outResult = SubmitAmountCommand::Result{
+
+				};
+			}
 			return true;
 		}
 
 		return false;
 	}
 
-	bool Game::Do(SubmitOptionCommand aCommand)
+	bool Game::Do(SubmitOptionCommand aCommand, SubmitOptionCommand::Result* outResult)
 	{
 		if (myTaskQueue.empty())
 		{
@@ -420,17 +568,33 @@ namespace cardgame
 		}
 
 		OptionTask* task = static_cast<OptionTask*>(myTaskQueue.front());
+		if (task->GetAuthority() != aCommand.Authority)
+		{
+			return false;
+		}
 
 		if (task->Submit(aCommand.Index))
 		{
+			EventTaskFinished taskSubmitted = {
+				.Type = task->GetType()
+			};
+			myEventManager.Push(EVENT_TASK_FINISHED, taskSubmitted);
+
 			myTaskQueue.pop();
+
+			if (outResult != nullptr)
+			{
+				*outResult = SubmitOptionCommand::Result{
+
+				};
+			}
 			return true;
 		}
 
 		return false;
 	}
 
-	bool Game::Do(PlayCommand aCommand)
+	bool Game::Do(PlayCommand aCommand, PlayCommand::Result* outResult)
 	{
 		Card* card;
 		{
@@ -494,15 +658,21 @@ namespace cardgame
 			EVENT_CARD_PLAYED,
 			EventCardPlayed{
 				.Card = aCommand.Card,
-				.Owner = aCommand.Player,
 				.Cost = cost,
 				.Payed = payed
 			}
 		);
 
+		if (outResult != nullptr)
+		{
+			*outResult = PlayCommand::Result{
+				.NewLocation = move.Location
+			};
+		}
+
 		return true;
 	}
-	bool Game::Do(MoveCardCommand aCommand)
+	bool Game::Do(MoveCardCommand aCommand, MoveCardCommand::Result* outResult)
 	{
 		Card* card = FindCard(aCommand.Card);
 		if (card == nullptr)
@@ -526,19 +696,22 @@ namespace cardgame
 			EVENT_CARD_MOVED,
 			EventCardMoved{
 				.Card = aCommand.Card,
-				.Owner = card->GetOwner(),
 				.From = from->GetID(),
 				.To = to->GetID()
 			}
 		);
 
+		if (outResult != nullptr)
+		{
+			*outResult = MoveCardCommand::Result{
+
+			};
+		}
+
 		return true;
 	}
-	bool Game::Do(CreateCardCommand aCommand)
+	bool Game::Do(CreateCardCommand aCommand, CreateCardCommand::Result* outResult)
 	{
-		//TODO: implement.
-		aCommand;
-
 		const CardID id = CreateCardID();
 		Player* const owner = FindPlayer(aCommand.Owner);
 		Location* const location = FindLocation(aCommand.Location);
@@ -549,15 +722,15 @@ namespace cardgame
 		}
 
 		{
-			std::unique_ptr<Card> card = myCardFactory.CreateCard(aCommand.FactoryID, this, id);
+			std::unique_ptr<Card> card = myCardFactory.CreateCard(aCommand.FactoryID);
 			if (card == nullptr)
 			{
 				return false;
 			}
 
-			card->SetOwner(owner->GetID());
-			card->SetLocation(location->GetID());
-			location->AddCard(card->GetID());
+			location->AddCard(id);
+			card->Init(this, id, owner->GetID(), location->GetID());
+
 			myCards[id] = std::move(card);
 		}
 
@@ -565,26 +738,303 @@ namespace cardgame
 			EVENT_CARD_CREATED,
 			EventCardCreated{
 				.Card = id,
-				.Owner = owner->GetID(),
 				.Location = location->GetID()
 			}
 		);
 
+		if (outResult != nullptr)
+		{
+			*outResult = CreateCardCommand::Result{
+				.Card = id
+			};
+		}
+
 		return true;
 	}
-	bool Game::Do(StartCommand aCommand)
+	bool Game::Do(RemoveCardCommand aCommand, RemoveCardCommand::Result* outResult)
+	{
+		auto it = myCards.find(aCommand.Card);
+
+		if (it == myCards.end())
+		{
+			return false;
+		}
+
+		it->second->OnDestroyed();
+
+		myCards.erase(it);
+
+		myEventManager.Push(
+			EVENT_CARD_REMOVED,
+			EventCardRemoved{
+				.Card = aCommand.Card
+			}
+		);
+
+		if (outResult != nullptr)
+		{
+			*outResult = RemoveCardCommand::Result{
+
+			};
+		}
+
+		return true;
+	}
+	bool Game::Do(CreateLocationCommand aCommand, CreateLocationCommand::Result* outResult)
 	{
 		aCommand;
 
-		myTurnIndex = 0;
-		myTurnPlayer = nullptr;
-		for (const std::unique_ptr<Player>& player : std::views::values(myPlayers))
-		{
-			if (GetTurnIndex() == player->GetTurnIndex())
-			{
-				myTurnPlayer = player.get();
-				break;
+		const LocationID id = CreateLocationID();
+		myLocations[id] = std::make_unique<Location>(id);
+
+		myEventManager.Push(
+			EVENT_LOCATION_CREATED,
+			EventLocationCreated{
+				.Location = id
 			}
+		);
+
+		if (outResult != nullptr)
+		{
+			*outResult = CreateLocationCommand::Result{
+				.Location = id
+			};
+		}
+
+		return false;
+	}
+	bool Game::Do(RemoveLocationCommand aCommand, RemoveLocationCommand::Result* outResult)
+	{
+		auto it = myLocations.find(aCommand.Location);
+
+		if (it == myLocations.end())
+		{
+			return false;
+		}
+
+		size_t numRemovedCards = 0;
+
+		if (aCommand.RemoveCards)
+		{
+			std::vector<CardID> cards;
+			for (auto& entry : myCards)
+			{
+				CardID id = entry.first;
+				std::unique_ptr<Card>& card = entry.second;
+
+				if (card->GetLocation() == aCommand.Location)
+				{
+					cards.push_back(id);
+				}
+			}
+
+			numRemovedCards = cards.size();
+
+			for (CardID card : cards)
+			{
+				RemoveCardCommand command = {
+					.Card = card
+				};
+				Do(command);
+			}
+		}
+		else
+		{
+			for (auto& entry : myCards)
+			{
+				std::unique_ptr<Card>& card = entry.second;
+				if (card->GetLocation() == aCommand.Location)
+				{
+					// Location contains cards.
+					return false;
+				}
+			}
+		}
+
+		myLocations.erase(it);
+
+		myEventManager.Push(
+			EVENT_LOCATION_REMOVED,
+			EventLocationRemoved{
+				.Location = aCommand.Location
+			}
+		);
+
+		if (outResult != nullptr)
+		{
+			*outResult = RemoveLocationCommand::Result{
+				.NumRemovedCards = numRemovedCards
+			};
+		}
+
+		return true;
+	}
+	bool Game::Do(CreatePlayerCommand aCommand, CreatePlayerCommand::Result* outResult)
+	{
+		aCommand;
+
+		const PlayerID id = CreatePlayerID();
+
+		CreateLocationCommand createLocationCommand = {
+		};
+		CreateLocationCommand::Result createLocationResult;
+
+		Do(createLocationCommand, &createLocationResult);
+		const LocationID hand = createLocationResult.Location;
+		Do(createLocationCommand, &createLocationResult);
+		const LocationID deck = createLocationResult.Location;
+		Do(createLocationCommand, &createLocationResult);
+		const LocationID play = createLocationResult.Location;
+		Do(createLocationCommand, &createLocationResult);
+		const LocationID discard = createLocationResult.Location;
+
+		TurnIndex turnIndex = static_cast<TurnIndex>(GetNumPlayers());
+
+		myPlayers[id] = std::make_unique<Player>(id, hand, deck, play, discard, turnIndex);
+
+		myEventManager.Push(
+			EVENT_PLAYER_CREATED,
+			EventPlayerCreated{
+				.Player = id
+			}
+		);
+
+		if (outResult != nullptr)
+		{
+			*outResult = CreatePlayerCommand::Result{
+				.Player = id
+			};
+		}
+
+		return true;
+	}
+	bool Game::Do(RemovePlayerCommand aCommand, RemovePlayerCommand::Result* outResult)
+	{
+		auto it = myPlayers.find(aCommand.Player);
+
+		if (it == myPlayers.end())
+		{
+			return false;
+		}
+
+		Player* player = it->second.get();
+
+		size_t numRemovedCards = 0;
+
+		{
+			RemoveLocationCommand command = {
+				.Location = player->GetHandLocation(),
+				.RemoveCards = true
+			};
+			RemoveLocationCommand::Result result = {};
+			Do(command, &result);
+			numRemovedCards += result.NumRemovedCards;
+		}
+		{
+			RemoveLocationCommand command = {
+				.Location = player->GetDeckLocation(),
+				.RemoveCards = true
+			};
+			RemoveLocationCommand::Result result = {};
+			Do(command, &result);
+			numRemovedCards += result.NumRemovedCards;
+		}
+		{
+			RemoveLocationCommand command = {
+				.Location = player->GetPlayLocation(),
+				.RemoveCards = true
+			};
+			RemoveLocationCommand::Result result = {};
+			Do(command, &result);
+			numRemovedCards += result.NumRemovedCards;
+		}
+		{
+			RemoveLocationCommand command = {
+				.Location = player->GetDiscardLocation(),
+				.RemoveCards = true
+			};
+			RemoveLocationCommand::Result result = {};
+			Do(command, &result);
+			numRemovedCards += result.NumRemovedCards;
+		}
+
+		const TurnIndex turnIndex = player->GetTurnIndex();
+		myPlayers.erase(it);
+
+		for (auto& entry : myPlayers)
+		{
+			Player* p = entry.second.get();
+			const TurnIndex index = p->GetTurnIndex();
+			if (index > turnIndex)
+			{
+				p->SetTurnIndex(index - 1);
+			}
+		}
+
+		myEventManager.Push(
+			EVENT_PLAYER_REMOVED,
+			EventPlayerRemoved{
+				.Player = aCommand.Player
+			}
+		);
+
+
+		if (turnIndex == GetTurnIndex())
+		{
+			myEventManager.Push(
+				EVENT_TURN_END,
+				EventTurnEnd{
+					.Owner = aCommand.Player
+				}
+			);
+
+			const Player* turnPlayer = GetTurnPlayer();
+			if (turnPlayer != nullptr)
+			{
+				myEventManager.Push(
+					EVENT_TURN_BEGIN,
+					EventTurnBegin{
+						.Owner = GetTurnPlayer()->GetID()
+					}
+				);
+			}
+		}
+
+		// Makes sure myTurnIndex is not invalid.
+		if (GetNumPlayers() != 0)
+		{
+			myTurnIndex %= static_cast<TurnIndex>(GetNumPlayers());
+		}
+		else
+		{
+			myTurnIndex = 0;
+		}
+
+		if (outResult != nullptr)
+		{
+			*outResult = RemovePlayerCommand::Result{
+				.NumRemovedCards = numRemovedCards
+			};
+		}
+
+		return true;
+	}
+	bool Game::Do(StartCommand aCommand, StartCommand::Result* outResult)
+	{
+		aCommand;
+
+		if (GetNumPlayers() == 0)
+		{
+			return false;
+		}
+
+		myTurnIndex = 0;
+
+		const cardgame::Player* turnPlayer = GetTurnPlayer();
+
+		if (turnPlayer == nullptr)
+		{
+			return false;
 		}
 
 		myEventManager.Push(
@@ -594,11 +1044,23 @@ namespace cardgame
 			}
 		);
 
+		if (outResult != nullptr)
+		{
+			*outResult = StartCommand::Result{
+
+			};
+		}
+
 		return true;
 	}
-	bool Game::Do(EndTurnCommand aCommand)
+	bool Game::Do(EndTurnCommand aCommand, EndTurnCommand::Result* outResult)
 	{
 		aCommand;
+
+		if (GetNumPlayers() == 0)
+		{
+			return false;
+		}
 
 		myEventManager.Push(
 			EVENT_TURN_END,
@@ -609,16 +1071,6 @@ namespace cardgame
 
 		myTurnIndex = (myTurnIndex + 1) % static_cast<TurnIndex>(GetNumPlayers());
 
-		myTurnPlayer = nullptr;
-		for (const std::unique_ptr<Player>& player : std::views::values(myPlayers))
-		{
-			if (GetTurnIndex() == player->GetTurnIndex())
-			{
-				myTurnPlayer = player.get();
-				break;
-			}
-		}
-
 		myEventManager.Push(
 			EVENT_TURN_BEGIN,
 			EventTurnBegin{
@@ -626,9 +1078,16 @@ namespace cardgame
 			}
 		);
 
+		if (outResult != nullptr)
+		{
+			*outResult = EndTurnCommand::Result{
+
+			};
+		}
+
 		return true;
 	}
-	bool Game::Do(HealPlayerCommand aCommand)
+	bool Game::Do(HealPlayerCommand aCommand, HealPlayerCommand::Result* outResult)
 	{
 		if (aCommand.Amount < 0)
 		{
@@ -661,9 +1120,16 @@ namespace cardgame
 			}
 		);
 
+		if (outResult != nullptr)
+		{
+			*outResult = HealPlayerCommand::Result{
+
+			};
+		}
+
 		return true;
 	}
-	bool Game::Do(DamagePlayerCommand aCommand)
+	bool Game::Do(DamagePlayerCommand aCommand, DamagePlayerCommand::Result* outResult)
 	{
 		if (aCommand.Amount < 0)
 		{
@@ -696,9 +1162,15 @@ namespace cardgame
 			}
 		);
 
+		if (outResult != nullptr)
+		{
+			*outResult = DamagePlayerCommand::Result{
+			};
+		}
+
 		return true;
 	}
-	bool Game::Do(AddPlayerResourcesCommand aCommand)
+	bool Game::Do(AddPlayerResourcesCommand aCommand, AddPlayerResourcesCommand::Result* outResult)
 	{
 		if (aCommand.Amount < 0)
 		{
@@ -731,9 +1203,16 @@ namespace cardgame
 			}
 		);
 
+		if (outResult != nullptr)
+		{
+			*outResult = AddPlayerResourcesCommand::Result{
+
+			};
+		}
+
 		return true;
 	}
-	bool Game::Do(RemovePlayerResourcesCommand aCommand)
+	bool Game::Do(RemovePlayerResourcesCommand aCommand, RemovePlayerResourcesCommand::Result* outResult)
 	{
 		if (aCommand.Amount < 0)
 		{
@@ -766,9 +1245,16 @@ namespace cardgame
 			}
 		);
 
+		if (outResult != nullptr)
+		{
+			*outResult = RemovePlayerResourcesCommand::Result{
+
+			};
+		}
+
 		return true;
 	}
-	bool Game::Do(SetNameCommand aCommand)
+	bool Game::Do(SetNameCommand aCommand, SetNameCommand::Result* outResult)
 	{
 		Player* player = FindPlayer(aCommand.Player);
 		if (player == nullptr)
@@ -777,6 +1263,46 @@ namespace cardgame
 		}
 
 		player->SetName(aCommand.Name);
+
+		myEventManager.Push(
+			EVENT_PLAYER_NAME_CHANGED,
+			EventPlayerNameChanged{
+				.Player = aCommand.Player
+			}
+		);
+
+		if (outResult != nullptr)
+		{
+			*outResult = SetNameCommand::Result{
+
+			};
+		}
+
+		return true;
+	}
+	bool Game::Do(SetSeedCommand aCommand, SetSeedCommand::Result* outResult)
+	{
+		myRNG.seed(aCommand.Seed);
+
+		if (outResult != nullptr)
+		{
+			*outResult = SetSeedCommand::Result{
+
+			};
+		}
+
+		return true;
+	}
+	bool Game::Do(GenerateUniformRandomIntegerCommand aCommand, GenerateUniformRandomIntegerCommand::Result* outResult)
+	{
+		int number = std::uniform_int_distribution<int>(aCommand.Min, aCommand.Max)(myRNG);
+
+		if (outResult != nullptr)
+		{
+			*outResult = GenerateUniformRandomIntegerCommand::Result{
+				.Number = number
+			};
+		}
 
 		return true;
 	}

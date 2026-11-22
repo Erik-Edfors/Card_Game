@@ -12,6 +12,13 @@ namespace shared
 		NETWORK_DEFINE_MESSAGE_ID("PING");
 	};
 
+	struct NM_AcknowladgeAssured
+	{
+		NETWORK_DEFINE_MESSAGE_ID("ACKNOWLADGE");
+
+		MessageIndex Index;
+	};
+
 	struct NM_KeepAlive
 	{
 		NETWORK_DEFINE_MESSAGE_ID("KEEP_ALIVE");
@@ -53,7 +60,7 @@ namespace shared
 	{
 		NETWORK_DEFINE_MESSAGE_ID("DISCONNECT");
 
-		ClientID Client;
+		//ClientID Client;
 		NETWORK_DISCONNECT_REASON Reason;
 	};
 
@@ -61,7 +68,7 @@ namespace shared
 	{
 		NETWORK_DEFINE_MESSAGE_ID("CONNECTION_RESULT");
 
-		ClientID Client;
+		//ClientID Client;
 		bool Accepted;
 	};
 
@@ -69,25 +76,25 @@ namespace shared
 	{
 		NETWORK_DEFINE_MESSAGE_ID("REQ_NAME");
 
-		std::string Name;
+		char Name[cardgame::MAX_PLAYER_NAME_SIZE];
 	};
 	NBS_DEFINE_TYPE(
 		NM_NameRequest,
 		Name
 	);
 
-	struct NM_NameChange
-	{
-		NETWORK_DEFINE_MESSAGE_ID("NAME_CHANGE");
+	//struct NM_NameChange
+	//{
+	//	NETWORK_DEFINE_MESSAGE_ID("NAME_CHANGE");
 
-		ClientID Client;
-		std::string Name;
-	};
-	NBS_DEFINE_TYPE(
-		NM_NameChange,
-		Client,
-		Name
-	);
+	//	ClientID Client;
+	//	std::string Name;
+	//};
+	//NBS_DEFINE_TYPE(
+	//	NM_NameChange,
+	//	Client,
+	//	Name
+	//);
 
 	struct NM_AssignPlayer
 	{
@@ -99,8 +106,6 @@ namespace shared
 	struct NM_StartGame
 	{
 		NETWORK_DEFINE_MESSAGE_ID("START_GAME");
-
-		size_t NumPlayers;
 	};
 
 	struct NM_GameReady
@@ -169,5 +174,12 @@ namespace shared
 
 		cardgame::Command Command;
 		size_t Index;
+	};
+
+	struct NM_SubmissionResult
+	{
+		NETWORK_DEFINE_MESSAGE_ID("SUBMISSION_RESULT");
+
+		bool Succeeded;
 	};
 }

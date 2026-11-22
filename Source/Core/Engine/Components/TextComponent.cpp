@@ -51,6 +51,15 @@ float TextComponent::GetAdvancePadding() const noexcept
 	return myText.GetAdvancePadding();
 }
 
+void TextComponent::SetAlignment(float aAlignment) noexcept
+{
+	myText.SetAlignment(aAlignment);
+}
+float TextComponent::GetAlignment() const noexcept
+{
+	return myText.GetAlignment();
+}
+
 void TextComponent::SetFont(const assets::FontFile* aFont) noexcept
 {
 	myText.SetFont(aFont);

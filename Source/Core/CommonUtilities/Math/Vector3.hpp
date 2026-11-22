@@ -24,63 +24,63 @@ namespace CommonUtilities
 #pragma warning(pop)
 		};
 		//Creates a vector (aX, aY, aZ)
-		Vector3<_Ty>(const _Ty& aX, const _Ty& aY, const _Ty& aZ);
+		constexpr Vector3<_Ty>(const _Ty& aX, const _Ty& aY, const _Ty& aZ);
 		//Creates a vector (aValues[0], aValues[1], aValues[2])
-		Vector3<_Ty>(const _Ty aValues[3]);
+		constexpr Vector3<_Ty>(const _Ty aValues[3]);
 		//Creates a zero-vector
-		Vector3<_Ty>();
+		constexpr Vector3<_Ty>();
 		//Copy constructor (compiler generated)
-		Vector3<_Ty>(const Vector3<_Ty>& aVector3) = default;
+		constexpr Vector3<_Ty>(const Vector3<_Ty>& aVector3) = default;
 		//
-		Vector3<_Ty>(const Vector2<_Ty>& aVector2, const _Ty& aZ);
+		constexpr Vector3<_Ty>(const Vector2<_Ty>& aVector2, const _Ty& aZ);
 		//Explicit conversion constructor from other vector type.
 		template<class _VecTy>
-		explicit Vector3<_Ty>(const _VecTy& aVector);
+		constexpr explicit Vector3<_Ty>(const _VecTy& aVector);
 		//Assignment operator (compiler generated)
-		Vector3<_Ty>& operator=(const Vector3<_Ty>& aVector3) = default;
+		constexpr Vector3<_Ty>& operator=(const Vector3<_Ty>& aVector3) = default;
 		//Destructor (compiler generated)
-		~Vector3<_Ty>() = default;
+		constexpr ~Vector3<_Ty>() = default;
 		//Explicit Type operator, create a different vector with the same values.
 		//Example creates a Tga::Vector3<_Ty> from this CommonUtillities::Vector3<_Ty>
 		template <class OtherVectorClass>
-		explicit operator OtherVectorClass() const;
+		constexpr explicit operator OtherVectorClass() const;
 		//Returns a negated copy of the vector
-		Vector3<_Ty> operator-() const;
+		constexpr Vector3<_Ty> operator-() const;
 		//Returns the squared length of the vector
-		_Ty LengthSqr() const;
+		constexpr _Ty LengthSqr() const;
 		//Returns the length of the vector
-		_Ty Length() const;
+		constexpr _Ty Length() const;
 		//Returns a normalized copy of this vector
-		Vector3<_Ty> GetNormalized() const;
+		constexpr Vector3<_Ty> GetNormalized() const;
 		//Normalizes the vector
-		void Normalize();
+		constexpr void Normalize();
 		//Returns the dot product of this and aVector
-		_Ty Dot(const Vector3<_Ty>& aVector) const;
+		constexpr _Ty Dot(const Vector3<_Ty>& aVector) const;
 		//Returns the cross product of this and aVector
-		Vector3<_Ty> Cross(const Vector3<_Ty>& aVector) const;
+		constexpr Vector3<_Ty> Cross(const Vector3<_Ty>& aVector) const;
 
-		Vector4<_Ty> Vec4(const _Ty& aW) const;
+		constexpr Vector4<_Ty> Vec4(const _Ty& aW) const;
 
-		Vector2<_Ty> xy() const;
-		Vector2<_Ty> xz() const;
+		constexpr Vector2<_Ty> xy() const;
+		constexpr Vector2<_Ty> xz() const;
 
-		Vector2<_Ty> yz() const;
-		Vector2<_Ty> yx() const;
+		constexpr Vector2<_Ty> yz() const;
+		constexpr Vector2<_Ty> yx() const;
 
-		Vector2<_Ty> zx() const;
-		Vector2<_Ty> zy() const;
+		constexpr Vector2<_Ty> zx() const;
+		constexpr Vector2<_Ty> zy() const;
 
-		Vector3<_Ty> xyz() const;
-		Vector3<_Ty> xzy() const;
+		constexpr Vector3<_Ty> xyz() const;
+		constexpr Vector3<_Ty> xzy() const;
 
-		Vector3<_Ty> yxz() const;
-		Vector3<_Ty> yzx() const;
+		constexpr Vector3<_Ty> yxz() const;
+		constexpr Vector3<_Ty> yzx() const;
 
-		Vector3<_Ty> zxy() const;
-		Vector3<_Ty> zyx() const;
+		constexpr Vector3<_Ty> zxy() const;
+		constexpr Vector3<_Ty> zyx() const;
 
-		Vector4<_Ty> xyz0() const;
-		Vector4<_Ty> xyz1() const;
+		constexpr Vector4<_Ty> xyz0() const;
+		constexpr Vector4<_Ty> xyz1() const;
 	};
 
 	using Vector3f = Vector3<float>;
@@ -89,30 +89,30 @@ namespace CommonUtilities
 	using Vector3ui = Vector3<unsigned int>;
 
 	template<class _Ty>
-	inline Vector3<_Ty>::Vector3(const _Ty& aX, const _Ty& aY, const _Ty& aZ)
+	inline constexpr Vector3<_Ty>::Vector3(const _Ty& aX, const _Ty& aY, const _Ty& aZ)
 	{
 		this->x = aX;
 		this->y = aY;
 		this->z = aZ;
 	}
 	template<class _Ty>
-	inline Vector3<_Ty>::Vector3(const _Ty aValues[3])
+	inline constexpr Vector3<_Ty>::Vector3(const _Ty aValues[3])
 	{
 		this->x = aValues[0];
 		this->y = aValues[1];
 		this->z = aValues[2];
 	}
 	template<class _Ty>
-	inline Vector3<_Ty>::Vector3() : Vector3<_Ty>(0, 0, 0)
+	inline constexpr Vector3<_Ty>::Vector3() : Vector3<_Ty>(0, 0, 0)
 	{
 	}
 	template<class _Ty>
-	inline Vector3<_Ty>::Vector3(const Vector2<_Ty>& aVector2, const _Ty& aZ) : Vector3<_Ty>(aVector2.x, aVector2.y, aZ)
+	inline constexpr Vector3<_Ty>::Vector3(const Vector2<_Ty>& aVector2, const _Ty& aZ) : Vector3<_Ty>(aVector2.x, aVector2.y, aZ)
 	{
 	}
 	template<class _Ty>
 	template<class _VecTy>
-	inline Vector3<_Ty>::Vector3(const _VecTy& aVector) : 
+	inline constexpr Vector3<_Ty>::Vector3(const _VecTy& aVector) : 
 		x(static_cast<_Ty>(aVector.x)),
 		y(static_cast<_Ty>(aVector.y)),
 		z(static_cast<_Ty>(aVector.z))
@@ -120,34 +120,34 @@ namespace CommonUtilities
 	}
 	template<class _Ty>
 	template<class OtherVectorClass>
-	inline Vector3<_Ty>::operator OtherVectorClass() const
+	inline constexpr Vector3<_Ty>::operator OtherVectorClass() const
 	{
 		return OtherVectorClass(this->x, this->y, this->z);
 	}
 	template<class _Ty>
-	inline Vector3<_Ty> Vector3<_Ty>::operator-() const
+	inline constexpr Vector3<_Ty> Vector3<_Ty>::operator-() const
 	{
 		return Vector3<_Ty>(-this->x, -this->y, -this->z);
 	}
 	template<class _Ty>
-	inline _Ty Vector3<_Ty>::LengthSqr() const
+	inline constexpr _Ty Vector3<_Ty>::LengthSqr() const
 	{
 		return this->x * this->x + this->y * this->y + this->z * this->z;
 	}
 	template<class _Ty>
-	inline _Ty Vector3<_Ty>::Length() const
+	inline constexpr _Ty Vector3<_Ty>::Length() const
 	{
 		return static_cast<_Ty>(std::sqrt(LengthSqr()));
 	}
 	template<class _Ty>
-	inline Vector3<_Ty> Vector3<_Ty>::GetNormalized() const
+	inline constexpr Vector3<_Ty> Vector3<_Ty>::GetNormalized() const
 	{
 		Vector3<_Ty> res = *this;
 		res.Normalize();
 		return res;
 	}
 	template<class _Ty>
-	inline void Vector3<_Ty>::Normalize()
+	inline constexpr void Vector3<_Ty>::Normalize()
 	{
 		_Ty len = Length();
 		this->x /= len;
@@ -155,12 +155,12 @@ namespace CommonUtilities
 		this->z /= len;
 	}
 	template<class _Ty>
-	inline _Ty Vector3<_Ty>::Dot(const Vector3<_Ty>& aVector) const
+	inline constexpr _Ty Vector3<_Ty>::Dot(const Vector3<_Ty>& aVector) const
 	{
 		return this->x * aVector.x + this->y * aVector.y + this->z * aVector.z;
 	}
 	template<class _Ty>
-	inline Vector3<_Ty> Vector3<_Ty>::Cross(const Vector3<_Ty>& aVector) const
+	inline constexpr Vector3<_Ty> Vector3<_Ty>::Cross(const Vector3<_Ty>& aVector) const
 	{
 		return Vector3<_Ty>(
 			this->y * aVector.z - this->z * aVector.y,
@@ -170,7 +170,7 @@ namespace CommonUtilities
 	}
 	//Returns the vector sum of aVector0 and aVector1
 	template <class _Ty>
-	Vector3<_Ty> operator+(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr Vector3<_Ty> operator+(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		return Vector3<_Ty>(
 			aVector0.x + aVector1.x,
@@ -180,7 +180,7 @@ namespace CommonUtilities
 	}
 	//Returns the vector difference of aVector0 and aVector1
 	template <class _Ty>
-	Vector3<_Ty> operator-(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr Vector3<_Ty> operator-(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		return Vector3<_Ty>(
 			aVector0.x - aVector1.x,
@@ -190,7 +190,7 @@ namespace CommonUtilities
 	}
 	//Returns the vector aVector1 component-multiplied by aVector1
 	template <class _Ty>
-	Vector3<_Ty> operator*(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr Vector3<_Ty> operator*(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		return Vector3<_Ty>(
 			aVector0.x * aVector1.x,
@@ -199,7 +199,7 @@ namespace CommonUtilities
 		);
 	}
 	template <class _Ty>
-	Vector3<_Ty> operator/(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr Vector3<_Ty> operator/(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		return Vector3<_Ty>(
 			aVector0.x / aVector1.x,
@@ -209,7 +209,7 @@ namespace CommonUtilities
 	}
 	//Returns the vector aVector multiplied by the scalar aScalar
 	template <class _Ty>
-	Vector3<_Ty> operator*(const Vector3<_Ty>& aVector, const _Ty& aScalar)
+	inline constexpr Vector3<_Ty> operator*(const Vector3<_Ty>& aVector, const _Ty& aScalar)
 	{
 		return Vector3<_Ty>(
 			aScalar * aVector.x,
@@ -219,13 +219,13 @@ namespace CommonUtilities
 	}
 	//Returns the vector aVector multiplied by the scalar aScalar
 	template <class _Ty>
-	Vector3<_Ty> operator*(const _Ty& aScalar, const Vector3<_Ty>& aVector)
+	inline constexpr Vector3<_Ty> operator*(const _Ty& aScalar, const Vector3<_Ty>& aVector)
 	{
 		return aVector * aScalar;
 	}
 	//Returns the vector aVector divided by the scalar aScalar (equivalent to aVector multiplied by 1 / aScalar)
 	template <class _Ty>
-	Vector3<_Ty> operator/(const Vector3<_Ty>& aVector, const _Ty& aScalar)
+	inline constexpr Vector3<_Ty> operator/(const Vector3<_Ty>& aVector, const _Ty& aScalar)
 	{
 		return Vector3<_Ty>(
 			aVector.x / aScalar,
@@ -235,7 +235,7 @@ namespace CommonUtilities
 	}
 
 	template <class _Ty>
-	Vector3<_Ty> operator/(const _Ty& aScalar, const Vector3<_Ty>& aVector)
+	inline constexpr Vector3<_Ty> operator/(const _Ty& aScalar, const Vector3<_Ty>& aVector)
 	{
 		return Vector3<_Ty>(
 			aScalar / aVector.x,
@@ -245,7 +245,7 @@ namespace CommonUtilities
 	}
 	//Equivalent to setting aVector0 to (aVector0 + aVector1)
 	template <class _Ty>
-	Vector3<_Ty>& operator+=(Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr Vector3<_Ty>& operator+=(Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		aVector0.x += aVector1.x;
 		aVector0.y += aVector1.y;
@@ -254,7 +254,7 @@ namespace CommonUtilities
 	}
 	//Equivalent to setting aVector0 to (aVector0 - aVector1)
 	template <class _Ty>
-	Vector3<_Ty>& operator-=(Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr Vector3<_Ty>& operator-=(Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		aVector0.x -= aVector1.x;
 		aVector0.y -= aVector1.y;
@@ -262,7 +262,7 @@ namespace CommonUtilities
 		return aVector0;
 	}
 	template <class _Ty>
-	Vector3<_Ty>& operator*=(Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr Vector3<_Ty>& operator*=(Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		aVector0.x *= aVector1.x;
 		aVector0.y *= aVector1.y;
@@ -270,7 +270,7 @@ namespace CommonUtilities
 		return aVector0;
 	}
 	template <class _Ty>
-	Vector3<_Ty>& operator/=(Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr Vector3<_Ty>& operator/=(Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		aVector0.x /= aVector1.x;
 		aVector0.y /= aVector1.y;
@@ -279,7 +279,7 @@ namespace CommonUtilities
 	}
 	//Equivalent to setting aVector to (aVector * aScalar)
 	template <class _Ty>
-	Vector3<_Ty>& operator*=(Vector3<_Ty>& aVector, const _Ty& aScalar)
+	inline constexpr Vector3<_Ty>& operator*=(Vector3<_Ty>& aVector, const _Ty& aScalar)
 	{
 		aVector.x *= aScalar;
 		aVector.y *= aScalar;
@@ -288,7 +288,7 @@ namespace CommonUtilities
 	}
 	//Equivalent to setting aVector to (aVector / aScalar)
 	template <class _Ty>
-	Vector3<_Ty>& operator/=(Vector3<_Ty>& aVector, const _Ty& aScalar)
+	inline constexpr Vector3<_Ty>& operator/=(Vector3<_Ty>& aVector, const _Ty& aScalar)
 	{
 		aVector.x /= aScalar;
 		aVector.y /= aScalar;
@@ -297,12 +297,12 @@ namespace CommonUtilities
 	}
 
 	template <class _Ty>
-	bool operator==(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr bool operator==(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		return aVector0.x == aVector1.x && aVector0.y == aVector1.y && aVector0.z == aVector1.z;
 	}
 	template <class _Ty>
-	bool operator!=(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
+	inline constexpr bool operator!=(const Vector3<_Ty>& aVector0, const Vector3<_Ty>& aVector1)
 	{
 		return aVector0.x != aVector1.x || aVector0.y != aVector1.y || aVector0.z != aVector1.z;
 	}
@@ -310,91 +310,91 @@ namespace CommonUtilities
 
 
 	template<class _Ty>
-	inline Vector4<_Ty> Vector3<_Ty>::Vec4(const _Ty& aW) const
+	inline constexpr Vector4<_Ty> Vector3<_Ty>::Vec4(const _Ty& aW) const
 	{
 		return Vector4<_Ty>(x, y, z, aW);
 	}
 
 	template<class _Ty>
-	inline Vector2<_Ty> Vector3<_Ty>::xy() const
+	inline constexpr Vector2<_Ty> Vector3<_Ty>::xy() const
 	{
 		return Vector2<_Ty>(x, y);
 	}
 
 	template<class _Ty>
-	inline Vector2<_Ty> Vector3<_Ty>::xz() const
+	inline constexpr Vector2<_Ty> Vector3<_Ty>::xz() const
 	{
 		return Vector2<_Ty>(x, z);
 	}
 
 	template<class _Ty>
-	inline Vector2<_Ty> Vector3<_Ty>::yz() const
+	inline constexpr Vector2<_Ty> Vector3<_Ty>::yz() const
 	{
 		return Vector2<_Ty>(y, z);
 	}
 
 	template<class _Ty>
-	inline Vector2<_Ty> Vector3<_Ty>::yx() const
+	inline constexpr Vector2<_Ty> Vector3<_Ty>::yx() const
 	{
 		return Vector2<_Ty>(y, x);
 	}
 
 	template<class _Ty>
-	inline Vector2<_Ty> Vector3<_Ty>::zx() const
+	inline constexpr Vector2<_Ty> Vector3<_Ty>::zx() const
 	{
 		return Vector2<_Ty>(z, x);
 	}
 
 	template<class _Ty>
-	inline Vector2<_Ty> Vector3<_Ty>::zy() const
+	inline constexpr Vector2<_Ty> Vector3<_Ty>::zy() const
 	{
 		return Vector2<_Ty>(z, y);
 	}
 
 	template<class _Ty>
-	inline Vector3<_Ty> Vector3<_Ty>::xyz() const
+	inline constexpr Vector3<_Ty> Vector3<_Ty>::xyz() const
 	{
 		return Vector3<_Ty>(x, y, z);
 	}
 
 	template<class _Ty>
-	inline Vector3<_Ty> Vector3<_Ty>::xzy() const
+	inline constexpr Vector3<_Ty> Vector3<_Ty>::xzy() const
 	{
 		return Vector3<_Ty>(x, z, y);
 	}
 
 	template<class _Ty>
-	inline Vector3<_Ty> Vector3<_Ty>::yxz() const
+	inline constexpr Vector3<_Ty> Vector3<_Ty>::yxz() const
 	{
 		return Vector3<_Ty>(y, x, z);
 	}
 
 	template<class _Ty>
-	inline Vector3<_Ty> Vector3<_Ty>::yzx() const
+	inline constexpr Vector3<_Ty> Vector3<_Ty>::yzx() const
 	{
 		return Vector3<_Ty>(y, z, x);
 	}
 
 	template<class _Ty>
-	inline Vector3<_Ty> Vector3<_Ty>::zxy() const
+	inline constexpr Vector3<_Ty> Vector3<_Ty>::zxy() const
 	{
 		return Vector3<_Ty>(z, x, y);
 	}
 
 	template<class _Ty>
-	inline Vector3<_Ty> Vector3<_Ty>::zyx() const
+	inline constexpr Vector3<_Ty> Vector3<_Ty>::zyx() const
 	{
 		return Vector3<_Ty>(z, y, x);
 	}
 
 	template<class _Ty>
-	inline Vector4<_Ty> Vector3<_Ty>::xyz0() const
+	inline constexpr Vector4<_Ty> Vector3<_Ty>::xyz0() const
 	{
 		return Vec4(static_cast<_Ty>(0));
 	}
 
 	template<class _Ty>
-	inline Vector4<_Ty> Vector3<_Ty>::xyz1() const
+	inline constexpr Vector4<_Ty> Vector3<_Ty>::xyz1() const
 	{
 		return Vec4(static_cast<_Ty>(1));
 	}

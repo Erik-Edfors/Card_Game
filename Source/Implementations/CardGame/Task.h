@@ -4,16 +4,6 @@
 
 namespace cardgame
 {
-	enum : unsigned char
-	{
-		TASK_TARGET_PLAYERS,
-		TASK_TARGET_CARDS,
-		TASK_TARGET_LOCATIONS,
-		TASK_AMOUNT,
-		TASK_OPTION,
-	};
-	using TASK_TYPE = unsigned char;
-
 	class TargetPlayersTask;
 	class TargetCardsTask;
 	class TargetLocationsTask;
@@ -26,6 +16,7 @@ namespace cardgame
 		virtual TASK_TYPE GetType() const = 0;
 		virtual const char* GetDescriptor() const = 0;
 		virtual bool IsFinished() const = 0;
+		virtual PlayerID GetAuthority() const = 0;
 
 		TargetPlayersTask& AsTargetPlayers();
 		TargetCardsTask& AsTargetCards();

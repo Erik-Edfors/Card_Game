@@ -43,7 +43,7 @@ namespace client
 		bool Shutdown();
 		void Update();
 
-		shared::ClientID GetID() const noexcept;
+		//shared::ClientID GetID() const noexcept;
 
 		CommonUtilities::Contract<ServerInfo> RequestServerInfo(const networking::SocketAddress& aServer, float aTimeout = 30.f);
 
@@ -70,6 +70,8 @@ namespace client
 		static void OnConnectionResult(const shared::NetworkManager::MessageCallbackData<shared::NM_ConnectionResult>& aData);
 		static void OnDisconnect(const shared::NetworkManager::MessageCallbackData<shared::NM_Disconnect>& aData);
 
+		static void OnAssuredTimeout(const shared::NetworkManager::AssuredTimeoutCallbackData& aData);
+
 		bool SendConnectionRequest(const networking::SocketAddress& aRemote);
 
 		template<class _MessageTy>
@@ -90,7 +92,7 @@ namespace client
 			bool AllowForeign;
 		};
 
-		shared::ClientID myID;
+		//shared::ClientID myID;
 
 		std::vector<_ServerInfoContract> myServerInfoContracts;
 

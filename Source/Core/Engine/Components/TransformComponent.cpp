@@ -1,7 +1,7 @@
 #include "Engine.pch.h"
 #include "TransformComponent.h"
 
-TransformComponent::TransformComponent() : 
+TransformComponent::TransformComponent() :
 	myIsDirty(false)
 {
 }
@@ -190,14 +190,16 @@ void TransformComponent::Clean() const
 	if (myIsDirty)
 	{
 		TransformComponent* parent = myParent.Get();
-		if (parent == nullptr)
+		if (parent != nullptr)
+		{
+			const CommonUtilities::Matrix4x4f globalMatrix = GetMatrix() * parent->GetGlobalMatrix();
+			myGlobalTransformCache.SetMatrix(globalMatrix);
+		}
+		else
 		{
 			myGlobalTransformCache = myTransform;
-			return;
+			myIsDirty = false;
 		}
-
-		const CommonUtilities::Matrix4x4f globalMatrix = GetMatrix() * parent->GetGlobalMatrix();
-		myGlobalTransformCache.SetMatrix(globalMatrix);
 
 		myIsDirty = false;
 	}

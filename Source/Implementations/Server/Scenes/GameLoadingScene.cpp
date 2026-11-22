@@ -1,8 +1,9 @@
 #include "Server.pch.h"
 #include "GameLoadingScene.h"
 
-#include "../ServerApp.h"
-#include "../Server.h"
+#include "ServerApp.h"
+#include "Server.h"
+#include "Scenes/MainScene.h"
 
 #include <Core/imgui/imgui.h>
 
@@ -12,7 +13,8 @@ namespace server
 {
 	GameLoadingScene::GameLoadingScene(ServerApp* aApp) :
 		myApp(aApp),
-		myGameScene(std::make_unique<GameScene>(aApp))
+		myGameScene(std::make_unique<GameScene>(aApp)),
+		myStartTimer(0.f)
 	{
 	}
 	GameLoadingScene::~GameLoadingScene()
@@ -28,19 +30,12 @@ namespace server
 			}
 		);
 	}
-	void GameLoadingScene::OnInit()
+	void GameLoadingScene::OnEnter()
 	{
 		GetServer().SetAllowingConnections(false);
 		GetServer().SetMessageCallback<shared::NM_GameReady>(&OnGameReady, this);
 
-		if (not myGameScene->InitializeGame(myPlayers.size()))
-		{
-			//TODO: Failed to initialize game.
-			return;
-		}
-
 		shared::NM_StartGame startGame = {
-			.NumPlayers = myPlayers.size()
 		};
 
 		shared::NetworkManager::NetworkMessage message;
@@ -51,7 +46,7 @@ namespace server
 			GetServer().SendTo(message, GetServer().GetClientRemote(player.Client));
 		}
 	}
-	void GameLoadingScene::OnShutdown()
+	void GameLoadingScene::OnExit()
 	{
 		GetServer().SetMessageCallback<shared::NM_GameReady>(nullptr, nullptr);
 	}
@@ -65,6 +60,15 @@ namespace server
 			allReady &= player.FinishedLoading;
 		}
 
+		if (allReady)
+		{
+			myStartTimer += aDeltaTime;
+			if (myStartTimer > 2.f)
+			{
+				StartGame();
+			}
+		}
+
 		const ImGuiWindowFlags flags = ImGuiWindowFlags_None
 			| ImGuiWindowFlags_NoBringToFrontOnFocus
 			| ImGuiWindowFlags_NoDecoration
@@ -75,53 +79,66 @@ namespace server
 		ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
 		if (ImGui::Begin("Lobby", nullptr, flags))
 		{
-			if (allReady)
+			ImGui::SeparatorText("Waiting for Players to be Ready");
+			if (ImGui::Button("Cancel Game", { -1.f, 0.f }))
 			{
-				if (ImGui::Button("Start Game", { -1.f, 0.f }))
-				{
-					StartGame();
-				}
-			}
-			else
-			{
-				if (ImGui::Button("Cancel Game", { -1.f, 0.f }))
-				{
-					//TODO: Add cancel game
-				}
+				GetServer().DisconnectClients(shared::NETWORK_DISCONNECT_END_OF_SESSION);
+				GetEngine().ChangeScene<MainScene>(myApp);
 			}
 
 			int id = 0;
 
 			const float itemSpacing = 2.f * ImGui::GetStyle().ItemSpacing.x;
 
-			for (const _PlayerInfo& player : myPlayers)
+			if (ImGui::BeginChild("##Players", { -1, -1 }, ImGuiChildFlags_Borders))
 			{
-				ImGui::PushID(id++);
+				ImGui::SeparatorText("Players");
 
-				if (ImGui::BeginChild("##Player", { -1, 0.f }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Borders))
+				auto it = myPlayers.begin();
+				while (it != myPlayers.end())
 				{
-					const float availWidth = ImGui::GetContentRegionAvail().x;
+					_PlayerInfo& player = *it;
 
-					if (ImGui::BeginChild("##Name", { availWidth * 0.3f - itemSpacing, 0.f }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
+					ImGui::PushID(id++);
+
+					bool erase = false;
+
+					if (ImGui::BeginChild("##Player", { -1, 0.f }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Borders))
 					{
-						ImGui::Text(player.Name.c_str());
+						const float availWidth = ImGui::GetContentRegionAvail().x;
+
+						if (ImGui::BeginChild("##Name", { availWidth * 0.3f - itemSpacing, 0.f }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
+						{
+							ImGui::Text(player.Name.c_str());
+						}
+						ImGui::EndChild();
+						if (ImGui::BeginChild("##Status", { availWidth * 0.3f - itemSpacing, 0.f }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
+						{
+							ImGui::Text(player.FinishedLoading ? "Ready!" : "Loading...");
+						}
+						ImGui::EndChild();
+
+						if (ImGui::Button("Kick", { availWidth * 0.3f - itemSpacing, 0.f }))
+						{
+							erase = true;
+							GetServer().DisconnectClient(player.Client, shared::NETWORK_DISCONNECT_KICKED_BY_OPERATOR);
+						}
 					}
 					ImGui::EndChild();
-					if (ImGui::BeginChild("##Status", { availWidth * 0.3f - itemSpacing, 0.f }, ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_FrameStyle))
-					{
-						ImGui::Text(player.FinishedLoading ? "Ready!" : "Loading...");
-					}
-					ImGui::EndChild();
 
-					if (ImGui::Button("Kick", { availWidth * 0.3f - itemSpacing, 0.f }))
+					ImGui::PopID();
+
+					if (erase)
 					{
-						//TODO: Add kick 
+						it = myPlayers.erase(it);
+					}
+					else
+					{
+						it = std::next(it);
 					}
 				}
-				ImGui::EndChild();
-
-				ImGui::PopID();
 			}
+			ImGui::EndChild();
 		}
 		ImGui::End();
 	}
@@ -132,11 +149,11 @@ namespace server
 		const shared::ClientID client = server.GetClientID(aData.Address);
 
 		auto it = std::find_if(
-			scene.myPlayers.begin(), 
-			scene.myPlayers.end(), 
-			[client](const _PlayerInfo& aPlayer) 
-			{ 
-				return aPlayer.Client == client; 
+			scene.myPlayers.begin(),
+			scene.myPlayers.end(),
+			[client](const _PlayerInfo& aPlayer)
+			{
+				return aPlayer.Client == client;
 			}
 		);
 
@@ -146,9 +163,6 @@ namespace server
 			if (not player.FinishedLoading)
 			{
 				player.FinishedLoading = true;
-
-				const cardgame::Player* assignedPlayer = scene.myGameScene->AssignPlayer(player.Client);
-				assignedPlayer;
 
 				//shared::NM_AssignPlayer assignPlayer = {
 				//	.PlayerID = assignedPlayer->GetID()
@@ -166,21 +180,8 @@ namespace server
 		// Assign names 
 		for (const _PlayerInfo& info : myPlayers)
 		{
-			cardgame::SetNameCommand setName = {
-				.Player = gameScene->GetPlayer(info.Client)->GetID(),
-				.Name = {}
-			};
-			constexpr size_t maxNameLen = sizeof(setName.Name) - 1;
-			const size_t end = info.Name.copy(setName.Name, maxNameLen, 0);
-			setName.Name[end] = '\0';	// Might be reduntant if '.Name = {}' sets all 0.
-
-			cardgame::Command command = {
-				.Type = cardgame::COMMAND_SET_NAME,
-				.Command = {
-					.SetName = setName
-				}
-			};
-			gameScene->PushCommand(command);
+			const cardgame::Player* assignedPlayer = gameScene->AssignPlayer(info.Client, info.Name);
+			assignedPlayer;
 		}
 	}
 	Server& GameLoadingScene::GetServer() const noexcept

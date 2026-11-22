@@ -9,7 +9,7 @@ namespace cardgame
 	{
 	}
 
-	std::unique_ptr<Card> CardFactory::CreateCard(CardFactoryID aFactoryID, Game* aGame, CardID aCardID)
+	std::unique_ptr<Card> CardFactory::CreateCard(CardFactoryID aFactoryID)
 	{
 		auto it = myConstructors.find(aFactoryID);
 		if (it == myConstructors.end())
@@ -18,6 +18,6 @@ namespace cardgame
 			return nullptr;
 		}
 		CardConstructor constructor = it->second;
-		return constructor(aGame, aCardID);
+		return constructor();
 	}
 }

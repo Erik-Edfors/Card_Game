@@ -17,7 +17,7 @@ namespace cs
 		using PureValue = std::remove_const_t<Value>;
 		using Pointer = Value*;
 		using Reference = Value&;
-		using Registry = ComponentRegistry<PureValue>;
+		using Registry = ComponentRegistryBase;
 
 		ComponentRef() noexcept;
 		ComponentRef(const ComponentRef& aRef) noexcept;
@@ -49,6 +49,13 @@ namespace cs
 		bool operator!=(const std::remove_const_t<Pointer> aComponent) const noexcept;
 		bool operator!=(const std::nullptr_t) const noexcept;
 
+		template<class _DerivedTy>
+			requires(std::is_base_of_v<_ComponentTy, _DerivedTy>)
+		ComponentRef& operator=(const ComponentRef<_DerivedTy>& aRef) noexcept;
+		template<class _DerivedTy>
+			requires(std::is_base_of_v<_ComponentTy, _DerivedTy>)
+		ComponentRef& operator=(_DerivedTy* aComponent) noexcept;
+
 		ComponentRef& operator=(const ComponentRef& aRef) noexcept;
 		ComponentRef& operator=(ComponentRef&& aRef) noexcept;
 		ComponentRef& operator=(Pointer aComponent) noexcept;
@@ -63,7 +70,7 @@ namespace cs
 	template<class _ComponentTy>
 	inline ComponentRef<_ComponentTy>::ComponentRef() noexcept :
 		myRegistry(nullptr),
-		myHandle(CS_INVALID_COMPONENT_HANDLE)
+		myHandle(INVALID_COMPONENT_HANDLE)
 	{
 	}
 	template<class _ComponentTy>
@@ -78,32 +85,29 @@ namespace cs
 		myHandle(std::move(aRef.myHandle))
 	{
 		aRef.myRegistry = nullptr;
-		aRef.myHandle = CS_INVALID_COMPONENT_HANDLE;
+		aRef.myHandle = INVALID_COMPONENT_HANDLE;
 	}
 	template<class _ComponentTy>
 	inline ComponentRef<_ComponentTy>::ComponentRef(std::nullptr_t) noexcept :
 		myRegistry(nullptr),
-		myHandle(CS_INVALID_COMPONENT_HANDLE)
+		myHandle(INVALID_COMPONENT_HANDLE)
 	{
 	}
 	template<class _ComponentTy>
 	inline ComponentRef<_ComponentTy>::ComponentRef(Pointer aComponent) noexcept :
 		myRegistry(nullptr),
-		myHandle(CS_INVALID_COMPONENT_HANDLE)
+		myHandle(INVALID_COMPONENT_HANDLE)
 	{
 		if (aComponent != nullptr)
 		{
-			myRegistry = aComponent->GetSystem().GetRegistry<PureValue>();
-			if (myRegistry != nullptr)
-			{
-				myHandle = aComponent->GetHandle();
-			}
+			myRegistry = &aComponent->GetRegistry();
+			myHandle = aComponent->GetHandle();
 		}
 	}
 	template<class _ComponentTy>
 	inline ComponentRef<_ComponentTy>::ComponentRef(ComponentSystem* aSystem, ComponentHandle aHandle) noexcept :
 		myRegistry(nullptr),
-		myHandle(CS_INVALID_COMPONENT_HANDLE)
+		myHandle(INVALID_COMPONENT_HANDLE)
 	{
 		if (aSystem != nullptr)
 		{
@@ -117,7 +121,7 @@ namespace cs
 	template<class _ComponentTy>
 	inline ComponentRef<_ComponentTy>::ComponentRef(Registry* aRegistry, ComponentHandle aHandle) noexcept :
 		myRegistry(nullptr),
-		myHandle(CS_INVALID_COMPONENT_HANDLE)
+		myHandle(INVALID_COMPONENT_HANDLE)
 	{
 	}
 	template<class _ComponentTy>
@@ -130,7 +134,7 @@ namespace cs
 	{
 		if (myRegistry != nullptr)
 		{
-			return myRegistry->GetComponent(myHandle);
+			return static_cast<Pointer>(myRegistry->GetComponentBase(myHandle));
 		}
 		return nullptr;
 	}
@@ -153,7 +157,7 @@ namespace cs
 	inline void ComponentRef<_ComponentTy>::Reset() noexcept
 	{
 		myRegistry = nullptr;
-		myHandle = CS_INVALID_COMPONENT_HANDLE;
+		myHandle = INVALID_COMPONENT_HANDLE;
 	}
 
 	template<class _ComponentTy>
@@ -182,11 +186,7 @@ namespace cs
 	template<class _ComponentTy>
 	inline ComponentRef<_ComponentTy>::operator Pointer() const noexcept
 	{
-		if (myRegistry != nullptr && myHandle != CS_INVALID_COMPONENT_HANDLE)
-		{
-			return myRegistry->GetComponent(myHandle);
-		}
-		else return nullptr;
+		return Get();
 	}
 
 	template<class _ComponentTy>
@@ -221,6 +221,33 @@ namespace cs
 	}
 
 	template<class _ComponentTy>
+	template<class _DerivedTy>
+		requires(std::is_base_of_v<_ComponentTy, _DerivedTy>)
+	ComponentRef<_ComponentTy>& ComponentRef<_ComponentTy>::operator=(const ComponentRef<_DerivedTy>& aRef) noexcept
+	{
+		myRegistry = aRef.myRegistry;
+		myHandle = aRef.myHandle;
+		return *this;
+	}
+	template<class _ComponentTy>
+	template<class _DerivedTy>
+		requires(std::is_base_of_v<_ComponentTy, _DerivedTy>)
+	ComponentRef<_ComponentTy>& ComponentRef<_ComponentTy>::operator=(_DerivedTy* aComponent) noexcept
+	{
+		if (aComponent != nullptr)
+		{
+			myRegistry = &aComponent->GetRegistry();
+			myHandle = aComponent->GetHandle();
+		}
+		else
+		{
+			myRegistry = nullptr;
+			myHandle = INVALID_COMPONENT_HANDLE;
+		}
+		return *this;
+	}
+
+	template<class _ComponentTy>
 	inline ComponentRef<_ComponentTy>& ComponentRef<_ComponentTy>::operator=(const ComponentRef& aRef) noexcept
 	{
 		myRegistry = aRef.myRegistry;
@@ -234,7 +261,7 @@ namespace cs
 		myHandle = std::move(aRef.myHandle);
 
 		aRef.myRegistry = nullptr;
-		aRef.myHandle = CS_INVALID_COMPONENT_HANDLE;
+		aRef.myHandle = INVALID_COMPONENT_HANDLE;
 		return *this;
 	}
 	template<class _ComponentTy>
@@ -242,16 +269,13 @@ namespace cs
 	{
 		if (aComponent != nullptr)
 		{
-			myRegistry = aComponent->GetSystem().GetRegistry<PureValue>();
-			if (myRegistry != nullptr)
-			{
-				myHandle = aComponent->GetHandle();
-			}
+			myRegistry = &aComponent->GetRegistry();
+			myHandle = aComponent->GetHandle();
 		}
 		else
 		{
 			myRegistry = nullptr;
-			myHandle = CS_INVALID_COMPONENT_HANDLE;
+			myHandle = INVALID_COMPONENT_HANDLE;
 		}
 		return *this;
 	}

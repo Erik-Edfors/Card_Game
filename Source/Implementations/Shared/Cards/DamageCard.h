@@ -18,6 +18,8 @@ namespace shared
 	protected:
 		virtual void OnInit() override;
 		virtual bool OnEvent(CommonUtilities::StringHash aEvent, const std::any& aData) override;
+		virtual void OnDestroyed() override;
+
 	private:
 		TargetOpponentTask myTargetTask;
 	};

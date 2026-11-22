@@ -14,9 +14,6 @@ namespace assets
 
 		static bool Shutdown();
 
-		//template<class _Ty>
-		//static _Ty* Load(const std::filesystem::path& aFile);
-
 		static std::filesystem::path NormalizeFilePath(const std::filesystem::path& aPath);
 
 		static const std::filesystem::path& GetAssetsPath();
@@ -29,36 +26,6 @@ namespace assets
 			void* Asset;
 		};
 
-		//static size_t OpenFileContents(const std::filesystem::path& aPath, const void** outContents);
-		//static void FreeFileContents(void* aFileContents);
-
 		std::filesystem::path myAssetsPath;
-
-		//static std::unordered_map<std::filesystem::path, AssetRegistry> myAssets;
 	};
-
-	//template<class _Ty>
-	//inline _Ty* AssetManager::Load(const std::filesystem::path& aFile)
-	//{
-	//	std::filesystem::path path = NormalizeFilePath(aFile);
-
-	//	{
-	//		auto it = myAssets.find(path);
-	//		if (it != myAssets.end())
-	//		{
-	//			return it->second.Asset;
-	//		}
-	//	}
-
-	//	void* contents = OpenFileContents(path);
-
-	//	//TODO: assign asset with deleter.
-	//	myAssets[path] = AssetRegistry{
-	//		.Asset = nullptr
-	//	};
-
-	//	FreeFileContents(contents);
-
-	//	return myAssets[path].Asset.get();
-	//}
 }

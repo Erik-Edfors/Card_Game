@@ -1,3 +1,4 @@
+#include "Assets.pch.h"
 #include "FontRegistry.h"
 
 namespace assets

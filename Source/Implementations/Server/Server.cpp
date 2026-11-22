@@ -71,29 +71,29 @@ namespace server
 		{
 			server.RemoveClient(id);
 
-			shared::NM_Disconnect disconnect = {
-				.Client = id,
-				.Reason = aData.Message.Reason
-			};
-			shared::NetworkManager::NetworkMessage message;
-			if (not server.myNetworkManager.CreateMessage(&message, disconnect, false))
-			{
-				// TODO: Log failed to create message.
-				// This causes a dirty disconnect.
-				// Meaning the server will no longer treat 
-				// the remot as a client, but the remote will not know that.
-			}
-			else
-			{
-				// Send to other clients. Not disconnecting client.
-				if (not server.SendToClients(message))
-				{
-					//TODO: Log failed to send disconnect.
-					// This causes a dirty disconnect.
-					// Meaning the server will no longer treat 
-					// the remot as a client, but the remote will not know that.
-				}
-			}
+			//shared::NM_Disconnect disconnect = {
+			//	.Client = id,
+			//	.Reason = aData.Message.Reason
+			//};
+			//shared::NetworkManager::NetworkMessage message;
+			//if (not server.myNetworkManager.CreateMessage(&message, disconnect, false))
+			//{
+			//	// TODO: Log failed to create message.
+			//	// This causes a dirty disconnect.
+			//	// Meaning the server will no longer treat 
+			//	// the remot as a client, but the remote will not know that.
+			//}
+			//else
+			//{
+			//	// Send to other clients. Not disconnecting client.
+			//	if (not server.SendToClients(message))
+			//	{
+			//		//TODO: Log failed to send disconnect.
+			//		// This causes a dirty disconnect.
+			//		// Meaning the server will no longer treat 
+			//		// the remot as a client, but the remote will not know that.
+			//	}
+			//}
 
 			if (server.myDisconnectionCallback != nullptr)
 			{
@@ -107,6 +107,17 @@ namespace server
 			}
 		}
 
+	}
+
+	void Server::OnAssuredTimeout(const shared::NetworkManager::AssuredTimeoutCallbackData& aData)
+	{
+		Server& server = *reinterpret_cast<Server*>(aData.UserData);
+
+		shared::ClientID client = server.GetClientID(aData.Remote);
+		if (client != shared::INVALID_CLIENT_ID)
+		{
+			server.DisconnectClient(client, shared::NETWORK_DISCONNECT_TIMED_OUT);
+		}
 	}
 
 	Server::Server() :
@@ -124,16 +135,11 @@ namespace server
 	{
 	}
 
-	bool Server::Initialize(networking::Port aPort)
+	bool Server::Initialize()
 	{
 		if (not myNetworkManager.Initialize(4096))
 		{
 			//TODO: Log failed to initialize.
-			return false;
-		}
-		if (not myNetworkManager.Bind(aPort))
-		{
-			//TODO: Log failed to bind.
 			return false;
 		}
 
@@ -141,6 +147,7 @@ namespace server
 		myNetworkManager.SetCallback<shared::NM_ServerInfoRequest>(&OnInfoRequest, this);
 		myNetworkManager.SetCallback<shared::NM_ConnectionRequest>(&OnConnectionRequest, this);
 		myNetworkManager.SetCallback<shared::NM_Disconnect>(&OnDisconnect, this);
+		myNetworkManager.SetAssuredTimeoutCallback(&OnAssuredTimeout, this);
 
 		return true;
 	}
@@ -202,6 +209,15 @@ namespace server
 				}
 			}
 		}
+	}
+
+	bool Server::Bind(networking::Port aPort)
+	{
+		return myNetworkManager.Bind(aPort);
+	}
+	bool Server::IsBound() const
+	{
+		return myNetworkManager.IsBound();
 	}
 
 	void Server::SetName(std::string_view aName) noexcept
@@ -295,7 +311,6 @@ namespace server
 		}
 
 		shared::NM_Disconnect disconnect = {
-			.Client = aClient,
 			.Reason = aReason
 		};
 		shared::NetworkManager::NetworkMessage message;
@@ -309,7 +324,7 @@ namespace server
 		else
 		{
 			// Send to both other clients, and removed client.
-			if (not SendToClients(message))
+			if (not SendTo(message, GetClientRemote(aClient)))
 			{
 				//TODO: Log failed to send disconnect.
 				// This causes a dirty disconnect.
@@ -343,10 +358,7 @@ namespace server
 	{
 		for (const auto& entry : myClients)
 		{
-			const shared::ClientID clientID = entry.first;
-
 			shared::NM_Disconnect disconnect = {
-				.Client = clientID,
 				.Reason = aReason
 			};
 			shared::NetworkManager::NetworkMessage message;
@@ -359,7 +371,7 @@ namespace server
 			}
 			else
 			{
-				if (not SendToClients(message))
+				if (not SendTo(message, entry.second.Address))
 				{
 					//TODO: Log failed to send disconnect.
 					// This causes a dirty disconnect.
@@ -435,11 +447,19 @@ namespace server
 
 	bool Server::SendTo(const shared::NetworkManager::NetworkMessage& aMessage, const networking::SocketAddress& aAddress)
 	{
+		if (not IsBound())
+		{
+			return false;
+		}
 		return myNetworkManager.SendTo(aMessage, aAddress);
 	}
 
 	bool Server::SendToClients(const shared::NetworkManager::NetworkMessage& aMessage)
 	{
+		if (not IsBound())
+		{
+			return false;
+		}
 		bool result = true;
 		for (auto& entry : myClients)
 		{

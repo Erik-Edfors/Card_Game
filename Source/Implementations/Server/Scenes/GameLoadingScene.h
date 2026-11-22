@@ -18,8 +18,8 @@ namespace server
 		void AddPlayer(std::string_view aName, shared::ClientID aClient);
 
 	protected:
-		virtual void OnInit() override;
-		virtual void OnShutdown() override;
+		virtual void OnEnter() override;
+		virtual void OnExit() override;
 		virtual void OnUpdate(float aDeltaTime) override;
 
 	private:
@@ -33,6 +33,8 @@ namespace server
 		static void OnGameReady(const Server::MessageCallbackData<shared::NM_GameReady>& aData);
 
 		void StartGame();
+
+		float myStartTimer;
 
 		std::unique_ptr<GameScene> myGameScene;
 		Server& GetServer() const noexcept;

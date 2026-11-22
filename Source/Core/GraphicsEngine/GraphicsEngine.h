@@ -10,6 +10,7 @@ namespace graphics
 {
 	class Device;
 	class ImmediateDeviceContext;
+	class Window;
 	class ConstantBuffer;
 }
 
@@ -36,6 +37,7 @@ public:
 
 	graphics::Device* GetDevice() const noexcept;
 	graphics::ImmediateDeviceContext* GetDeviceContext() const noexcept;
+	graphics::Window* GetWindow() const;
 
 	bool UpdateConstantBuffer(CONSTANT_BUFFER aBuffer, void* aData, size_t aSize);
 	graphics::ConstantBuffer* GetConstantBuffer(CONSTANT_BUFFER aBuffer);

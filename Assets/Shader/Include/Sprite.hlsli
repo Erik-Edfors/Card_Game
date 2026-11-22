@@ -2,6 +2,9 @@ cbuffer FrameBuffer : register(b0)
 {
     float4x4 FB_View;
     float4x4 FB_Projection;
+    float2 FB_TargetSize;
+
+    uint2 FB_padding;
 };
 
 cbuffer ObjectBuffer : register(b1)
@@ -10,8 +13,9 @@ cbuffer ObjectBuffer : register(b1)
     float4 OB_Tint;
     float4 OB_AtlasRect;
     float2 OB_Origin;
+    uint OB_ID;
 
-    uint2 OB_padding;
+    uint OB_padding;
 };
 
 struct Sprite_VS_Out
@@ -28,5 +32,6 @@ struct Sprite_PS_In
 
 struct Sprite_PS_Out
 {
-    float4 Color : SV_TARGET;
+    float4 Color : SV_TARGET0;
+    uint ID : SV_TARGET1;
 };

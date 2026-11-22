@@ -176,12 +176,21 @@ namespace client
 			return false;
 		}
 
+#ifdef _RETAIL
+		constexpr const wchar_t* AssetPath = L"Assets/";
+#else
+		constexpr const wchar_t* AssetPath = L"../../../Assets/";
+#endif
+
 		// Initializing Engine
-		if (not myEngine->Initialize(myWindow, L"../../../Assets/"))	//TODO: Get asset path from config file.
+		if (not myEngine->Initialize(myWindow, AssetPath))	//TODO: Get asset path from config file.
 		{
 			LOG_ERROR(LOG_CATEGORY, "Failed to initialize Engine!");
 			return false;
 		}
+
+		static const char* const iniFilename = "client_imgui.ini";
+		ImGui::GetIO().IniFilename = iniFilename;
 
 		if (not myClient->Initialize()) //TODO: Allow user selected port
 		{

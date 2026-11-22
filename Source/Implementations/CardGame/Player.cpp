@@ -53,6 +53,11 @@ namespace cardgame
 		return myTurnIndex;
 	}
 
+	void Player::SetTurnIndex(TurnIndex aTurnIndex) noexcept
+	{
+		myTurnIndex = aTurnIndex;
+	}
+
 	void Player::SetResourceCount(ResourceCount aAmount) noexcept
 	{
 		myResources = aAmount;

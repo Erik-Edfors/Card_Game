@@ -184,19 +184,19 @@ namespace graphics
 
 		result::Code UpdateConstantBuffer(
 			ConstantBuffer* aConstantBuffer,
-			void* aData,
+			const void* aData,
 			size_t aDataSize
 		) override;
 
 		result::Code UpdateVertexBuffer(
 			VertexBuffer* aVertexBuffer,
-			void* aData,
+			const void* aData,
 			size_t aDataSize
 		) override;
 
 		result::Code UpdateIndexBuffer(
 			IndexBuffer* aIndexBuffer,
-			void* aData,
+			const void* aData,
 			size_t aDataSize
 		) override;
 

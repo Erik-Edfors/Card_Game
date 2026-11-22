@@ -24,6 +24,9 @@ public:
 	void SetAdvancePadding(float aPadding) noexcept;
 	float GetAdvancePadding() const noexcept;
 
+	void SetAlignment(float aAlignment) noexcept;
+	float GetAlignment() const noexcept;
+
 	void SetFont(const assets::FontFile* aFont) noexcept;
 	const assets::FontFile* GetFont() const noexcept;
 

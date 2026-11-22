@@ -114,7 +114,7 @@ namespace CommonUtilities
 	template<typename T>
 	constexpr inline Matrix4x4<T>::Matrix4x4(const T(&aValues)[16])
 	{
-		std::copy(std::begin(aValues), std::end(aValues), myElements);
+		std::copy(std::begin(aValues), std::end(aValues), myData);
 	}
 	template<typename T>
 	constexpr inline Matrix4x4<T>::Matrix4x4(const std::array<std::array<T, 4>, 4>& aValues)

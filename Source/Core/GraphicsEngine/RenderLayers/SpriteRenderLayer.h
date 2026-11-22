@@ -8,6 +8,8 @@
 #include <Core/RenderHardwareInterface/Objects/ShaderResource.h>
 #include <Core/RenderHardwareInterface/Objects/Buffers/ConstantBuffer.h>
 
+#include <unordered_set>
+
 namespace graphics
 {
 	class ShaderResource;
@@ -58,6 +60,8 @@ public:
 	void SetTransform(const CommonUtilities::Matrix4x4f& aTransform) noexcept;
 	const CommonUtilities::Matrix4x4f& GetTransform() const noexcept;
 
+	unsigned int GetID() const noexcept;
+
 	Instance GetInstance(graphics::Device* aDevice) const;
 
 private:
@@ -70,6 +74,7 @@ private:
 	CommonUtilities::Vector4f myTint;
 	CommonUtilities::AABB2Df myAtlasRect;
 	CommonUtilities::Vector2f myOrigin;
+	unsigned int myID;
 };
 
 class SpriteRenderLayer : public RenderLayer
@@ -90,6 +95,8 @@ public:
 	void SetDepthStencil(graphics::DepthStencil* aDepthStencil) noexcept;
 	graphics::DepthStencil* GetDepthStencil() const noexcept;
 
+	unsigned int GetHoveredID() const noexcept;
+
 	void Draw(const Sprite& aSprite);
 
 protected:
@@ -104,7 +111,10 @@ private:
 	CommonUtilities::Matrix4x4f myProjection;
 
 	graphics::PImpl<graphics::RenderTarget> myRenderTarget;
+	graphics::PImpl<graphics::RenderTarget> myIDsTarget;
 	graphics::PImpl<graphics::DepthStencil> myDepthStencil;
+
+	graphics::PImpl<graphics::Texture2D> myIDStagingTexture;
 
 	graphics::PImpl<graphics::BlendState> myBlendState;
 
@@ -116,4 +126,6 @@ private:
 	graphics::PImpl<graphics::PixelShader> myPixelShader;
 
 	std::vector<Sprite::Instance> myInstances;
+
+	unsigned int myHoveredID;
 };

@@ -15,6 +15,9 @@ workspace(Settings.Name)
 	targetname(Settings.TargetName)
 	objdir(Settings.TempDir)
 
+    -- Default project user settings
+    usershowallfiles(Settings.User.ShowAllFiles)
+
     staticruntime("off")
 
     multiprocessorcompile("On")
@@ -50,11 +53,24 @@ workspace(Settings.Name)
         }
         optimize("On")
         runtime("Release")
+
+    filter("configurations:Retail")
+        defines {
+            "NDEBUG",
+            "_RELEASE",
+            "_RETAIL"
+        }
+        optimize("On")
+        runtime("Release")
+        outputcppruntime(true)
         
     filter { "configurations:Debug", "action:vs*", "not action:vs2015", "not action:vs2013", "not action:vs2012", "not action:vs2010", "not action:vs2008", "not action:vs2005" }
         symbols("Full")
 
     filter { "configurations:Release", "action:vs*", "not action:vs2013", "not action:vs2012", "not action:vs2010", "not action:vs2008", "not action:vs2005" }
+        symbols("FastLink")
+
+    filter { "configurations:Retail", "action:vs*", "not action:vs2013", "not action:vs2012", "not action:vs2010", "not action:vs2008", "not action:vs2005" }
         symbols("FastLink")
 
     filter("system:windows")

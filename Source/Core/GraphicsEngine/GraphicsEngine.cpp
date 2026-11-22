@@ -58,109 +58,109 @@ bool GraphicsEngine::Initialize(graphics::Device* aDevice)
 	//// Constant Buffers
 	//////////////////
 
-	{
-		graphics::ConstantBufferDesc cbDesc = {};
-		cbDesc.Name = "Frame Buffer";
-		cbDesc.InitialData = nullptr;
-		cbDesc.Size = sizeof(FrameBuffer);
-		cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
-		cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
-		myDevice->CreateConstantBuffer(
-			&myConstantBuffers[CONSTANT_BUFFER_FRAME],
-			&cbDesc
-		);
-	}
+	//{
+	//	graphics::ConstantBufferDesc cbDesc = {};
+	//	cbDesc.Name = "Frame Buffer";
+	//	cbDesc.InitialData = nullptr;
+	//	cbDesc.Size = sizeof(FrameBuffer);
+	//	cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
+	//	cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
+	//	myDevice->CreateConstantBuffer(
+	//		&myConstantBuffers[CONSTANT_BUFFER_FRAME],
+	//		&cbDesc
+	//	);
+	//}
 
-	{
-		graphics::ConstantBufferDesc cbDesc = {};
-		cbDesc.Name = "Object Buffer";
-		cbDesc.InitialData = nullptr;
-		cbDesc.Size = sizeof(ObjectBuffer);
-		cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
-		cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
-		myDevice->CreateConstantBuffer(
-			&myConstantBuffers[CONSTANT_BUFFER_OBJECT],
-			&cbDesc
-		);
-	}
+	//{
+	//	graphics::ConstantBufferDesc cbDesc = {};
+	//	cbDesc.Name = "Object Buffer";
+	//	cbDesc.InitialData = nullptr;
+	//	cbDesc.Size = sizeof(ObjectBuffer);
+	//	cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
+	//	cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
+	//	myDevice->CreateConstantBuffer(
+	//		&myConstantBuffers[CONSTANT_BUFFER_OBJECT],
+	//		&cbDesc
+	//	);
+	//}
 
-	{
-		graphics::ConstantBufferDesc cbDesc = {};
-		cbDesc.Name = "Material Buffer";
-		cbDesc.InitialData = nullptr;
-		cbDesc.Size = sizeof(MaterialBuffer);
-		cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
-		cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
-		myDevice->CreateConstantBuffer(
-			&myConstantBuffers[CONSTANT_BUFFER_MATERIAL],
-			&cbDesc
-		);
-	}
+	//{
+	//	graphics::ConstantBufferDesc cbDesc = {};
+	//	cbDesc.Name = "Material Buffer";
+	//	cbDesc.InitialData = nullptr;
+	//	cbDesc.Size = sizeof(MaterialBuffer);
+	//	cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
+	//	cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
+	//	myDevice->CreateConstantBuffer(
+	//		&myConstantBuffers[CONSTANT_BUFFER_MATERIAL],
+	//		&cbDesc
+	//	);
+	//}
 
-	{
-		graphics::ConstantBufferDesc cbDesc = {};
-		cbDesc.Name = "Animation Buffer";
-		cbDesc.InitialData = nullptr;
-		cbDesc.Size = sizeof(AnimationBuffer);
-		cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
-		cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
-		myDevice->CreateConstantBuffer(
-			&myConstantBuffers[CONSTANT_BUFFER_ANIMATION],
-			&cbDesc
-		);
-	}
+	//{
+	//	graphics::ConstantBufferDesc cbDesc = {};
+	//	cbDesc.Name = "Animation Buffer";
+	//	cbDesc.InitialData = nullptr;
+	//	cbDesc.Size = sizeof(AnimationBuffer);
+	//	cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
+	//	cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
+	//	myDevice->CreateConstantBuffer(
+	//		&myConstantBuffers[CONSTANT_BUFFER_ANIMATION],
+	//		&cbDesc
+	//	);
+	//}
 
-	{
-		graphics::ConstantBufferDesc cbDesc = {};
-		cbDesc.Name = "Light Buffer";
-		cbDesc.InitialData = nullptr;
-		cbDesc.Size = sizeof(LightBuffer);
-		cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
-		cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
-		myDevice->CreateConstantBuffer(
-			&myConstantBuffers[CONSTANT_BUFFER_LIGHT],
-			&cbDesc
-		);
-	}
+	//{
+	//	graphics::ConstantBufferDesc cbDesc = {};
+	//	cbDesc.Name = "Light Buffer";
+	//	cbDesc.InitialData = nullptr;
+	//	cbDesc.Size = sizeof(LightBuffer);
+	//	cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
+	//	cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
+	//	myDevice->CreateConstantBuffer(
+	//		&myConstantBuffers[CONSTANT_BUFFER_LIGHT],
+	//		&cbDesc
+	//	);
+	//}
 
-	{
-		graphics::ConstantBufferDesc cbDesc = {};
-		cbDesc.Name = "Shadow Map Buffer";
-		cbDesc.InitialData = nullptr;
-		cbDesc.Size = sizeof(ShadowMapBuffer);
-		cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
-		cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
-		myDevice->CreateConstantBuffer(
-			&myConstantBuffers[CONSTANT_BUFFER_SHADOW_MAP],
-			&cbDesc
-		);
-	}
+	//{
+	//	graphics::ConstantBufferDesc cbDesc = {};
+	//	cbDesc.Name = "Shadow Map Buffer";
+	//	cbDesc.InitialData = nullptr;
+	//	cbDesc.Size = sizeof(ShadowMapBuffer);
+	//	cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
+	//	cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
+	//	myDevice->CreateConstantBuffer(
+	//		&myConstantBuffers[CONSTANT_BUFFER_SHADOW_MAP],
+	//		&cbDesc
+	//	);
+	//}
 
-	{
-		graphics::ConstantBufferDesc cbDesc = {};
-		cbDesc.Name = "Bloom Buffer";
-		cbDesc.InitialData = nullptr;
-		cbDesc.Size = sizeof(BloomBuffer);
-		cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
-		cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
-		myDevice->CreateConstantBuffer(
-			&myConstantBuffers[CONSTANT_BUFFER_BLOOM],
-			&cbDesc
-		);
-	}
+	//{
+	//	graphics::ConstantBufferDesc cbDesc = {};
+	//	cbDesc.Name = "Bloom Buffer";
+	//	cbDesc.InitialData = nullptr;
+	//	cbDesc.Size = sizeof(BloomBuffer);
+	//	cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
+	//	cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
+	//	myDevice->CreateConstantBuffer(
+	//		&myConstantBuffers[CONSTANT_BUFFER_BLOOM],
+	//		&cbDesc
+	//	);
+	//}
 
-	{
-		graphics::ConstantBufferDesc cbDesc = {};
-		cbDesc.Name = "Blur Buffer";
-		cbDesc.InitialData = nullptr;
-		cbDesc.Size = sizeof(BlurBuffer);
-		cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
-		cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
-		myDevice->CreateConstantBuffer(
-			&myConstantBuffers[CONSTANT_BUFFER_BLUR],
-			&cbDesc
-		);
-	}
+	//{
+	//	graphics::ConstantBufferDesc cbDesc = {};
+	//	cbDesc.Name = "Blur Buffer";
+	//	cbDesc.InitialData = nullptr;
+	//	cbDesc.Size = sizeof(BlurBuffer);
+	//	cbDesc.Usage = graphics::GRAPHICS_USAGE_DYNAMIC;
+	//	cbDesc.CPUAccessFlags = graphics::GRAPHICS_CPU_ACCESS_WRITE;
+	//	myDevice->CreateConstantBuffer(
+	//		&myConstantBuffers[CONSTANT_BUFFER_BLUR],
+	//		&cbDesc
+	//	);
+	//}
 
 	return true;
 
@@ -265,6 +265,11 @@ graphics::ImmediateDeviceContext* GraphicsEngine::GetDeviceContext() const noexc
 	return myDeviceContext.Get();
 }
 
+graphics::Window* GraphicsEngine::GetWindow() const
+{
+	return myDevice->GetWindow();
+}
+
 bool GraphicsEngine::UpdateConstantBuffer(CONSTANT_BUFFER aBuffer, void* aData, size_t aSize)
 {
 	auto buffer = myConstantBuffers.find(aBuffer);
@@ -333,152 +338,6 @@ LightEntryID GraphicsEngine::CreateLightEntryID()
 {
 	return myNextLightEntryID++;
 }
-
-//RenderPass* GraphicsEngine::GetRenderPass() const
-//{
-//	return myRenderPass;
-//}
-//
-//void GraphicsEngine::SetRenderPass(RenderPass* aPipelineState)
-//{
-//	if (myRenderPass != nullptr)
-//	{
-//		myRenderPass->Unbind(this);
-//	}
-//	myRenderPass = aPipelineState;
-//	if (myRenderPass != nullptr)
-//	{
-//		myRenderPass->Bind(this);
-//	}
-//}
-
-//bool GraphicsEngine::BeginRender()
-//{
-//	if (myRenderPass == nullptr)
-//	{
-//		return false;
-//	}
-//
-//	//TODO: Find better way to implement constant buffers
-//	for (auto& entry : myConstantBuffers)
-//	{
-//		myDevice->BindConstantBuffers(&entry.second, 1, entry.first, graphics::GRAPHICS_SHADER_STAGE_VERTEX | graphics::GRAPHICS_SHADER_STAGE_PIXEL);
-//	}
-//
-//	myRenderPass->BeginRender(this);
-//	return true;
-//}
-//
-//bool GraphicsEngine::EndRender()
-//{
-//	if (myRenderPass == nullptr)
-//	{
-//		return false;
-//	}
-//
-//	myRenderPass->EndRender(this);
-//
-//	graphics::ConstantBuffer* dummy = nullptr;
-//
-//	//TODO: Find better way to implement constant buffers
-//	for (auto& entry : myConstantBuffers)
-//	{
-//		myDevice->BindConstantBuffers(&dummy, 1, entry.first, graphics::GRAPHICS_SHADER_STAGE_VERTEX | graphics::GRAPHICS_SHADER_STAGE_PIXEL);
-//	}
-//	return true;
-//}
-
-//bool GraphicsEngine::RenderPipelineState()
-//{
-//	if (myPipelineState == nullptr)
-//	{
-//		return false;
-//	}
-//
-//	myPipelineState->Render(myDevice.Get());
-//
-//	return true;
-//}
-
-//void GraphicsEngine::ResetPipelineState()
-//{
-//	if (myRenderPass != nullptr)
-//	{
-//		myRenderPass->Unbind(this);
-//		myRenderPass = nullptr;
-//	}
-//}
-
-//PipelineState* GraphicsEngine::GetState()
-//{
-//	return myPipelineStateStack.empty() ? nullptr : myPipelineStateStack.back().get();
-//}
-//
-//PipelineState* GraphicsEngine::PushState(const PipelineStateDesc& aDesc)
-//{
-//	if (not myPipelineStateStack.empty())
-//	{
-//		myPipelineStateStack.back()->Unbind(myDevice.Get());
-//	}
-//	myPipelineStateStack.push_back(std::move(std::make_shared<PipelineState>(aDesc)));
-//	myPipelineStateStack.back()->Bind(myDevice.Get());
-//	return myPipelineStateStack.back().get();
-//}
-//
-//PipelineState* GraphicsEngine::PopState()
-//{
-//	if (myPipelineStateStack.empty())
-//	{
-//		return nullptr;
-//	}
-//	myPipelineStateStack.back()->Unbind(myDevice.Get());
-//	myPipelineStateStack.pop_back();
-//	return myPipelineStateStack.empty() ? nullptr : myPipelineStateStack.back().get();
-//}
-
-//graphics::PipelineState* GraphicsEngine::GetPipelineState(PIPELINE_STATE aPipelineState)
-//{
-//	auto entry = myPipelineStates.find(aPipelineState);
-//	if (entry != myPipelineStates.end())
-//	{
-//		return entry->second.Get();
-//	}
-//	else return nullptr;
-//}
-//
-//bool GraphicsEngine::SetState(PIPELINE_STATE aPipelineState)
-//{
-//	ResetState();
-//	if (aPipelineState == PIPELINE_STATE_NONE)
-//	{
-//		return true;
-//	}
-//
-//	auto entry = myPipelineStates.find(aPipelineState);
-//	if (entry != myPipelineStates.end())
-//	{
-//		myBoundState = aPipelineState;
-//		graphics::result::Code result = entry->second->Bind(myDevice.Get());
-//		return GRAPHICS_SUCCEEDED(result);
-//	}
-//	return false;
-//}
-//
-//PIPELINE_STATE GraphicsEngine::GetState() const
-//{
-//	return myBoundState;
-//}
-//
-//bool GraphicsEngine::ResetState()
-//{
-//	if (myBoundState != PIPELINE_STATE_NONE)
-//	{
-//		graphics::result::Code result = myPipelineStates[myBoundState]->Unbind(myDevice.Get());
-//		myBoundState = PIPELINE_STATE_NONE;
-//		return GRAPHICS_SUCCEEDED(result);
-//	}
-//	return false;
-//}
 
 #undef FILE_CATEGORY 
 #undef CLASS_CATEGORY

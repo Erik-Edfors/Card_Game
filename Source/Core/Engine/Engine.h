@@ -92,7 +92,6 @@ public:
 
 	Scene* GetScene() noexcept;
 
-	//TODO: Change PushScene and PopScene to only add/remove scenes after update.
 	template<class _SceneTy, class... _Args>
 	_SceneTy* PushScene(_Args&&... aArgs);
 	template<class _SceneTy>
@@ -144,12 +143,18 @@ inline _SceneTy* Engine::PushScene(_Args&&... aArgs)
 template<class _SceneTy>
 inline _SceneTy* Engine::PushScene(std::unique_ptr<_SceneTy>&& aScene)
 {
+	if (aScene == nullptr)
+	{
+		return nullptr;
+	}
+
 	_SceneTy* scene = aScene.get();
 	PushPopEntry push = {
 		.Type = PushPopType::Push,
 		.Scene = std::move(aScene)
 	};
 	myPushPopEntries.push_back(std::move(push));
+	scene->Initialize(this);
 
 	return scene;
 }

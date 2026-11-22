@@ -139,6 +139,7 @@ namespace graphics
 		HRESULT result = myDevice->CreateDeferredContext(NULL, &deviceContext);
 
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, ID3D11Device::CreateDeferredContext, LOG_CATEGORY);
+		result;
 
 		if (*outDeviceContext != nullptr)
 		{
@@ -1016,7 +1017,7 @@ namespace graphics
 		return result::OK;
 #undef LOG_CATEGORY
 	}
-	result::Code Device_DX11Impl::UpdateConstantBuffer(ConstantBuffer* aConstantBuffer, void* aData, size_t aDataSize)
+	result::Code Device_DX11Impl::UpdateConstantBuffer(ConstantBuffer* aConstantBuffer, const void* aData, size_t aDataSize)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::UpdateConstantBuffer"
 
@@ -1038,7 +1039,7 @@ namespace graphics
 		return result::OK;
 #undef LOG_CATEGORY
 	}
-	result::Code Device_DX11Impl::UpdateVertexBuffer(VertexBuffer* aVertexBuffer, void* aData, size_t aDataSize)
+	result::Code Device_DX11Impl::UpdateVertexBuffer(VertexBuffer* aVertexBuffer, const void* aData, size_t aDataSize)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::UpdateVertexBuffer"
 
@@ -1060,7 +1061,7 @@ namespace graphics
 		return result::OK;
 #undef LOG_CATEGORY
 	}
-	result::Code Device_DX11Impl::UpdateIndexBuffer(IndexBuffer* aIndexBuffer, void* aData, size_t aDataSize)
+	result::Code Device_DX11Impl::UpdateIndexBuffer(IndexBuffer* aIndexBuffer, const void* aData, size_t aDataSize)
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::UpdateIndexBuffer"
 
@@ -1848,6 +1849,7 @@ namespace graphics
 		myDeviceContext->ClearState();
 		HRESULT result = mySwapChain->ResizeBuffers(0, static_cast<UINT>(aWidth), static_cast<UINT>(aHeight), DXGI_FORMAT_UNKNOWN, mySwapChainFlags);
 		GRAPHICS_ASSERT_WIN32_API_CALL(result, IDXGISwapChain::ResizeBuffers, LOG_CATEGORY);
+		result;
 
 		//Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
 		//result = mySwapChain->GetBuffer(0u, __uuidof(ID3D11Texture2D), &texture);

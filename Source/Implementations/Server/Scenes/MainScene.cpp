@@ -88,11 +88,18 @@ namespace server
 	{
 #define LOG_CATEGORY CLASS_CATEGORY"::OnInit"
 
+		myServerPortName = "54322";
+
 		//myConsole.SetInputCallback(&InputCallback, this);
 
 		//myCommandParser.AddCommand("test", &test, this);
 
 #undef LOG_CATEGORY
+	}
+
+	void MainScene::OnEnter()
+	{
+		myServer->ResetServer();
 	}
 
 	void MainScene::OnUpdate(float aDeltaTime)
@@ -113,6 +120,12 @@ namespace server
 		ImGui::SetNextWindowSize(ImGui::GetWindowViewport()->Size);
 		if (ImGui::Begin("Main", nullptr, flags))
 		{
+			ImGui::SeparatorText("Server Setup");
+
+			ImGui::Text("Port");
+			ImGui::SetNextItemWidth(-1);
+			ImGui::InputText("##Port", &myServerPortName, ImGuiInputTextFlags_CharsDecimal);
+
 			std::string input = server.GetName();
 			ImGui::Text("Name");
 			ImGui::SetNextItemWidth(-1);
@@ -120,6 +133,7 @@ namespace server
 			{
 				server.SetName(input);
 			}
+
 			input = server.GetDescription();
 			ImGui::Text("Description");
 			ImGui::SetNextItemWidth(-1);
@@ -127,12 +141,27 @@ namespace server
 			{
 				server.SetDescription(input);
 			}
+
 			ImGui::NewLine();
 			if (ImGui::Button("Host Game", { -1.f, 0.f }))
 			{
 				if (not server.GetName().empty())
 				{
-					GetEngine().ChangeScene<LobbyScene>(myServer);
+					bool failedToParsePort = false;
+					networking::Port port = 54322;
+					try
+					{
+						port = static_cast<networking::Port>(std::stoi(myServerPortName));
+					}
+					catch (std::exception)
+					{
+						failedToParsePort = true;
+					}
+
+					if (not failedToParsePort && server.Bind(port))
+					{
+						GetEngine().ChangeScene<LobbyScene>(myServer);
+					}
 				}
 			}
 		}

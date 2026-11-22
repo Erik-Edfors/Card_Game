@@ -21,6 +21,11 @@ namespace cs
 		virtual void LateUpdate(float aDeltaTime) = 0;
 		virtual void Cleanup() = 0;
 		virtual void Shutdown() = 0;
+
+		virtual Component* GetComponentBase(ComponentHandle aHandle) = 0;
+		virtual Component* GetComponentBase(EntityHandle aHandle) = 0;
+
+		virtual ComponentSystem& GetSystem() noexcept = 0;
 	private:
 	};
 
@@ -35,6 +40,9 @@ namespace cs
 		template<class... _Args>
 		_ComponentTy* AddComponent(ComponentHandle aHandle, EntityHandle aEntityHandle, _Args&&... aArgs);
 
+		virtual Component* GetComponentBase(ComponentHandle aHandle) override;
+		virtual Component* GetComponentBase(EntityHandle aHandle) override;
+
 		_ComponentTy* GetComponent(ComponentHandle aHandle);
 		_ComponentTy* GetComponent(EntityHandle aHandle);
 		ComponentIterator<_ComponentTy> Iterate(EntityHandle aHandle);
@@ -47,7 +55,7 @@ namespace cs
 		virtual void Cleanup() override;
 		virtual void Shutdown() override;
 
-		ComponentSystem& GetSystem() noexcept;
+		virtual ComponentSystem& GetSystem() noexcept override;
 
 	private:
 		struct _ListEntry
@@ -159,6 +167,16 @@ namespace cs
 	inline ComponentRegistry<_ComponentTy>::~ComponentRegistry()
 	{
 		Shutdown();
+	}
+	template<class _ComponentTy>
+	Component* ComponentRegistry<_ComponentTy>::GetComponentBase(ComponentHandle aHandle)
+	{
+		return GetComponent(aHandle);
+	}
+	template<class _ComponentTy>
+	Component* ComponentRegistry<_ComponentTy>::GetComponentBase(EntityHandle aHandle)
+	{
+		return GetComponent(aHandle);
 	}
 	template<class _ComponentTy>
 	inline _ComponentTy* ComponentRegistry<_ComponentTy>::GetComponent(ComponentHandle aHandle)
@@ -303,7 +321,7 @@ namespace cs
 		}
 
 		myList.push_back(std::move(entry));
-		static_cast<ComponentControlls&>(myList.back().Component).Initialize(&GetSystem(), aHandle, aEntityHandle);
+		static_cast<ComponentControlls&>(myList.back().Component).Initialize(this, aHandle, aEntityHandle);
 		return myList.back();
 	}
 	template<class _ComponentTy>

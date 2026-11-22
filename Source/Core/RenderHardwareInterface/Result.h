@@ -15,26 +15,54 @@ namespace graphics
 			const char* Desc;
 		} Message;
 
-		Message GetErrorMessage(Code aCode);
+		constexpr Message GetErrorMessage(Code aCode);
 
-#define DEFINE_ERROR(name, value, desc) \
+#define GRAPHICS_DEFINE_ERROR(name, value, desc) \
 constexpr Code name = (Code)(value); \
 constexpr const char* name ## _DESC = desc
 
-		DEFINE_ERROR(OK,						0,		"Succeeded!");
-		DEFINE_ERROR(UNKNOWN,					1,		"Unknown Result!");
-		DEFINE_ERROR(UNKNOWN_CODE,				2,		"Unknown Code!");
+		GRAPHICS_DEFINE_ERROR(OK,						0,		"Succeeded!");
+		GRAPHICS_DEFINE_ERROR(UNKNOWN,					1,		"Unknown Result!");
+		GRAPHICS_DEFINE_ERROR(UNKNOWN_CODE,				2,		"Unknown Code!");
 
 		//Logic Errors [100-199]
-		DEFINE_ERROR(OUT_OF_RANGE,				101,	"Value Out Of Range!");
-		DEFINE_ERROR(INVALID_ARGUMENT,			102,	"Invalid Argument!");
-		DEFINE_ERROR(INVALID_IMPLEMENTATION,	103,	"Invalid Implementation!");
+		GRAPHICS_DEFINE_ERROR(OUT_OF_RANGE,				101,	"Value Out Of Range!");
+		GRAPHICS_DEFINE_ERROR(INVALID_ARGUMENT,			102,	"Invalid Argument!");
+		GRAPHICS_DEFINE_ERROR(INVALID_IMPLEMENTATION,	103,	"Invalid Implementation!");
 
 		//Runtime Errors [200-299]
-		DEFINE_ERROR(INVALID_STATE,				201,	"Invalid State!");
-		DEFINE_ERROR(SYSTEM_ERROR,				202,	"System Error!");
-		DEFINE_ERROR(UNABLE_TO_OPEN_FILE,		203,	"Unable to open file!");
+		GRAPHICS_DEFINE_ERROR(INVALID_STATE,				201,	"Invalid State!");
+		GRAPHICS_DEFINE_ERROR(SYSTEM_ERROR,				202,	"System Error!");
+		GRAPHICS_DEFINE_ERROR(UNABLE_TO_OPEN_FILE,		203,	"Unable to open file!");
 
-#undef DEFINE_ERROR
+#undef GRAPHICS_DEFINE_ERROR
+
+#define GRAPHICS_CODE_MESSAGE(code) (Message{ #code, code ## _DESC })
+#define GRAPHICS_RESULT_CASE(code) case code ## : return GRAPHICS_CODE_MESSAGE(code)
+#define GRAPHICS_RESULT_DEFAULT(code) default: return GRAPHICS_CODE_MESSAGE(code)
+
+		inline constexpr Message GetErrorMessage(Code aCode)
+		{
+			switch (aCode)
+			{
+				GRAPHICS_RESULT_CASE(OK);
+				GRAPHICS_RESULT_CASE(UNKNOWN);
+				GRAPHICS_RESULT_CASE(UNKNOWN_CODE);
+
+				GRAPHICS_RESULT_CASE(OUT_OF_RANGE);
+				GRAPHICS_RESULT_CASE(INVALID_ARGUMENT);
+				GRAPHICS_RESULT_CASE(INVALID_IMPLEMENTATION);
+
+				GRAPHICS_RESULT_CASE(INVALID_STATE);
+				GRAPHICS_RESULT_CASE(SYSTEM_ERROR);
+				GRAPHICS_RESULT_CASE(UNABLE_TO_OPEN_FILE);
+
+				GRAPHICS_RESULT_DEFAULT(UNKNOWN_CODE);
+			}
+		}
+
+#undef CODE_MESSAGE
+#undef RESULT_CASE
+#undef RESULT_DEFAULT
 	}
 }

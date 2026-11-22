@@ -128,6 +128,8 @@ namespace CommonUtilities
 
 		bool GetEvent(Event* outEvent) noexcept;
 
+		size_t ClearEvents() noexcept;
+
 		TEventListener& operator=(TEventListener&& aEventListener) noexcept;
 		TEventListener& operator=(const TEventListener& aEventListener) noexcept;
 
@@ -372,6 +374,20 @@ namespace CommonUtilities
 			return true;
 		}
 		return false;
+	}
+
+	template<typename _IDTy, typename _DataTy, class _IDHasher>
+	size_t TEventListener<_IDTy, _DataTy, _IDHasher>::ClearEvents() noexcept
+	{
+		std::scoped_lock lk(myMutex);
+
+		size_t count = 0;
+		while (not myEvents.empty())
+		{
+			myEvents.pop();
+			++count;
+		}
+		return count;
 	}
 
 	template<typename _IDTy, typename _DataTy, class _IDHasher>

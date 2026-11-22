@@ -1,3 +1,4 @@
+#include "Assets.pch.h"
 #include "Font.h"
 #include <Core/Logger/Logger.h>
 #include <fstream>

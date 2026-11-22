@@ -1,9 +1,6 @@
 #pragma once
 #include <limits>
 
-#define CS_INVALID_COMPONENT_HANDLE (::cs::ComponentHandle { .Handle = UINT_MAX })
-#define CS_INVALID_ENTITY_HANDLE (::cs::EntityHandle { .Handle = UINT_MAX })
-
 namespace std
 {
 	template <class _Kty>
@@ -20,6 +17,9 @@ namespace cs
 	{
 		unsigned int Handle;
 	};
+
+	constexpr EntityHandle INVALID_ENTITY_HANDLE = cs::EntityHandle{ .Handle = 0 };
+	constexpr ComponentHandle INVALID_COMPONENT_HANDLE = cs::ComponentHandle{ .Handle = 0 };
 
 	inline constexpr bool operator ==(::cs::EntityHandle aLHS, ::cs::EntityHandle aRHS) noexcept { return aLHS.Handle == aRHS.Handle; }
 	inline constexpr bool operator !=(::cs::EntityHandle aLHS, ::cs::EntityHandle aRHS) noexcept { return aLHS.Handle != aRHS.Handle; }

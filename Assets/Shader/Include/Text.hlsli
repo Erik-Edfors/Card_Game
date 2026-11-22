@@ -2,6 +2,9 @@ cbuffer FrameBuffer : register(b0)
 {
     float4x4 FB_View;
     float4x4 FB_Projection;
+    float2 FB_TargetSize;
+
+    uint2 FB_padding;
 }
 
 cbuffer ObjectBuffer : register(b1)

@@ -6,7 +6,6 @@
 #include <Core/RenderHardwareInterface/Objects/Buffers/VertexBuffer.h>
 #include <Core/RenderHardwareInterface/Objects/Buffers/ConstantBuffer.h>
 #include <Core/Assets/FileFormats/Font.h>	// TODO: Remove, this is temporary until a proper storage for fonts is made.
-//#include <Core/RenderHardwareInterface/Objects/Texture2D.h>
 
 namespace graphics
 {
@@ -57,6 +56,9 @@ public:
 	void SetTransform(const CommonUtilities::Matrix4x4f& aTransform) noexcept;
 	const CommonUtilities::Matrix4x4f& GetTransform() const noexcept;
 
+	void SetAlignment(float aAlignment) noexcept;
+	float GetAlignment() const noexcept;
+
 	void SetColor(CommonUtilities::Vector4f aColor) noexcept;
 	CommonUtilities::Vector4f GetColor() const noexcept;
 
@@ -87,6 +89,8 @@ public:
 private:
 	void Clean(graphics::Device* aDevice) const;
 
+	static void AlignVertices(float aLeft, float aRight, float aAlignment, GlyphVertex* aVertices, size_t aNumVertices) noexcept;
+
 	mutable bool myObjectBufferIsDirty;
 	mutable bool myVerticesIsDirty;
 	mutable bool myAtlasIsDirty;
@@ -98,6 +102,7 @@ private:
 	std::wstring myText;
 	CommonUtilities::Vector4f myColor;
 	CommonUtilities::Vector4f myBorderColor;
+	float myAlignment;
 	float myBorderThickness;
 	float myAdvancePadding;
 	float myFontSize;

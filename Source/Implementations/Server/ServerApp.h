@@ -72,6 +72,8 @@ namespace server
 		Engine& GetEngine() const noexcept;
 		Server& GetServer() const noexcept;
 
+		bool ResetServer();
+
 	private:
 		bool myExiting;
 		std::unique_ptr<Engine> myEngine;

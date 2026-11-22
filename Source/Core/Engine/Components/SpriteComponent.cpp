@@ -46,6 +46,21 @@ CommonUtilities::Vector2f SpriteComponent::GetOrigin() const noexcept
 	return mySprite.GetOrigin();
 }
 
+unsigned int SpriteComponent::GetID() const noexcept
+{
+	return mySprite.GetID();
+}
+
+bool SpriteComponent::IsHovered() const noexcept
+{
+	return myRenderLayer->GetHoveredID() == GetID();
+}
+
+SpriteRenderLayer* SpriteComponent::GetRenderLayer() const noexcept
+{
+	return myRenderLayer;
+}
+
 void SpriteComponent::OnStart()
 {
 	myTransform = GetSystem().GetComponent<TransformComponent>(GetEntityHandle());

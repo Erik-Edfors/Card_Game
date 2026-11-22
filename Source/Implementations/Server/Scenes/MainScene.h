@@ -18,9 +18,12 @@ namespace server
 
 	protected:
 		virtual void OnInit() override;
+		virtual void OnEnter() override;
 		virtual void OnUpdate(float aDeltaTime) override;
 
 	private:
+		std::string myServerPortName;
+
 		ServerApp* myServer;
 		//shared::Console myConsole;
 		//shared::CommandParser myCommandParser;

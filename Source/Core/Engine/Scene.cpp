@@ -3,7 +3,8 @@
 #include "Engine.h"
 
 Scene::Scene() :
-	myEngine(nullptr)
+	myEngine(nullptr),
+	myStarted(false)
 {
 }
 Scene::~Scene()
@@ -11,7 +12,11 @@ Scene::~Scene()
 }
 void Scene::Update(float aDeltaTime)
 {
-	//TODO: Actually get delta time!
+	if (not myStarted)
+	{
+		OnStart();
+		myStarted = true;
+	}
 	GetComponentSystem().Update(aDeltaTime);
 	OnUpdate(aDeltaTime);
 }
@@ -23,6 +28,12 @@ cs::ComponentSystem& Scene::GetComponentSystem() noexcept
 {
 	return myComponentSystem;
 }
+
+bool Scene::HasStarted() const noexcept
+{
+	return myStarted;
+}
+
 void Scene::Initialize(Engine* aEngine)
 {
 	myEngine = aEngine;

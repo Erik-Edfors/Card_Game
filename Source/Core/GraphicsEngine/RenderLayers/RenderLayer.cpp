@@ -41,6 +41,7 @@ void RenderLayer::PreRender()
 }
 void RenderLayer::PostRender()
 {
+	myContext->ClearState();
 	OnPostRender();
 }
 void RenderLayer::Render()

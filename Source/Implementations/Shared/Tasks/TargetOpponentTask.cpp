@@ -4,12 +4,30 @@
 namespace shared
 {
 	TargetOpponentTask::TargetOpponentTask() noexcept : 
+		myAuthority(cardgame::INVALID_PLAYER_ID),
 		myOwner(cardgame::INVALID_PLAYER_ID),
 		myTarget(cardgame::INVALID_PLAYER_ID)
 	{
 	}
 	TargetOpponentTask::~TargetOpponentTask() noexcept
 	{
+	}
+
+	void TargetOpponentTask::Initialize(cardgame::PlayerID aAuthority, cardgame::PlayerID aOwner) noexcept
+	{
+		Reset();
+		SetAuthority(aAuthority);
+		SetOwner(aOwner);
+	}
+
+	void TargetOpponentTask::Reset() noexcept
+	{
+		myTarget = cardgame::INVALID_PLAYER_ID;
+	}
+
+	void TargetOpponentTask::SetAuthority(cardgame::PlayerID aPlayer) noexcept
+	{
+		myAuthority = aPlayer;
 	}
 
 	void TargetOpponentTask::SetOwner(cardgame::PlayerID aOwner) noexcept
@@ -35,6 +53,11 @@ namespace shared
 	bool TargetOpponentTask::IsFinished() const
 	{
 		return myTarget != cardgame::INVALID_PLAYER_ID;
+	}
+
+	cardgame::PlayerID TargetOpponentTask::GetAuthority() const
+	{
+		return myAuthority;
 	}
 
 	unsigned int TargetOpponentTask::GetMinTargets() const

@@ -32,6 +32,12 @@ public:
 	void SetOrigin(CommonUtilities::Vector2f aOrigin) noexcept;
 	CommonUtilities::Vector2f GetOrigin() const noexcept;
 
+	unsigned int GetID() const noexcept;
+
+	bool IsHovered() const noexcept;
+
+	SpriteRenderLayer* GetRenderLayer() const noexcept;
+
 protected:
 	virtual void OnStart() override;
 	virtual void OnUpdate(float aDeltaTime) override;
